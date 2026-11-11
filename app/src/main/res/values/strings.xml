@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Phoenix</string>
+    <string name="site_watcher_desc">Читает только адресную строку браузера, чтобы узнать домен открытого сайта и подобрать для него сервер. Домен хранится только в памяти, содержимое страниц не читается, ничего не отправляется.</string>
+</resources>

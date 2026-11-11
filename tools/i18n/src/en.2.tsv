@@ -1,0 +1,150 @@
+141	The "Phoenix VPN" button next to Wi-Fi and Bluetooth: turns the VPN on and off, a long press opens the app. The first time, open the app to grant the VPN permission.
+142	When a server stops working and the app looks for another, it checks which app is open now (usage access needed) and tries servers where that app has already worked first. If the app has its own target, that target's servers go first.
+143	Copy
+144	Copy ({})
+145	Copy all ({})
+146	Copy all
+147	Backup saved ({} lines)
+148	Best first
+149	Best now: {}
+150	Switch server on low speed
+151	Many servers do not pass UDP: apps wait for a reply and do not open even though Telegram works. With QUIC blocked they switch to plain TCP at once. Recommended to keep on. Applied at the next connection.
+152	Can be restored
+153	NOT allowed
+154	Auto-collect reliability
+155	Name
+156	Item names depend on the firmware version. If the button did not find the right screen, the app settings will open; continue with the steps above.
+157	Found automatically ({}): apps with Russian packages that are not in the preset. If an app needs the VPN, remove it.
+158	Settings
+159	Android VPN settings
+160	App settings
+161	Not blocked in Russia
+162	Does not look like a site address
+163	Not tied to the clock: the period counts from the last successful collection. If the phone was off or had no network, collection runs as soon as possible and the next period counts from it. A shorter interval means fresher configs but more traffic and battery use.
+164	Block internet without VPN
+165	Could not restore (the entry is out of date)
+166	Could not open VPN settings
+167	Could not read the file: {}
+168	Could not save
+169	Could not save the log (no entries for the chosen period?)
+170	Could not save the file
+171	Could not save: {}
+172	Failed: {}
+173	No more than once per 5 minutes and 4 times per hour, so that on a bad network the app does not jump from server to server everywhere.
+174	No configs: tap "Collect now"
+175	Nothing to check: no configs or no service selected
+176	A link like https://… is needed
+177	App info
+178	Refresh
+179	Phone shells (EMUI, MIUI, ColorOS and others) unload background apps on their own. Here is what to allow on your phone.
+180	VPN bypass and service checks
+181	Common
+182	Common values apply in every mode that has no settings of its own. A mode can have its own: then it follows them and the common ones do not touch it.
+183	Common source list — {}
+184	Battery restriction removed
+185	Battery restriction: 
+186	Detect now
+187	Detect automatically
+188	Detecting the type of blocking…
+189	Disconnect
+190	Open services
+191	The open service does not work on this server
+192	Open
+193	Open settings
+194	Differs from common ({}): 
+195	No differences from the common settings.
+196	Cancel
+197	Collection report
+198	Report saved: Downloads/Phoenix
+199	No report yet
+200	Estimate of the cost of checks (traffic is approximate). If the numbers are large, turn on "Focus" or quiet hours.
+201	Clear
+202	VPN error
+203	Reconnect automatically
+204	Recheck all configs
+205	Recheck all
+206	Recheck apps only
+207	Recheck configs
+208	Rechecking servers…
+209	Rechecking…
+210	Quick settings tile
+211	Nothing matches the filters.
+212	Connect VPN automatically
+213	Connecting…
+214	Connection
+215	Connect
+216	Search
+217	Search the log
+218	Search by name or country
+219	While an app from your targets is open (a game, a bank, a call), the app does not run heavy checks and does not switch servers because of speed. Usage access is needed.
+220	Show
+221	Full protection (even when the app is closed or killed by the system) is turned on only in Android settings: VPN → Phoenix → "Always-on VPN" and "Block connections without VPN".
+222	Got it
+223	After a recheck and in the background: working configs that have not yet been checked for the selected services get checked. If you add a service, the already checked ones are checked too.
+224	Last mode detection
+225	Last detection: {}
+226	Recent problems
+227	Last run: {}
+228	The latest collection is loaded.
+229	Pull the shade down → pencil icon (edit) → drag "Phoenix VPN" to the active tiles.
+230	Permissions and background work
+231	Audit suggestions ({})
+232	When turned on, the current common values are copied here; after that they can be changed independently.
+233	When the phone starts and when the app opens (last or best config). The system VPN permission is needed once.
+234	The app remembers which hours of the week you use the phone (on the phone only, the file is included in the backup). After a week, in "quiet" hours heavy work does not start without charging, and before the usual start of activity the tunnel is checked in advance.
+235	The app checks which sites open directly and switches the mode when two detections in a row agree. The check runs when the network changes.
+236	The app changes the source blocklist and their priorities by itself. Any such change can be undone within a day.
+237	Apps that bypass the VPN
+238	Apps that bypass the VPN ({})
+239	Apps and sites
+240	Apply (up to {})
+241	Checked
+242	Check
+243	Check the first {} configs
+244	Check servers now
+245	Service check through a config
+246	Leak check
+247	Rechecks all configs of the mode (first TCP, then real latency through the core). Runs in the background for up to 25 minutes, you can close the screen.
+248	Check working configs automatically
+249	Checking 0/{}…
+250	Checking {}/{}…
+251	Checking servers for targets…
+252	Checking…
+253	Protocol
+254	Firmware
+255	Working…
+256	Every N hours
+257	VPN permission
+258	Allow exact alarms
+259	Mode
+260	Mode "{}": when it is active, its settings are used (if its own are on), otherwise the common ones.
+261	"Focus" mode
+262	Blocking mode
+263	Mode: {}
+264	Backup
+265	Russian apps
+266	Russian sites ({} domains: .ru, .рф, Gosuslugi, banks, Yandex, VK…) open directly by default. You can add your own here. Applied at the next connection.
+267	Site
+268	Site in browser: not detected
+269	Site in browser: detected
+270	Sites that bypass the VPN
+271	Sites of these apps go directly too
+272	Recheck all configs by itself
+273	Chooses by itself (recommended)
+274	Reset to common settings
+275	Fresh checks (24 h)
+276	Summary
+277	Own settings for "{}"
+278	Own apps ({})
+279	Own links in the pool ({})
+280	Own quiet hours
+281	Custom service
+282	Today: 
+283	Now
+284	Common settings apply to this mode now. Turn on "Own settings" to change them separately.
+285	No servers yet. Tap "Collect now" on the main screen.
+286	Servers: {} · checked alive: {}
+287	Servers
+288	Servers: list, sorting, filters
+289	Network
+290	Network now: {}

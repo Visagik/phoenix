@@ -1,0 +1,415 @@
+1	Solo problemas
+2	hasta las %02d:00
+3	desde las %02d:00
+4	(manual)
+5	(común: solo funcionamiento del servidor)
+6	(se detecta automáticamente)
+7	(se detecta solo)
+8	· mostrados {}
+9	· comprobados {}
+10	Ahora no está disponible en este teléfono.
+11	Ahora: {}.
+12	de 5 MB
+13	%.1f MB
+14	+ Aplicación
+15	+ Sitio
+16	+ Servicio propio
+17	. El resto no se puede añadir automáticamente (el motivo se indica debajo de cada uno); puede añadirlos con el botón «A la lista negra»
+18	3+ servicios
+19	Android sabe qué enlaces abre una aplicación (por ejemplo, el sitio de un banco). Esos sitios también van sin VPN en el navegador, igual que la propia aplicación. Funciona en Android 12 y posteriores; Telegram, YouTube, Google y similares nunca se incluyen.
+20	Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch y similares se abren directamente: más rápido y con menos tráfico. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude y todo lo que se bloquea en Rusia permanece en la VPN.
+21	VPN activada
+22	VPN desactivada
+23	Xray: versión {}
+24	\nServidores de reserva comprobados: {}
+25	\n⚠ La aplicación automática omite: {}. El botón «A la lista negra» los añade manualmente.
+26	example.com o un enlace
+27	{} (reservas {}, comprobados {}){}
+28	{} KB
+29	{} Restricción de batería
+30	{} Alarmas exactas
+31	hace {} min
+32	{} h
+33	hace {} h
+34	{} — TLS y Reality pueden fallar; active la hora automática
+35	«Como en todas partes» para una aplicación significa: usar la elección hecha arriba para todas. Los demás botones (auto, A, B) fijan su propia elección para esta aplicación.\n\nLos sitios siempre usan la opción A. Una aplicación usa A si el núcleo puede reconocerla por su conexión (el resto del tráfico no se toca); si no puede, usa B cuando se ha concedido acceso al uso.
+36	A
+37	A: solo ella por su propio servidor
+38	Inicio automático (MIUI / HyperOS)
+39	El inicio automático y «No descargar de la memoria» en MIUI/HyperOS, Funtouch y EMUI no se pueden comprobar por programa; consúltelos en la página «Trabajo en segundo plano (firmware)».
+40	Inicio automático y segundo plano ({})
+41	No hay nada que añadir automáticamente: los motivos se indican bajo las sugerencias; para añadir manualmente, use el botón «A la lista negra»
+42	Recopilación automática
+43	Recopilación de configuraciones
+44	Dirección
+45	Dirección (por ejemplo, https://discord.com/)
+46	La dirección de comprobación debe empezar por https://
+47	La dirección cambió tras la comprobación: los datos están desactualizados
+48	Dirección de un archivo de texto con enlaces de suscripción (uno por línea). Puede dejarlo vacío y usar solo sus enlaces.
+49	Dirección de un archivo de texto con enlaces de suscripción (uno por línea). Ahora se usa la lista integrada; puede indicar la suya. Campo vacío: volver a la integrada.
+50	Se desconoce la dirección de esta aplicación, se usa la comprobación general (si el servidor funciona). Si sabe qué sitio usa la aplicación, escriba su dirección y la comprobación será más precisa.
+51	La dirección que abre esta aplicación: con ella se comprueba si el servidor funciona para ella.
+52	La dirección con la que se comprueba que el servidor funciona para este objetivo. Un campo vacío restablece la predeterminada. Los servidores se recalcularán en la próxima comprobación.
+53	B
+54	B: cambiar toda la VPN
+55	Bancos, Gosuslugi, VK, Yandex, marketplaces, operadores ({} uds., solo los instalados).
+56	Sin estos permisos Android (sobre todo MIUI/HyperOS) puede no iniciar la recopilación por la noche con la aplicación cerrada. Entonces se hará al abrir por primera vez el teléfono o la aplicación.
+57	Blancas
+58	Listas blancas
+59	Listas blancas: solo se abren sitios rusos. Listas negras: se bloquean sitios concretos. Cada modo tiene sus fuentes, estadísticas y lista de exclusión. La recopilación nocturna se hace para cada modo que tenga fuentes.
+60	Alarma: {}
+61	A veces hay internet, pero las fotos y páginas casi no cargan. Mientras usa el teléfono, cada 45 segundos se mira cuántos datos pasan por el servidor; si son pocos, se hace una pequeña medición (hasta 400 KB) y, tras dos lentas seguidas, se prueban otros servidores. Si no usa el teléfono, no se descarga nada.
+62	Motor de túnel rápido (hev)
+63	A la lista negra
+64	No hay enlaces https://… en el portapapeles
+65	A la hora exacta
+66	A un archivo
+67	En el archivo se guardan los ajustes y, para cada modo (listas blancas y negras), los objetivos con sus direcciones de comprobación y política, las aplicaciones y sitios que evitan la VPN, sus fuentes, la lista negra de fuentes, los servicios elegidos y la experiencia acumulada de las configuraciones (dónde funcionaron). No se incluyen las configuraciones descargadas ni el registro: se renuevan con la recopilación nocturna. Los servidores de los objetivos tampoco se guardan porque contienen claves de acceso: tras importar se volverán a elegir.
+68	A un archivo: 24 horas
+69	A un archivo: todo
+70	Restaurado: {}
+71	Restaurar
+72	Restaurar eliminados ({})
+73	Versión
+74	Hora de recopilación
+75	Hora del teléfono
+76	Todos los botones de permisos (alarmas exactas, batería, inicio automático, datos en segundo plano) están en un solo lugar: «Ajustes → Trabajo en segundo plano (firmware)».
+77	Todo
+78	Ayer: 
+79	Elija una aplicación
+80	Eventos principales de los últimos 15 minutos del registro: caídas del servidor, cambios de red, búsqueda, cambios.
+81	Listo
+82	Listo: {}
+83	Listo: {} de {} activos
+84	Datos
+85	Datos en segundo plano sin restricciones
+86	Aún no hay datos. Pulse «Recopilar ahora» (o espere a la ejecución nocturna).
+87	Fecha de comprobación
+88	Diagnóstico
+89	Diagnóstico copiado
+90	Desactivado por defecto en listas blancas: allí solo se abre directamente lo permitido.
+91	La opción B necesita acceso al uso
+92	Para cada objetivo la aplicación mantiene hasta 3 servidores comprobados y los vuelve a comprobar cada pocas horas.
+93	Para un sitio solo funciona la opción A.
+94	Activado por defecto en listas negras.
+95	Días de vida
+96	Añadir
+97	Añadir mosaico a ajustes rápidos
+98	Añadir enlaces del portapapeles
+99	Añadido
+100	Añadidos {} de {}. Aparecerán en la próxima recopilación
+101	Añadido a la lista negra
+102	Añadido a la lista negra: {}
+103	Enlaces añadidos: {} de {}. Aparecerán en la próxima recopilación
+104	Añadido. Aparecerá en la próxima recopilación
+105	Se añaden a la lista común de fuentes en cada recopilación.
+106	La proporción es cuántas configuraciones del enlace responden entre las comprobadas (comprobación reciente de 7 días o experiencia en la red actual). Prioridad «alta»: las configuraciones de este enlace se prueban antes que otras activas y el enlace no entra en la lista negra por auditoría. «Baja»: sus configuraciones van al final de la cola.
+107	Acceso al uso: concedido
+108	Acceso a estadísticas de uso
+109	Si IPv6 no se mete en el túnel, los sitios con IPv6 se abren directamente, sin VPN (fuga). El bloqueo hace que las aplicaciones pasen enseguida a IPv4 por la VPN. Se aplica en la próxima conexión.
+110	Si la VPN no se pudo levantar o se cortó, el túnel sigue activo y el tráfico se bloquea mientras la aplicación busca un servidor que funcione. Desactivado por defecto: entonces, ante un fallo, internet va directamente.
+111	Si activa el servicio de accesibilidad «Phoenix: sitio en el navegador», la aplicación ve solo el dominio del sitio abierto (la barra de direcciones de Chrome, Yandex, Samsung, Firefox, Opera, Edge, Brave y algunos navegadores más) y, al cambiar de servidor, elige uno donde ese sitio se abra. El dominio se guarda solo en memoria, no se lee el contenido de las páginas ni se envía nada. En Android 13 y posteriores, para una aplicación que no es de una tienda, abra primero «Información de la aplicación» → menú ⋮ → «Permitir ajustes restringidos».
+112	Si no se encuentra un servidor de reserva, la aplicación inicia por sí sola una nueva comprobación completa de todas las configuraciones (no más de una vez cada 30 minutos).
+113	Si el túnel deja de funcionar (tres comprobaciones fallidas), la aplicación prueba las configuraciones de reserva de mejor puntuación.
+114	Activos
+115	Registro
+116	Registro «{}»
+117	Registro copiado
+118	En los últimos 15 minutos no pasó nada importante.
+119	Últimas 24 horas
+120	Cargando la lista…
+121	Latencia
+122	Bloquear QUIC (UDP 443)
+123	La medición descarga hasta 8 MB. Por defecto, solo por Wi-Fi.
+124	Las mediciones de velocidad se hacen solas.
+125	Las mediciones de velocidad no se hacen solas (red móvil); el botón «Velocidad» de la tarjeta siempre funciona.
+126	No hay entradas para este filtro.
+127	Entradas: {} de {} (en pantalla las últimas {}; «A un archivo» guarda según el filtro: 24 horas o todo el registro). El registro acumula hasta 5 MB por modo.
+128	Volviendo a comprobar…
+129	Cambiar
+130	Medir la velocidad también en red móvil
+131	Midiendo velocidad…
+132	Importación completada:\n
+133	Importar desde archivo
+134	La importación no borra nada: las listas se combinan (la lista negra de fuentes solo crece), los objetivos se añaden a los existentes, los ajustes individuales se toman del archivo. El archivo es de texto, puede abrirlo y verlo. Puede contener enlaces a sus fuentes: no lo envíe a desconocidos.
+135	Nombre
+136	Fuentes
+137	Fuentes del modo
+138	Fuentes cuyas configuraciones ya están completas en otra. Se añaden automáticamente a la lista negra el día 1 y el 15 (hasta {} cada vez); aquí puede aplicarlas de inmediato.
+139	Cada {} h tras la última recopilación correcta
+140	Todos los días a las {}
+141	El botón «Phoenix VPN» junto a Wi-Fi y Bluetooth: activa y desactiva la VPN; una pulsación larga abre la aplicación. La primera vez hay que abrir la aplicación para conceder el permiso de VPN.
+142	Cuando un servidor deja de funcionar y la aplicación busca otro, mira qué aplicación está abierta ahora (se necesita acceso al uso) y prueba primero los servidores donde esa aplicación ya se abrió. Si la aplicación tiene objetivo propio, primero van sus servidores.
+143	Copiar
+144	Copiar ({})
+145	Copiar todo ({})
+146	Copiar todo
+147	Copia guardada ({} líneas)
+148	Los mejores arriba
+149	Mejor ahora: {}
+150	Cambiar de servidor con baja velocidad
+151	Muchos servidores no dejan pasar UDP: las aplicaciones esperan respuesta y no se abren aunque Telegram funcione. Con QUIC bloqueado pasan enseguida a TCP normal. Se recomienda dejarlo activado. Se aplica en la próxima conexión.
+152	Se puede restaurar
+153	NO permitidos
+154	Fiabilidad de la recopilación automática
+155	Nombre
+156	Los nombres de los elementos dependen de la versión del firmware. Si el botón no encontró la pantalla, se abrirán los ajustes de la aplicación; continúe con los pasos anteriores.
+157	Encontradas automáticamente ({}): aplicaciones con paquetes rusos que no están en el conjunto. Si una aplicación necesita VPN, quítela.
+158	Ajustes
+159	Ajustes de VPN de Android
+160	Ajustes de la aplicación
+161	No bloqueado en Rusia
+162	No parece una dirección de sitio
+163	No está ligado al reloj: el plazo se cuenta desde la última recopilación correcta. Si el teléfono estaba apagado o sin red, la recopilación se hará en cuanto sea posible y el siguiente plazo se contará desde ella. Menor intervalo: configuraciones más recientes, pero más tráfico y batería.
+164	No permitir internet sin VPN
+165	No se pudo restaurar (el registro está desactualizado)
+166	No se pudieron abrir los ajustes de VPN
+167	No se pudo leer el archivo: {}
+168	No se pudo guardar
+169	No se pudo guardar el registro (¿no hay entradas del período elegido?)
+170	No se pudo guardar el archivo
+171	No se pudo guardar: {}
+172	Error: {}
+173	No más de una vez cada 5 minutos y no más de 4 veces por hora, para no saltar de servidor en servidor con mala red.
+174	No hay configuraciones: pulse «Recopilar ahora»
+175	Nada que comprobar: no hay configuraciones o no se eligió ningún servicio
+176	Se necesita un enlace del tipo https://…
+177	Información de la aplicación
+178	Actualizar
+179	Las capas de los teléfonos (EMUI, MIUI, ColorOS y otras) descargan solas las aplicaciones en segundo plano. Aquí se recoge lo que hay que permitir en su teléfono.
+180	Exclusión de VPN y comprobación de servicios
+181	Comunes
+182	Los valores comunes se aplican en cada modo que no tenga ajustes propios. Un modo puede tener los suyos: entonces vive según ellos y los comunes no lo afectan.
+183	Lista común de fuentes — {}
+184	Restricción de batería eliminada
+185	Restricción de batería: 
+186	Detectar ahora
+187	Detectar automáticamente
+188	Detectando el tipo de bloqueo…
+189	Desconectar
+190	Servicios abiertos
+191	El servicio abierto no funciona en este servidor
+192	Abrir
+193	Abrir ajustes
+194	Difiere de los comunes ({}): 
+195	No hay diferencias con los ajustes comunes.
+196	Cancelar
+197	Informe de recopilación
+198	Informe guardado: Descargas/Phoenix
+199	Aún no hay informe
+200	Estimación del coste de las comprobaciones (tráfico aproximado). Si las cifras son grandes, active «Concentración» o las horas de silencio.
+201	Borrar
+202	Error de VPN
+203	Reconectar automáticamente
+204	Volver a comprobar todas las configuraciones
+205	Volver a comprobar todo
+206	Volver a comprobar solo aplicaciones
+207	Nueva comprobación de configuraciones
+208	Volviendo a comprobar servidores…
+209	Volviendo a comprobar…
+210	Mosaico en ajustes rápidos
+211	Nada coincide con los filtros.
+212	Conectar la VPN automáticamente
+213	Conectando…
+214	Conexión
+215	Conectar
+216	Buscar
+217	Buscar en el registro
+218	Buscar por nombre o país
+219	Mientras esté abierta una aplicación de sus objetivos (juego, banco, llamada), la aplicación no lanza comprobaciones pesadas ni cambia de servidor por la velocidad. Se necesita acceso al uso.
+220	Mostrar
+221	La protección total (incluso con la aplicación cerrada o terminada por el sistema) se activa solo en los ajustes de Android: VPN → Phoenix → «VPN siempre activada» y «Bloquear conexiones sin VPN».
+222	Entendido
+223	Tras una nueva comprobación y en segundo plano: se comprueban las configuraciones que funcionan y que aún no se han comprobado con los servicios elegidos. Si añade un servicio, también se comprobarán las ya comprobadas.
+224	Última detección de modo
+225	Última detección: {}
+226	Problemas recientes
+227	Última ejecución: {}
+228	Se cargó la última recopilación.
+229	Deslice la cortina hacia abajo → icono de lápiz (editar) → arrastre «Phoenix VPN» a los mosaicos activos.
+230	Permisos y trabajo en segundo plano
+231	Sugerencias de auditoría ({})
+232	Al activarlo se copian aquí los valores comunes actuales; después se pueden cambiar de forma independiente.
+233	Al encender el teléfono y al abrir la aplicación (última o mejor configuración). Hay que conceder una vez el permiso del sistema para VPN.
+234	La aplicación recuerda en qué horas de la semana usa el teléfono (solo en el teléfono, el archivo entra en la copia de seguridad). Tras una semana, en horas «tranquilas» no se inician tareas pesadas sin cargador, y antes del inicio habitual de actividad se comprueba el túnel con antelación.
+235	La aplicación comprueba qué sitios se abren directamente y cambia el modo cuando dos detecciones seguidas coinciden. La comprobación se hace al cambiar la red.
+236	La aplicación cambia sola la lista negra de fuentes y sus prioridades. Cualquier cambio así se puede deshacer en un día.
+237	Aplicaciones que evitan la VPN
+238	Aplicaciones que evitan la VPN ({})
+239	Aplicaciones y sitios
+240	Aplicar (hasta {})
+241	Comprobados
+242	Comprobar
+243	Comprobar las primeras {} configuraciones
+244	Comprobar servidores ahora
+245	Comprobación de servicios mediante configuración
+246	Comprobación de fugas
+247	Vuelve a comprobar todas las configuraciones del modo (primero TCP, luego latencia real mediante el núcleo). Funciona en segundo plano hasta 25 minutos; puede cerrar la pantalla.
+248	Comprobar solas las configuraciones que funcionan
+249	Comprobando 0/{}…
+250	Comprobando {}/{}…
+251	Comprobando servidores para los objetivos…
+252	Comprobando…
+253	Protocolo
+254	Firmware
+255	Trabajando…
+256	Cada N horas
+257	Permiso de VPN
+258	Permitir alarmas exactas
+259	Modo
+260	Modo «{}»: cuando está activo, se usan sus ajustes (si están activados los propios), si no, los comunes.
+261	Modo «Concentración»
+262	Modo de bloqueo
+263	Modo: {}
+264	Copia de seguridad
+265	Aplicaciones rusas
+266	Los sitios rusos ({} dominios: .ru, .рф, Gosuslugi, bancos, Yandex, VK…) se abren directamente por defecto. Aquí puede añadir los suyos. Se aplica en la próxima conexión.
+267	Sitio
+268	Sitio en el navegador: no se detecta
+269	Sitio en el navegador: se detecta
+270	Sitios que evitan la VPN
+271	Los sitios de estas aplicaciones también van directos
+272	Volver a comprobar todas las configuraciones automáticamente
+273	Elige solo (recomendado)
+274	Restablecer a los ajustes comunes
+275	Comprobaciones recientes (24 h)
+276	Resumen
+277	Ajustes propios para «{}»
+278	Mis aplicaciones ({})
+279	Mis enlaces al grupo ({})
+280	Mis horas de silencio
+281	Servicio propio
+282	Hoy: 
+283	Ahora
+284	Ahora este modo usa los ajustes comunes. Active «Ajustes propios» para cambiarlos por separado.
+285	Aún no hay servidores. Pulse «Recopilar ahora» en la pantalla principal.
+286	Servidores: {} · comprobados activos: {}
+287	Servidores
+288	Servidores: lista, orden, filtros
+289	Red
+290	Red ahora: {}
+291	Más fuertes que los automáticos. En ese horario no se inician comprobaciones pesadas en segundo plano sin cargador.
+292	Cuánto funcionó la VPN, con qué frecuencia cambió el servidor y en qué servidores se mantuvo más tiempo. Se guarda solo en el teléfono, 30 días.
+293	Velocidad
+294	No se pudo medir la velocidad
+295	Velocidad: {}
+296	Cambio de servidor según la aplicación abierta
+297	Cambiar de servidor
+298	Quitar restricción de batería
+299	Recopilar ahora
+300	Orden (pulse el elemento elegido para invertir):
+301	Estado
+302	Guardado
+303	Guardado: Descargas/Phoenix
+304	Guardar
+305	Guardar informe
+306	Guardando el registro…
+307	Guardando…
+308	Accesibilidad
+309	Lista de exclusión guardada
+310	Compara la dirección «fuera de la VPN» y «a través de la VPN». La propia aplicación está fuera del túnel, así que aquí no se ven las fugas de DNS de otras aplicaciones.
+311	Enlace para la lista negra
+312	Enlace a reglas de regiones (opcional)
+313	Enlaces: proporción de funcionales y prioridad
+314	Aún no hay enlaces con estadísticas: aparecerán tras una recopilación.
+315	Estadísticas
+316	País
+317	Considerar lento un servidor si la velocidad es inferior a (Mbit/s):
+318	Tipo de bloqueo
+319	Horas de silencio según hábitos
+320	Solo al cargar
+321	Solo aplicaciones
+322	El mismo motor que v2rayNG: suele ser más rápido. Surte efecto en la próxima conexión. Solo teléfonos de 64 bits; si tiene sitios o aplicaciones con servidor propio, las reglas por aplicación no funcionarán para ellos, y entonces se queda automáticamente el integrado.
+323	Android no garantiza la hora exacta (es posible un desfase de unos minutos). Si a esa hora no hay red o el teléfono está apagado, la recopilación se hará en cuanto sea posible.
+324	Alarmas exactas
+325	Alarmas exactas: 
+326	Cada modo tiene sus enlaces, lista negra y auditoría; aquí puede editar cualquiera, sin importar qué modo esté activo ahora (✓). La recopilación nocturna se hace para cada modo que tenga fuentes.
+327	Cada objetivo tiene una dirección de comprobación: con ella se ve si el servicio se abre a través del servidor. Para aplicaciones conocidas se rellena sola; para las demás solo se comprueba el funcionamiento del servidor; la dirección se puede cambiar con el botón «Dirección».
+328	Quitar
+329	Notificaciones
+330	Notificaciones de Phoenix
+331	Eliminar
+332	Cambio inteligente (según la aplicación abierta)
+333	Archivo con líneas host:, closed:, marker:… Si está vacío o no es adecuado, rigen las reglas integradas: qué sitios están cerrados según el país de salida y por qué frases se reconoce la página «no disponible en su país». Se actualiza al iniciar la aplicación.
+334	Filtros:
+335	Trabajo en segundo plano (firmware)
+336	Aún no hay objetivos. Añada una aplicación (la lista se toma del teléfono) o un sitio.
+337	Objetivo «{}»
+338	Qué hacer si una aplicación no funciona en el servidor actual
+339	Qué hace la aplicación por sí sola
+340	¿Qué pasó?
+341	Qué funciona en esta red
+342	Qué ya está permitido
+343	Para saber qué aplicación está abierta ahora. Los datos permanecen en el teléfono.
+344	Qué ajustes editar
+345	Negras
+346	Listas negras
+347	Lista negra ({})
+348	Ahorra batería. Si el teléfono no se está cargando a esa hora, la recopilación se aplaza hasta conectar el cargador.
+349	Ahorro de datos: {}
+350	Exportar a archivo
+351	Exportar e importar
+352	Este enlace ya está en la lista negra
+353	Estas fuentes no se descargan. De la lista no se elimina nada automáticamente, solo manualmente.
+354	Estas aplicaciones funcionan directamente, sin VPN. Cada modo tiene su lista. Los cambios se aplican en la próxima conexión.
+355	Núcleo
+356	Núcleo de VPN
+357	El núcleo no arrancó: {}
+358	El núcleo abre los servicios elegidos mediante configuraciones que funcionan y anota el resultado en cada configuración (en la tarjeta: «Comprobado»; las mejores son aquellas con las que se abren más servicios). Los sitios con protección contra bots (Claude, Qwen) responden con rechazo, pero eso también cuenta como «alcanzado».
+359	auto
+360	conexión automática, IPv6, protección contra fugas, mosaico en ajustes rápidos
+361	listas blancas/negras, detección automática
+362	bloquear (recomendado)
+363	se pedirá en la primera conexión
+364	correcta (desfase de {} s)
+365	activadas
+366	hora o intervalo de recopilación, solo al cargar, estado de la última ejecución
+367	todos los permisos para segundo plano en un solo lugar: batería, alarmas, inicio automático
+368	concedido
+369	desactivadas: el servicio de VPN puede no mostrarse
+370	sí
+371	activa
+372	añadido manualmente
+373	aún no ha habido
+374	aún no se ha descargado
+375	{} de {} activos
+376	servidores de reserva, opción A o B
+377	cable
+378	como en todas partes
+379	red móvil
+380	directamente, sin VPN
+381	directamente, sin VPN (no se necesita servidor)
+382	no comprobado (sin respuesta de red)
+383	no permitidas
+384	no tocar
+385	no se pudo abrir el archivo
+386	no
+387	sin servidor propio: pasa por el común
+388	sin red
+389	no: la recopilación programada puede desplazarse
+390	no: el sistema puede descargar la aplicación
+391	solo para la opción B (cambio de VPN al abrir la aplicación)
+392	detectando…
+393	desconectado
+394	apertura de la aplicación
+395	marcado por usted (el sistema no permite comprobarlo); pulse para abrir de nuevo. 
+396	error: {}
+397	cambios de servidor {} · cambios de modo {} · cambios de red {}\nfallos de ruta {} · actualizaciones de objetivos {} · entradas con problemas {}
+398	conectando: {}
+399	conectado: {}
+400	permisos con marcas, qué pasa ahora, tamaño del registro
+401	comprobación: 
+402	comprobando…
+403	permitidas
+404	copia de seguridad de ajustes, objetivos, exclusiones, fuentes y registro
+405	aplicaciones y sitios rusos, mis aplicaciones
+406	resumen «qué pasa ahora», registro con filtros y búsqueda, informe de recopilación
+407	servidores: {}
+408	el sistema no permite comprobarlo por sí mismo: pulse, actívelo y vuelva, la marca se conservará. 
+409	quitada
+410	enlaces para listas blancas y negras, lista negra, auditoría
+411	el archivo es demasiado grande para una copia de Phoenix
+412	a través del servidor
+413	★ 3+ días
+414	✓ se abrió · ≈ responde pero no del todo (protección del sitio; para Claude y Qwen suele ser normal) · ✗ no se abrió · ? sin comprobar
+415	📌 Desanclar servidor

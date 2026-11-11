@@ -1,0 +1,140 @@
+1	Problems only
+2	to %02d:00
+3	from %02d:00
+4	(manual)
+5	(common: server health only)
+6	(detected automatically)
+7	(detected automatically)
+8	· shown {}
+9	· checked {}
+10	Not available on this phone right now.
+11	Now: {}.
+12	of 5 MB
+13	%.1f MB
+14	+ App
+15	+ Site
+16	+ Custom service
+17	. The rest cannot be added automatically (the reason is shown under each); you can add them with the "To blocklist" button
+18	3+ services
+19	Android itself knows which links an app opens (for example, a bank's site). Those sites also bypass the VPN in the browser, just like the app. Works on Android 12 and newer; Telegram, YouTube, Google and similar are never included.
+20	Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch and similar open directly: faster and with less traffic. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude and everything censored in Russia stays in the VPN.
+21	VPN is on
+22	VPN is off
+23	Xray: version {}
+24	\nBackup servers checked: {}
+25	\n⚠ Auto-apply skips: {}. The "To blocklist" button adds them manually.
+26	example.com or a link
+27	{} (backups {}, checked {}){}
+28	{} KB
+29	{} Battery restriction
+30	{} Exact alarms
+31	{} min ago
+32	{} h
+33	{} h ago
+34	{} — TLS and Reality may fail; turn on automatic time
+35	"Same as everywhere" for an app means: use the choice made above for all. The other buttons (auto, A, B) set its own choice for this app.\n\nSites always use option A. An app uses A if the core can identify the app by its connection (the rest of the traffic is not affected); if it cannot, B when usage access is granted.
+36	A
+37	A: only it goes through its own server
+38	Autostart (MIUI / HyperOS)
+39	Autostart and "Don't unload from memory" on MIUI/HyperOS, Funtouch, EMUI cannot be checked programmatically; see the "Background work (firmware)" page.
+40	Autostart and background ({})
+41	Nothing to add automatically: reasons are shown under the suggestions; add manually with the "To blocklist" button
+42	Auto-collect
+43	Collecting configs
+44	Address
+45	Address (for example, https://discord.com/)
+46	The check address must start with https://
+47	The address changed after the check: data is out of date
+48	Address of a text file with subscription links (one per line). You can leave it empty and use only your own links.
+49	Address of a text file with subscription links (one per line). The built-in list is used now; you can set your own. Empty field restores the built-in one.
+50	The address of this app is unknown, so the general check is used (whether the server works at all). If you know which site the app uses, enter its address to make the check more accurate.
+51	The address this app opens: it is used to check whether a server works for it.
+52	The address used to check that a server works for this target. Empty field restores the default. Servers are recalculated at the next check.
+53	B
+54	B: switch the whole VPN
+55	Banks, Gosuslugi, VK, Yandex, marketplaces, carriers ({} items, only installed ones are used).
+56	Without these permissions Android (especially MIUI/HyperOS) may not start collection at night while the app is closed. Then collection runs when you first open the phone or the app.
+57	White
+58	Whitelists
+59	Whitelists: only Russian sites open. Blacklists: individual sites are blocked. Each mode has its own sources, statistics and bypass list. Nightly collection runs for each mode that has sources.
+60	Alarm: {}
+61	Sometimes the internet is "there" but photos and pages barely load. While you use the phone, every 45 seconds the app checks how much data flows through the server; if it is low, one small test is made (up to 400 KB), and after two slow ones in a row other servers are tried. If the phone is not in use, nothing is downloaded.
+62	Fast tunnel engine (hev)
+63	To blocklist
+64	No https://… links in the clipboard
+65	At the exact time
+66	To file
+67	The file saves settings and, for each mode (whitelists and blacklists), targets with their check addresses and policy, apps and sites that bypass the VPN, your own sources, the source blocklist, selected services and the accumulated experience of configs (where they worked). Downloaded configs and the log are not included: they are refreshed by the nightly collection. Target servers are not saved either because they contain access keys: after import they will be picked again.
+68	To file: 24 hours
+69	To file: everything
+70	Restored: {}
+71	Restore
+72	Restore removed ({})
+73	Version
+74	Collection time
+75	Phone time
+76	All permission buttons (exact alarms, battery, autostart, background data) are in one place: "Settings → Background work (firmware)".
+77	All
+78	Yesterday: 
+79	Choose an app
+80	Main events from the last 15 minutes of the log: server failures, network changes, search, switches.
+81	Done
+82	Done: {}
+83	Done: {} of {} alive
+84	Data
+85	Unrestricted background data
+86	No data yet. Tap "Collect now" (or wait for the nightly run).
+87	Check date
+88	Diagnostics
+89	Diagnostics copied
+90	Off by default for whitelists: only the allowed sites open directly there.
+91	Option B needs usage access
+92	For each target the app keeps up to 3 verified servers and rechecks them every few hours.
+93	Only option A works for a site.
+94	On by default for blacklists.
+95	Age (days)
+96	Add
+97	Add quick settings tile
+98	Add links from the clipboard
+99	Added
+100	Added {} of {}. They will appear in the next collection
+101	Added to the blocklist
+102	Added to the blocklist: {}
+103	Links added: {} of {}. They will appear in the next collection
+104	Added. It will appear in the next collection
+105	Added to the common source list at every collection.
+106	Share is how many configs of the link respond among the checked ones (a fresh check within 7 days or experience on the current network). "High" priority: configs of this link are tried before other live ones, and the link itself is not blocklisted by the audit. "Low": its configs go to the very end of the queue.
+107	Usage access: granted
+108	Usage statistics access
+109	If IPv6 is not routed into the tunnel, IPv6 sites open directly, bypassing the VPN (a leak). Blocking makes apps switch to IPv4 over the VPN right away. Applied at the next connection.
+110	If the VPN could not start or dropped, the tunnel stays on and traffic is blocked while the app looks for a working server. Off by default: then on failure the internet goes directly.
+111	If you turn on the "Phoenix: site in browser" accessibility service, the app sees only the domain of the open site (the address bar of Chrome, Yandex, Samsung, Firefox, Opera, Edge, Brave and a few more browsers) and, when switching servers, picks one where that site opens. The domain is kept only in memory, page content is not read, nothing is sent. On Android 13 and newer, for an app not from a store first open "App info" → ⋮ menu → "Allow restricted settings".
+112	If no backup server is found, the app starts a full recheck of all configs by itself (no more than once per 30 minutes).
+113	If the tunnel stops working (three failed checks), the app tries backup configs with the best rating.
+114	Alive
+115	Log
+116	Log "{}"
+117	Log copied
+118	Nothing important happened in the last 15 minutes.
+119	Last 24 hours
+120	Loading the list…
+121	Latency
+122	Block QUIC (UDP 443)
+123	The test downloads up to 8 MB. By default, over Wi-Fi only.
+124	Speed tests run automatically.
+125	Speed tests do not run by themselves (mobile network); the "Speed" button on a card always works.
+126	No entries for this filter.
+127	Entries: {} of {} (the last {} are on screen; "To file" saves according to the filter: 24 hours or the whole log). The log grows up to 5 MB per mode.
+128	Rechecking…
+129	Change
+130	Measure speed on mobile network too
+131	Measuring speed…
+132	Import done:\n
+133	Import from file
+134	Import erases nothing: lists are merged (the source blocklist only grows), targets are added to existing ones, single settings are taken from the file. The file is plain text, you can open and read it. It may contain links to your sources, so do not send it to strangers.
+135	Name
+136	Sources
+137	Sources for the mode
+138	Sources whose configs are already fully present in another one. They are added to the blocklist automatically on the 1st and 15th (up to {} at a time); here you can apply them right away.
+139	Every {} h after the last successful collection
+140	Every day at {}

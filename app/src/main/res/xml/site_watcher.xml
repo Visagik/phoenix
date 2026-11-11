@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Список браузеров должен совпадать с BrowserBars.packages -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds"
+    android:canRetrieveWindowContent="true"
+    android:notificationTimeout="400"
+    android:description="@string/site_watcher_desc"
+    android:packageNames="com.android.chrome,com.chrome.beta,com.chrome.dev,com.chrome.canary,com.brave.browser,com.microsoft.emmx,com.vivaldi.browser,com.kiwibrowser.browser,com.opera.browser,com.opera.mini.native,com.sec.android.app.sbrowser,com.yandex.browser,org.mozilla.firefox,org.mozilla.firefox_beta,org.mozilla.fenix,com.duckduckgo.mobile.android,com.mi.globalbrowser,com.android.browser,com.vivo.browser,com.huawei.browser,com.UCMobile.intl,com.ecosia.android" />

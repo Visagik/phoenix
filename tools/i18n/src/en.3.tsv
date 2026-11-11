@@ -1,0 +1,125 @@
+291	Stronger than automatic ones. Heavy background checks without charging do not start at this time.
+292	How long the VPN worked, how often the server changed and on which servers it stayed longest. Stored only on the phone, 30 days.
+293	Speed
+294	Could not measure speed
+295	Speed: {}
+296	Switch server considering the open app
+297	Change server
+298	Remove battery restriction
+299	Collect now
+300	Sorting (tap the selected item to reverse):
+301	Status
+302	Saved
+303	Saved: Downloads/Phoenix
+304	Save
+305	Save report
+306	Saving the log…
+307	Saving…
+308	Accessibility
+309	Bypass list saved
+310	Compares the address "outside the VPN" and "through the VPN". The app itself is outside the tunnel, so DNS leaks of other apps are not visible here.
+311	Link for the blocklist
+312	Link to region rules (optional)
+313	Links: share of working and priority
+314	No links with statistics yet: they will appear after a collection.
+315	Statistics
+316	Country
+317	Consider a server slow if the speed is below (Mbit/s):
+318	Type of blocking
+319	Quiet hours by habits
+320	Only while charging
+321	Apps only
+322	The same engine as in v2rayNG: usually faster. Takes effect at the next connection. 64-bit phones only; if you have sites or apps with their own server, per-app rules will not work for them, so the built-in engine stays automatically.
+323	Android does not guarantee the exact time (a shift of a few minutes is possible). If there is no network or the phone is off at that time, collection runs as soon as possible.
+324	Exact alarms
+325	Exact alarms: 
+326	Each mode has its own links, blocklist and audit; here you can edit any of them regardless of which mode is on now (✓). Nightly collection runs for each mode that has sources.
+327	Each target has a check address: it shows whether the service opens through the server. For known apps it is filled in automatically, for others only the server's operation is checked; the address can be changed with the "Address" button.
+328	Remove
+329	Notifications
+330	Phoenix notifications
+331	Delete
+332	Smart switch (for the open app)
+333	A file with host:, closed:, marker:… lines. If empty or unsuitable, the built-in rules apply: which sites are closed by exit country and by which phrases the "not supported in your country" page is recognized. Updated when the app starts.
+334	Filters:
+335	Background work (firmware)
+336	No targets yet. Add an app (the list is taken from the phone) or a site.
+337	Target "{}"
+338	What to do if an app does not work on the current server
+339	What the app does by itself
+340	What happened?
+341	What works on this network
+342	What is already allowed
+343	To find out which app is open now. The data stays on the phone.
+344	Whose settings to edit
+345	Black
+346	Blacklists
+347	Blocklist ({})
+348	Saves battery. If the phone is not charging at this time, collection is postponed until charging.
+349	Data saver: {}
+350	Export to file
+351	Export and import
+352	This link is already in the blocklist
+353	These sources are not downloaded. Nothing is removed from the list automatically, only manually.
+354	These apps work directly, bypassing the VPN. Each mode has its own list. Changes apply at the next connection.
+355	Core
+356	VPN core
+357	The core did not start: {}
+358	The core opens the selected services through working configs and records the result for each config (in the card: "Checked"; the best configs are those through which more services open). Sites with bot protection (Claude, Qwen) respond with a refusal, but that also counts as "reached".
+359	auto
+360	auto-connect, IPv6, leak protection, quick settings tile
+361	whitelists/blacklists, automatic detection
+362	block (recommended)
+363	will be requested at the first connection
+364	correct (off by {} s)
+365	enabled
+366	collection time or interval, only while charging, last run status
+367	all background permissions in one place: battery, alarms, autostart
+368	granted
+369	disabled: the VPN service may not be shown
+370	yes
+371	active
+372	added manually
+373	not yet
+374	not downloaded yet
+375	{} of {} alive
+376	backup servers, option A or B
+377	cable
+378	same as everywhere
+379	mobile network
+380	directly, bypassing the VPN
+381	directly, bypassing the VPN (no server needed)
+382	not checked (no network response)
+383	not allowed
+384	leave alone
+385	could not open the file
+386	no
+387	no own server: goes through the common one
+388	no network
+389	no: scheduled collection may shift
+390	no: the system may unload the app
+391	needed only for option B (switching the VPN when an app opens)
+392	detecting…
+393	disconnected
+394	app opened
+395	marked by you (the system does not allow checking); tap to open again. 
+396	error: {}
+397	server switches {} · mode changes {} · network changes {}\nroute failures {} · target updates {} · problem entries {}
+398	connecting: {}
+399	connected: {}
+400	permissions as ticks, what is going on now, log size
+401	check: 
+402	checking…
+403	allowed
+404	backup of settings, targets, bypass, sources and log
+405	Russian apps and sites, own apps
+406	"what is going on now" summary, log with filters and search, collection report
+407	servers: {}
+408	the system does not allow checking by itself: tap, turn it on and come back, the mark will be kept. 
+409	removed
+410	links for whitelists and blacklists, blocklist, audit
+411	file is too large for a Phoenix backup
+412	through the server
+413	★ 3+ days
+414	✓ opened · ≈ responds but not fully (site protection; for Claude and Qwen this is usually normal) · ✗ did not open · ? not checked
+415	📌 Unpin server

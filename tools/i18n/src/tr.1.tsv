@@ -1,0 +1,415 @@
+1	Yalnızca sorunlar
+2	%02d:00'a kadar
+3	%02d:00'dan
+4	(elle)
+5	(ortak: yalnızca sunucu çalışması)
+6	(otomatik algılanır)
+7	(kendisi algılar)
+8	· gösterilen {}
+9	· denetlenen {}
+10	Şu anda bu telefonda kullanılamıyor.
+11	Şimdi: {}.
+12	/ 5 MB
+13	%.1f MB
+14	+ Uygulama
+15	+ Site
+16	+ Özel hizmet
+17	. Geri kalanlar otomatik eklenemez (neden her birinin altında yazıyor), «Kara listeye» düğmesiyle ekleyebilirsiniz
+18	3+ hizmet
+19	Android, bir uygulamanın hangi bağlantıları açtığını kendisi bilir (örneğin bir bankanın sitesi). Bu siteler tarayıcıda da uygulama gibi VPN'i atlar. Android 12 ve üzerinde çalışır; Telegram, YouTube, Google ve benzerleri asla buraya girmez.
+20	Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch ve benzerleri doğrudan açılır: daha hızlı ve daha az trafikle. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude ve Rusya'da engellenen her şey VPN'de kalır.
+21	VPN açık
+22	VPN kapalı
+23	Xray: sürüm {}
+24	\nDenetlenen yedek: {}
+25	\n⚠ Otomatik uygulama atlıyor: {}. «Kara listeye» düğmesi elle ekler.
+26	example.com veya bağlantı
+27	{} (yedek {}, denetlenen {}){}
+28	{} KB
+29	{} Pil kısıtlaması
+30	{} Tam zamanlı alarmlar
+31	{} dk önce
+32	{} sa
+33	{} sa önce
+34	{} — TLS ve Reality çalışmayabilir; otomatik saati açın
+35	Bir uygulama için «her yerde olduğu gibi» yukarıdaki seçimi herkes için kullanmak demektir. Diğer düğmeler (otomatik, A, B) bu uygulama için kendi seçimini belirler.\n\nSiteler her zaman A seçeneğini kullanır. Uygulama, çekirdek uygulamayı bağlantısından tanıyabiliyorsa A'yı kullanır (diğer trafiğe dokunulmaz); tanıyamıyorsa, kullanım erişimi verilmişse B'yi kullanır.
+36	A
+37	A: yalnızca o kendi sunucusundan geçer
+38	Otomatik başlatma (MIUI / HyperOS)
+39	MIUI/HyperOS, Funtouch, EMUI'de otomatik başlatma ve «Bellekten boşaltma» program yoluyla denetlenemez; «Arka plan çalışması (yazılım)» sayfasına bakın.
+40	Otomatik başlatma ve arka plan ({})
+41	Otomatik eklenecek bir şey yok: nedenler önerilerin altında yazıyor, elle eklemek için «Kara listeye» düğmesi var
+42	Otomatik toplama
+43	Yapılandırma toplama
+44	Adres
+45	Adres (örneğin, https://discord.com/)
+46	Denetim adresi https:// ile başlamalıdır
+47	Denetimden sonra adres değişti: veriler eski
+48	Abonelik bağlantıları içeren metin dosyasının adresi (her satırda bir tane). Boş bırakıp yalnızca kendi bağlantılarınızı kullanabilirsiniz.
+49	Abonelik bağlantıları içeren metin dosyasının adresi (her satırda bir tane). Şu anda yerleşik liste kullanılıyor; kendinizinkini verebilirsiniz. Boş alan yerleşik listeyi geri getirir.
+50	Bu uygulamanın adresi bilinmiyor, genel denetim kullanıldı (sunucu çalışıyor mu). Uygulamanın hangi siteyi kullandığını biliyorsanız adresini yazın, denetim daha doğru olur.
+51	Bu uygulamanın açtığı adres: sunucunun onun için çalışıp çalışmadığı bununla denetlenir.
+52	Sunucunun bu hedef için çalıştığını denetleyen adres. Boş alan varsayılan adresi geri getirir. Sunucular bir sonraki denetimde yeniden hesaplanır.
+53	B
+54	B: tüm VPN'i değiştir
+55	Bankalar, Gosuslugi, VK, Yandex, pazar yerleri, operatörler ({} adet, yalnızca yüklü olanlar alınır).
+56	Bu izinler olmadan Android (özellikle MIUI/HyperOS) uygulama kapalıyken geceleri toplamayı başlatmayabilir. O zaman toplama telefon ya da uygulama ilk açıldığında yapılır.
+57	Beyaz
+58	Beyaz listeler
+59	Beyaz listeler: yalnızca Rus siteleri açılır. Kara listeler: tek tek siteler engellenir. Her modun kendi kaynakları, istatistikleri ve atlama listesi vardır. Gece toplama, kaynağı olan her mod için çalışır.
+60	Alarm: {}
+61	Bazen internet «var» ama fotoğraflar ve sayfalar neredeyse yüklenmez. Telefonu kullanırken 45 saniyede bir sunucudan ne kadar veri aktığına bakılır; azsa küçük bir ölçüm yapılır (en fazla 400 KB) ve arka arkaya iki yavaş sonuçtan sonra başka sunucular denenir. Telefon kullanılmıyorsa hiçbir şey indirilmez.
+62	Hızlı tünel motoru (hev)
+63	Kara listeye
+64	Panoda https://… bağlantısı yok
+65	Tam zamanında
+66	Dosyaya
+67	Dosyaya ayarlar ve her mod (beyaz ve kara listeler) için hedefler (denetim adresleri ve politikasıyla), VPN'i atlayan uygulamalar ve siteler, kendi kaynaklarınız, kaynak kara listesi, seçilen hizmetler ve yapılandırmaların biriken deneyimi (nerede çalıştıkları) kaydedilir. İndirilen yapılandırmalar ve günlük dahil değildir: gece toplamayla yenilenirler. Hedef sunucuları da kaydedilmez, çünkü erişim anahtarları içerirler: içe aktarmadan sonra yeniden seçilirler.
+68	Dosyaya: 24 saat
+69	Dosyaya: tümü
+70	Geri alındı: {}
+71	Geri al
+72	Kaldırılanları geri al ({})
+73	Sürüm
+74	Toplama saati
+75	Telefon saati
+76	Tüm izin düğmeleri (tam zamanlı alarmlar, pil, otomatik başlatma, arka plan verisi) tek yerde: «Ayarlar → Arka plan çalışması (yazılım)».
+77	Tümü
+78	Dün: 
+79	Uygulama seçin
+80	Günlüğün son 15 dakikasındaki ana olaylar: sunucu çökmeleri, ağ değişiklikleri, arama, geçişler.
+81	Hazır
+82	Hazır: {}
+83	Hazır: {} / {} canlı
+84	Veri
+85	Kısıtlamasız arka plan verisi
+86	Henüz veri yok. «Şimdi topla»ya dokunun (ya da gece çalışmasını bekleyin).
+87	Denetim tarihi
+88	Tanılama
+89	Tanılama kopyalandı
+90	Beyaz listeler için varsayılan olarak kapalı: orada yalnızca izin verilenler doğrudan açılır.
+91	B seçeneği için kullanım erişimi gerekir
+92	Her hedef için uygulama 3 denetlenmiş sunucuya kadar tutar ve birkaç saatte bir yeniden denetler.
+93	Site için yalnızca A seçeneği çalışır.
+94	Kara listeler için varsayılan olarak açık.
+95	Yaş (gün)
+96	Ekle
+97	Hızlı ayarlar kutucuğunu ekle
+98	Panodan bağlantı ekle
+99	Eklendi
+100	{} / {} eklendi. Bir sonraki toplamada görünecek
+101	Kara listeye eklendi
+102	Kara listeye eklendi: {}
+103	Eklenen bağlantılar: {} / {}. Bir sonraki toplamada görünecek
+104	Eklendi. Bir sonraki toplamada görünecek
+105	Her toplamada ortak kaynak listesine eklenir.
+106	Pay, denetlenenler arasında bağlantının kaç yapılandırmasının yanıt verdiğidir (7 günlük taze denetim veya mevcut ağdaki deneyim). «Yüksek» öncelik: bu bağlantının yapılandırmaları diğer canlılardan önce denenir ve bağlantı denetim sonucunda kara listeye alınmaz. «Düşük»: yapılandırmaları kuyruğun en sonuna gider.
+107	Kullanım erişimi: var
+108	Kullanım istatistiği erişimi
+109	IPv6 tünele alınmazsa, IPv6'lı siteler VPN'i atlayarak doğrudan açılır (sızıntı). Engelleme, uygulamaları hemen VPN üzerinden IPv4'e geçirir. Bir sonraki bağlantıda uygulanır.
+110	VPN başlatılamazsa veya koparsa, uygulama çalışan sunucu ararken tünel açık kalır ve trafik engellenir. Varsayılan olarak kapalı: o zaman arıza anında internet doğrudan gider.
+111	«Phoenix: tarayıcıdaki site» erişilebilirlik hizmetini açarsanız, uygulama yalnızca açık sitenin alan adını görür (Chrome, Yandex, Samsung, Firefox, Opera, Edge, Brave ve birkaç tarayıcının adres çubuğu) ve sunucu değiştirirken o sitenin açıldığı sunucuyu seçer. Alan adı yalnızca bellekte tutulur, sayfa içeriği okunmaz, hiçbir şey gönderilmez. Android 13 ve üzerinde, mağazadan olmayan uygulama için önce «Uygulama bilgisi» → ⋮ menüsü → «Kısıtlı ayarlara izin ver» seçeneğini açın.
+112	Yedek sunucu bulunamazsa uygulama tüm yapılandırmaların tam yeniden denetimini kendisi başlatır (30 dakikada bir defadan sık değil).
+113	Tünel çalışmayı bırakırsa (üç başarısız denetim), uygulama en iyi puanlı yedek yapılandırmaları dener.
+114	Canlı
+115	Günlük
+116	Günlük «{}»
+117	Günlük kopyalandı
+118	Son 15 dakikada önemli bir şey olmadı.
+119	Son 24 saat
+120	Liste yükleniyor…
+121	Gecikme
+122	QUIC'i kapat (UDP 443)
+123	Ölçüm en fazla 8 MB indirir. Varsayılan olarak yalnızca Wi-Fi'de.
+124	Hız ölçümleri kendiliğinden yapılır.
+125	Hız ölçümleri kendiliğinden yapılmaz (mobil ağ); kartın «Hız» düğmesi her zaman çalışır.
+126	Bu filtre için kayıt yok.
+127	Kayıt: {} / {} (ekranda son {}; «Dosyaya» filtreye göre kaydeder: 24 saat veya tüm günlük). Günlük mod başına 5 MB'a kadar birikir.
+128	Yeniden denetleniyor…
+129	Değiştir
+130	Hızı mobil ağda da ölç
+131	Hız ölçülüyor…
+132	İçe aktarma tamamlandı:\n
+133	Dosyadan içe aktar
+134	İçe aktarma hiçbir şeyi silmez: listeler birleştirilir (kaynak kara listesi yalnızca büyür), hedefler mevcutlara eklenir, tekil ayarlar dosyadan alınır. Dosya metindir, açıp okuyabilirsiniz. Kaynaklarınıza bağlantılar içerebilir; yabancılara göndermeyin.
+135	Ad
+136	Kaynaklar
+137	Mod için kaynaklar
+138	Yapılandırmaları zaten tamamen başka bir kaynakta olan kaynaklar. Ayın 1'inde ve 15'inde otomatik olarak kara listeye eklenirler (bir seferde {} adede kadar); burada hemen uygulayabilirsiniz.
+139	Son başarılı toplamadan {} saat sonra
+140	Her gün saat {}
+141	Wi-Fi ve Bluetooth'un yanındaki «Phoenix VPN» düğmesi: VPN'i açar ve kapatır, uzun basış uygulamayı açar. İlk seferde VPN izni vermek için uygulamayı açmanız gerekir.
+142	Bir sunucu çalışmayı bırakıp uygulama başkasını aradığında, şu anda hangi uygulamanın açık olduğuna bakar (kullanım erişimi gerekir) ve önce o uygulamanın daha önce açıldığı sunucuları dener. Uygulamanın kendi hedefi varsa önce onun sunucuları denenir.
+143	Kopyala
+144	Kopyala ({})
+145	Tümünü kopyala ({})
+146	Hepsini kopyala
+147	Kopya kaydedildi ({} satır)
+148	En iyiler üstte
+149	Şimdi en iyisi: {}
+150	Düşük hızda sunucuyu değiştir
+151	Birçok sunucu UDP'yi geçirmez: Telegram çalışsa da uygulamalar yanıt bekler ve açılmaz. QUIC kapalıyken doğrudan normal TCP'ye geçerler. Açık bırakmanız önerilir. Bir sonraki bağlantıda uygulanır.
+152	Geri alınabilir
+153	İzin VERİLMEDİ
+154	Otomatik toplama güvenilirliği
+155	Ad
+156	Öğe adları yazılım sürümüne bağlıdır. Düğme doğru ekranı bulamazsa uygulama ayarları açılır; yukarıdaki adımlarla devam edin.
+157	Otomatik bulundu ({}): sette olmayan Rus paketli uygulamalar. Uygulamanın VPN'e ihtiyacı varsa kaldırın.
+158	Ayarlar
+159	Android VPN ayarları
+160	Uygulama ayarları
+161	Rusya'da engellenmeyen
+162	Site adresine benzemiyor
+163	Saate bağlı değildir: süre son başarılı toplamadan itibaren sayılır. Telefon kapalıysa ya da ağ yoksa, toplama ilk fırsatta yapılır ve sonraki süre ondan başlar. Daha kısa aralık daha taze yapılandırma demektir, ancak daha çok trafik ve pil harcar.
+164	VPN olmadan internete izin verme
+165	Geri alınamadı (kayıt eski)
+166	VPN ayarları açılamadı
+167	Dosya okunamadı: {}
+168	Kaydedilemedi
+169	Günlük kaydedilemedi (seçilen dönemde kayıt yok mu?)
+170	Dosya kaydedilemedi
+171	Kaydedilemedi: {}
+172	Başarısız: {}
+173	5 dakikada bir defadan sık değil ve saatte en fazla 4 kez; kötü ağda her yerde sunucudan sunucuya atlamamak için.
+174	Yapılandırma yok: «Şimdi topla»ya dokunun
+175	Denetlenecek bir şey yok: yapılandırma yok veya hiçbir hizmet seçilmedi
+176	https://… biçiminde bir bağlantı gerekli
+177	Uygulama bilgisi
+178	Yenile
+179	Telefon kabukları (EMUI, MIUI, ColorOS ve diğerleri) arka plan uygulamalarını kendiliğinden bellekten atar. Burada tam sizin telefonunuzda nelere izin verilmesi gerektiği toplanmıştır.
+180	VPN atlama ve hizmet denetimi
+181	Ortak
+182	Ortak değerler, kendi ayarı olmayan her modda geçerlidir. Bir mod için kendi ayarlarınızı açabilirsiniz: o zaman mod onlara göre çalışır, ortak olanlar ona dokunmaz.
+183	Ortak kaynak listesi — {}
+184	Pil kısıtlaması kaldırıldı
+185	Pil kısıtlaması: 
+186	Şimdi algıla
+187	Kendisi algılasın
+188	Engelleme türü algılanıyor…
+189	Bağlantıyı kes
+190	Açılan hizmetler
+191	Açık hizmet bu sunucuda çalışmıyor
+192	Aç
+193	Ayarları aç
+194	Ortak olandan farklı ({}): 
+195	Ortak ayarlardan fark yok.
+196	İptal
+197	Toplama raporu
+198	Rapor kaydedildi: İndirilenler/Phoenix
+199	Henüz rapor yok
+200	Denetim maliyeti tahmini (trafik yaklaşık). Rakamlar büyükse «Odak» veya sessiz saatleri açın.
+201	Temizle
+202	VPN hatası
+203	Kendiliğinden yeniden bağlan
+204	Tüm yapılandırmaları yeniden denetle
+205	Hepsini yeniden denetle
+206	Yalnızca uygulamaları yeniden denetle
+207	Yapılandırmaları yeniden denetleme
+208	Sunucular yeniden denetleniyor…
+209	Yeniden denetleniyor…
+210	Hızlı ayarlar kutucuğu
+211	Filtrelere uyan bir şey yok.
+212	VPN'i kendiliğinden bağla
+213	Bağlanıyor…
+214	Bağlantı
+215	Bağlan
+216	Ara
+217	Günlükte ara
+218	Ada veya ülkeye göre ara
+219	Hedeflerinizden bir uygulama açıkken (oyun, banka, görüşme) uygulama ağır denetimler başlatmaz ve hız nedeniyle sunucu değiştirmez. Kullanım erişimi gerekir.
+220	Göster
+221	Tam koruma (uygulama kapalıyken ya da sistem tarafından sonlandırıldığında bile) yalnızca Android ayarlarında açılır: VPN → Phoenix → «Her zaman açık VPN» ve «VPN olmayan bağlantıları engelle».
+222	Anladım
+223	Yeniden denetimden sonra ve arka planda: seçilen hizmetlerde henüz denetlenmemiş çalışan yapılandırmalar denetlenir. Hizmet eklerseniz, önceden denetlenenler de yeniden denetlenir.
+224	Son mod algılama
+225	Son algılama: {}
+226	Son sorunlar
+227	Son çalıştırma: {}
+228	Son toplama yüklendi.
+229	Bildirim çubuğunu aşağı çekin → kalem simgesi (düzenle) → «Phoenix VPN»'i etkin kutucuklara sürükleyin.
+230	İzinler ve arka plan çalışması
+231	Denetim önerileri ({})
+232	Açıldığında geçerli ortak değerler buraya kopyalanır, sonra bağımsız olarak değiştirilebilir.
+233	Telefon açıldığında ve uygulama açıldığında (son veya en iyi yapılandırma). Sistemin VPN iznini bir kez vermeniz gerekir.
+234	Uygulama, telefonu haftanın hangi saatlerinde kullandığınızı hatırlar (yalnızca telefonda, dosya yedeğe dahildir). Bir hafta sonra «sessiz» saatlerde şarjsız ağır işler başlamaz, olağan etkinlik başlamadan önce de tünel önceden denetlenir.
+235	Uygulama, hangi sitelerin doğrudan açıldığını denetler ve art arda iki algılama uyuşunca modu değiştirir. Denetim ağ değiştiğinde yapılır.
+236	Uygulama kaynak kara listesini ve önceliklerini kendisi değiştirir. Böyle her değişiklik bir gün içinde geri alınabilir.
+237	VPN'i atlayan uygulamalar
+238	VPN'i atlayan uygulamalar ({})
+239	Uygulamalar ve siteler
+240	Uygula (en çok {})
+241	Denetlenenler
+242	Denetle
+243	İlk {} yapılandırmayı denetle
+244	Sunucuları şimdi denetle
+245	Yapılandırma üzerinden hizmet denetimi
+246	Sızıntı denetimi
+247	Modun tüm yapılandırmalarını baştan denetler (önce TCP, sonra çekirdek üzerinden gerçek gecikme). Arka planda 25 dakikaya kadar sürer, ekranı kapatabilirsiniz.
+248	Çalışan yapılandırmaları kendiliğinden denetle
+249	Denetleniyor 0/{}…
+250	Denetleniyor {}/{}…
+251	Hedefler için sunucular denetleniyor…
+252	Denetleniyor…
+253	Protokol
+254	Yazılım
+255	Çalışıyor…
+256	N saatte bir
+257	VPN izni
+258	Tam zamanlı alarmlara izin ver
+259	Mod
+260	«{}» modu: etkin olduğunda kendi ayarları kullanılır (kendi ayarları açıksa), aksi halde ortak olanlar.
+261	«Odak» modu
+262	Engelleme modu
+263	Mod: {}
+264	Yedek
+265	Rus uygulamaları
+266	Rus siteleri ({} alan adı: .ru, .рф, Gosuslugi, bankalar, Yandex, VK…) varsayılan olarak doğrudan açılır. Buraya kendinizinkini ekleyebilirsiniz. Bir sonraki bağlantıda uygulanır.
+267	Site
+268	Tarayıcıdaki site: algılanmıyor
+269	Tarayıcıdaki site: algılanıyor
+270	VPN'i atlayan siteler
+271	Bu uygulamaların siteleri de doğrudan
+272	Tüm yapılandırmaları kendiliğinden yeniden denetle
+273	Kendisi seçer (önerilir)
+274	Ortak ayarlara sıfırla
+275	Taze denetimler (24 sa)
+276	Özet
+277	«{}» için kendi ayarları
+278	Kendi uygulamalarım ({})
+279	Havuza kendi bağlantılarım ({})
+280	Kendi sessiz saatlerim
+281	Özel hizmet
+282	Bugün: 
+283	Şimdi
+284	Bu mod için şu an ortak ayarlar geçerli. Ayrı değiştirmek için «Kendi ayarları»nı açın.
+285	Henüz sunucu yok. Ana ekranda «Şimdi topla»ya dokunun.
+286	Sunucular: {} · denetlenen canlı: {}
+287	Sunucular
+288	Sunucular: liste, sıralama, filtreler
+289	Ağ
+290	Şimdiki ağ: {}
+291	Otomatik olanlardan daha güçlü. Bu saatlerde şarjsız ağır arka plan denetimleri başlamaz.
+292	VPN'in ne kadar çalıştığı, sunucunun ne sıklıkla değiştiği ve en uzun hangi sunucularda kaldığı. Yalnızca telefonda saklanır, 30 gün.
+293	Hız
+294	Hız ölçülemedi
+295	Hız: {}
+296	Açık uygulamaya göre sunucu değiştirme
+297	Sunucuyu değiştir
+298	Pil kısıtlamasını kaldır
+299	Şimdi topla
+300	Sıralama (ters çevirmek için seçili öğeye dokunun):
+301	Durum
+302	Kaydedildi
+303	Kaydedildi: İndirilenler/Phoenix
+304	Kaydet
+305	Raporu kaydet
+306	Günlük kaydediliyor…
+307	Kaydediliyor…
+308	Erişilebilirlik
+309	Atlama listesi kaydedildi
+310	«VPN dışı» ve «VPN üzerinden» adresini karşılaştırır. Uygulamanın kendisi tünelin dışındadır, bu yüzden diğer uygulamaların DNS sızıntıları buradan görünmez.
+311	Kara liste için bağlantı
+312	Bölge kurallarına bağlantı (isteğe bağlı)
+313	Bağlantılar: çalışanların payı ve öncelik
+314	Henüz istatistikli bağlantı yok: toplamadan sonra görünecek.
+315	İstatistik
+316	Ülke
+317	Hız şunun altındaysa sunucuyu yavaş say (Mbit/sn):
+318	Engelleme türü
+319	Alışkanlıklara göre sessiz saatler
+320	Yalnızca şarj olurken
+321	Yalnızca uygulamalar
+322	v2rayNG ile aynı motor: genellikle daha hızlı. Bir sonraki bağlantıda geçerli olur. Yalnızca 64 bit telefonlar; kendi sunucusu olan siteleriniz veya uygulamalarınız varsa, uygulama bazlı kurallar onlar için çalışmaz, bu durumda yerleşik motor otomatik kalır.
+323	Android tam saati garanti etmez (birkaç dakikalık kayma olabilir). O saatte ağ yoksa veya telefon kapalıysa toplama ilk fırsatta yapılır.
+324	Tam zamanlı alarmlar
+325	Tam zamanlı alarmlar: 
+326	Her modun kendi bağlantıları, kara listesi ve denetimi vardır; burada şu an hangi mod açık olursa olsun (✓) istediğinizi düzenleyebilirsiniz. Gece toplama, kaynağı olan her mod için çalışır.
+327	Her hedefin bir denetim adresi vardır: hizmetin sunucudan açılıp açılmadığı onunla görülür. Bilinen uygulamalar için kendiliğinden doldurulur, diğerleri için yalnızca sunucunun çalışması denetlenir; adres «Adres» düğmesiyle değiştirilebilir.
+328	Kaldır
+329	Bildirimler
+330	Phoenix bildirimleri
+331	Sil
+332	Akıllı değiştirme (açık uygulamaya göre)
+333	host:, closed:, marker:… satırlı dosya. Boşsa veya uygun değilse yerleşik kurallar geçerlidir: çıkış ülkesine göre hangi siteler kapalı ve «ülkenizde desteklenmiyor» sayfası hangi ifadelerle tanınır. Uygulama başlarken güncellenir.
+334	Filtreler:
+335	Arka plan çalışması (yazılım)
+336	Henüz hedef yok. Bir uygulama (liste telefondan alınır) veya site ekleyin.
+337	Hedef «{}»
+338	Uygulama mevcut sunucuda çalışmazsa ne yapılsın
+339	Uygulama kendiliğinden ne yapar
+340	Ne oldu?
+341	Bu ağda neler çalışıyor
+342	Şimdiye kadar nelere izin verildi
+343	Şu anda hangi uygulamanın açık olduğunu öğrenmek için. Veriler telefonda kalır.
+344	Kimin ayarları düzenlensin
+345	Kara
+346	Kara listeler
+347	Kara liste ({})
+348	Pil tasarrufu sağlar. Telefon o sırada şarj olmuyorsa toplama şarj bağlanana kadar ertelenir.
+349	Veri tasarrufu: {}
+350	Dosyaya aktar
+351	Dışa ve içe aktarma
+352	Bu bağlantı zaten kara listede
+353	Bu kaynaklar indirilmez. Listeden otomatik olarak hiçbir şey silinmez, yalnızca elle.
+354	Bu uygulamalar VPN'i atlayarak doğrudan çalışır. Her modun kendi listesi vardır. Değişiklikler bir sonraki bağlantıda uygulanır.
+355	Çekirdek
+356	VPN çekirdeği
+357	Çekirdek başlamadı: {}
+358	Çekirdek seçilen hizmetleri çalışan yapılandırmalar üzerinden açar ve sonucu her yapılandırmaya yazar (kartta: «Denetlendi»; en iyi yapılandırmalar daha çok hizmetin açıldığı olanlardır). Bot korumalı siteler (Claude, Qwen) ret ile yanıt verir, ancak bu da «ulaşıldı» sayılır.
+359	otomatik
+360	otomatik bağlanma, IPv6, sızıntı koruması, hızlı ayarlar kutucuğu
+361	beyaz/kara listeler, otomatik algılama
+362	engelle (önerilir)
+363	ilk bağlantıda istenecek
+364	doğru ({} sn fark)
+365	açık
+366	toplama saati veya aralığı, yalnızca şarjda, son çalıştırma durumu
+367	arka plan için tüm izinler tek yerde: pil, alarmlar, otomatik başlatma
+368	verildi
+369	kapalı — VPN hizmeti gösterilmeyebilir
+370	evet
+371	geçerli
+372	elle eklendi
+373	henüz yok
+374	henüz indirilmedi
+375	{} / {} canlı
+376	yedek sunucular, A veya B seçeneği
+377	kablo
+378	her yerdeki gibi
+379	mobil ağ
+380	doğrudan, VPN'i atlayarak
+381	doğrudan, VPN'i atlayarak (sunucu gerekmez)
+382	denetlenmedi (ağ yanıtı yok)
+383	izin verilmedi
+384	dokunma
+385	dosya açılamadı
+386	hayır
+387	kendi sunucusu yok: ortak olandan geçer
+388	ağ yok
+389	hayır — zamanlanmış toplama kayabilir
+390	hayır — sistem uygulamayı bellekten atabilir
+391	yalnızca B seçeneği için gerekli (uygulama açılınca VPN'i değiştirme)
+392	algılanıyor…
+393	bağlantı kesildi
+394	uygulama açıldı
+395	sizin tarafınızdan işaretlendi (sistem denetlemeye izin vermiyor); yeniden açmak için dokunun. 
+396	hata: {}
+397	sunucu geçişleri {} · mod değişiklikleri {} · ağ değişiklikleri {}\nrota arızaları {} · hedef güncellemeleri {} · sorunlu kayıtlar {}
+398	bağlanıyor: {}
+399	bağlandı: {}
+400	izinler işaretlerle, şu an ne oluyor, günlük boyutu
+401	denetim: 
+402	denetleniyor…
+403	izin verildi
+404	ayarların, hedeflerin, atlamanın, kaynakların ve günlüğün yedeği
+405	Rus uygulamaları ve siteleri, kendi uygulamalarım
+406	«şu an ne oluyor» özeti, filtreli ve aramalı günlük, toplama raporu
+407	sunucu: {}
+408	sistem kendisi denetlemeye izin vermiyor: dokunun, açın ve geri dönün, işaret saklanır. 
+409	kaldırıldı
+410	beyaz ve kara listeler için bağlantılar, kara liste, denetim
+411	dosya Phoenix yedeği için çok büyük
+412	sunucu üzerinden
+413	★ 3+ gün
+414	✓ açıldı · ≈ yanıt veriyor ama tam değil (site koruması; Claude ve Qwen için bu genelde normaldir) · ✗ açılmadı · ? denetlenmedi
+415	📌 Sunucunun sabitlemesini kaldır

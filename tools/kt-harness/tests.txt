@@ -57,3 +57,4 @@ Release3952Test.kt
 Release3955Test.kt
 ServerTableTest.kt
 I18nTest.kt
+I18nDictionariesTest.kt

@@ -103,11 +103,13 @@ object Scheduler {
     fun enqueue(context: Context, trigger: String) {
         val s = AppSettings(context)
         val manual = trigger == "manual"
-        val request = OneTimeWorkRequestBuilder<PhoenixWorker>()
+        val delaySec = ColdStart.catchUpDelaySec(trigger, s.lastSuccessAt)
+        val builder = OneTimeWorkRequestBuilder<PhoenixWorker>()
             .setConstraints(constraints(onlyCharging = s.onlyCharging && !manual))
             .setInputData(workDataOf(KEY_TRIGGER to trigger))
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .build()
+        // срочная задача не может быть отложенной: при первом запуске выбираем отсрочку, чтобы дать экрану прогрузиться
+        val request = if (delaySec > 0) builder.setInitialDelay(delaySec, TimeUnit.SECONDS).build()
+        else builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST).build()
         WorkManager.getInstance(context).enqueueUniqueWork(RUN, ExistingWorkPolicy.KEEP, request)
     }
 

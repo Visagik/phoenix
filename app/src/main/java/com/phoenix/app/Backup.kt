@@ -66,6 +66,9 @@ data class ImportReport(val settings: Map<String, String>, val notes: List<Strin
  * (они обновляются ночным сбором). Импорт ничего не стирает: списки объединяются, у одиночных настроек берётся значение из файла.
  */
 object Backup {
+    /** Предел размера копии при импорте (символов). Копия с историей и журналами загрузок легко весит 7–10 МБ. */
+    const val MAX_IMPORT_CHARS = 40_000_000
+
     private enum class How { UNION, TARGETS, REPLACE, IF_ABSENT, LOG }
 
     private val FILES: Map<String, How> = linkedMapOf(

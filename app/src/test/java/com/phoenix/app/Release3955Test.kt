@@ -194,4 +194,13 @@ class Release3955Test {
         assertEquals(listOf("a", "b"), QueueMix.mix(listOf("a", "b"), emptyList<String>(), 2))
         assertEquals(listOf("W1"), QueueMix.mix(emptyList<String>(), listOf("W1"), 2))
     }
+
+    @Test fun coldStartSoftensFirstRun() {
+        assertEquals(4, ColdStart.recheckParallel(12, 0L))
+        assertEquals(2, ColdStart.recheckParallel(4, 0L))
+        assertEquals(12, ColdStart.recheckParallel(12, 1_700_000_000_000L))
+        assertEquals(90L, ColdStart.catchUpDelaySec("catch-up", 0L))
+        assertEquals(0L, ColdStart.catchUpDelaySec("manual", 0L))
+        assertEquals(0L, ColdStart.catchUpDelaySec("catch-up", 5L))
+    }
 }

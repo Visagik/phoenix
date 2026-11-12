@@ -111,7 +111,7 @@ object Recheck {
                     },
                     probe = { cfg, url -> ProbeShare.measure(cfg, url) { XrayCore.measureDelay(context, cfg, url) } },
                     tcpParallel = ParallelGovernor.capFor(gov.tcp(govNet), NetInfo.kind(context) == NetInfo.Kind.MOBILE),
-                    probeParallel = gov.probe(govNet, CheckLimits.searchParallel(context)),
+                    probeParallel = gov.probe(govNet, ColdStart.recheckParallel(CheckLimits.searchParallel(context), AppSettings(context).lastSuccessAt)),
                     maxCandidates = 20_000,
                     onePerHost = false,
                     loadSample = GatewayProbe.sampler(context),

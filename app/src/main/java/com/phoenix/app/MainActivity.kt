@@ -328,7 +328,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _backupStatus.value = try {
                 val text = app.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
                     ?: throw java.io.IOException(tr("не удалось открыть файл"))
-                if (text.length > 5_000_000) throw java.io.IOException(tr("файл слишком большой для копии Phoenix"))
+                if (text.length > Backup.MAX_IMPORT_CHARS) throw java.io.IOException(tr("файл слишком большой для копии Phoenix"))
                 val report = Backup.import(app.filesDir, text)
                 try { settings.importMap(report.settings) } catch (e: Exception) { storage.log("BACKUP: настройки из копии не применены: ${e.message}") }
                 try { reloadSettingsFlows() } catch (e: Exception) { storage.log("BACKUP: не удалось обновить настройки на экране: ${e.message}") }

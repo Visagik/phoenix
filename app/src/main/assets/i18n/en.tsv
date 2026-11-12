@@ -1,306 +1,437 @@
-  Только проблемы	  from %02d:00
-  до %02d:00  	  (manual)  
-  с %02d:00  	  (common: server health only)  
- (вручную)	 (detected automatically)
- (общая: только работа сервера)	 (detected automatically)
- · проверено {}	 Now: {}.
- Сейчас недоступен на этом телефоне.	 of 5 MB
- из 5 МБ	 + App
-%.1f МБ	+ Site
-+ Приложение	+ Custom service
-+ Сайт	. The rest cannot be added automatically (the reason is shown under each); you can add them with the "To blocklist" button
-+ Свой сервис	3+ services
-. Остальные автоматически нельзя (причина указана под каждой), их можно добавить кнопкой «В ЧС»	Android itself knows which links an app opens (for example, a bank's site). Those sites also bypass the VPN in the browser, just like the app. Works on Android 12 and newer; Telegram, YouTube, Google and similar are never included.
-3+ сервиса	Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch and similar open directly: faster and with less traffic. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude and everything censored in Russia stays in the VPN.
-; если не работает, нажмите «Сменить сервер»	VPN is on
-Android сам знает, какие ссылки открывает приложение (например, сайт банка). Эти сайты в браузере тоже идут мимо VPN, как и само приложение. Работает на Android 12 и новее; Telegram, YouTube, Google и подобные сюда не попадают никогда.	VPN is off
-VPN включён	example.com or a link
-Xray: версия {}	{} KB
-{} КБ	{} min ago
-{} Ограничение батареи 	{} h 
-{} Точные будильники 	{} h ago 
-{} мин назад	{} — TLS and Reality may fail; turn on automatic time
-«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	Autostart (MIUI / HyperOS)
-А	Autostart and "Don't unload from memory" on MIUI/HyperOS, Funtouch, EMUI cannot be checked programmatically; see the "Background work (firmware)" page.
-Автозапуск (MIUI / HyperOS)	Nothing to add automatically: reasons are shown under the suggestions; add manually with the "To blocklist" button
-Автозапуск и «Не выгружать из памяти» на MIUI/HyperOS, Funtouch, EMUI программно не проверить — их смотрите на странице «Фоновая работа (прошивка)».	Auto-collect
-Автоматически добавлять нечего: причины указаны под предложениями, вручную — кнопка «В ЧС»	Address
-Автосбор	Address (for example, https://discord.com/)
-Автосбор конфигов	The check address must start with https://
-Адрес	The address changed after the check: data is out of date
-Адрес (например, https://discord.com/)	Address of a text file with subscription links (one per line). You can leave it empty and use only your own links.
-Адрес проверки должен начинаться с https://	Address of a text file with subscription links (one per line). The built-in list is used now; you can set your own. Empty field restores the built-in one.
-Адрес сменился после проверки: данные устарели	The address of this app is unknown, so the general check is used (whether the server works at all). If you know which site the app uses, enter its address to make the check more accurate.
-Адрес текстового файла со ссылками на подписки (по одной в строке). Можно оставить пустым и пользоваться только своими ссылками.	The address this app opens: it is used to check whether a server works for it.
-Адрес текстового файла со ссылками на подписки (по одной в строке). Сейчас используется встроенный список; можно указать свой. Пустое поле — вернуть встроенный.	The address used to check that a server works for this target. Empty field restores the default. Servers are recalculated at the next check.
-Адрес этого приложения не известен, подставлена общая проверка (работает ли сервер вообще). Если знаете, какой сайт использует приложение, впишите его адрес — проверка станет точнее.	B
-Адрес, который открывает это приложение: через него проверяется, работает ли сервер для него.	B: switch the whole VPN
-Б	Without these permissions Android (especially MIUI/HyperOS) may not start collection at night while the app is closed. Then collection runs when you first open the phone or the app.
-Б: переключить весь VPN	White
-Без этих разрешений Android (особенно MIUI/HyperOS) может не запустить сбор ночью, пока приложение закрыто. Тогда сбор пройдёт при первом открытии телефона или приложения.	Whitelists: only Russian sites open. Blacklists: individual sites are blocked. Each mode has its own sources, statistics and bypass list. Nightly collection runs for each mode that has sources.
-Белые списки	Sometimes the internet is "there" but photos and pages barely load. While you use the phone, every 45 seconds the app checks how much data flows through the server; if it is low, one small test is made (up to 400 KB), and after two slow ones in a row other servers are tried. If the phone is not in use, nothing is downloaded.
-Белые списки: открываются только российские сайты. Чёрные: закрыты отдельные сайты. У каждого режима свои источники, статистика и список обхода. Ночной сбор идёт для каждого режима, у которого есть источники.	Fast tunnel engine (hev)
-Бывает, что интернет «есть», но фото и страницы почти не грузятся. Пока вы пользуетесь телефоном, раз в 45 секунд смотрится, сколько данных идёт через сервер; если мало, делается один маленький замер (до 400 КБ), и после двух медленных подряд пробуются другие серверы. Если телефон не используется — ничего не качается.	No https://… links in the clipboard
-Быстрый движок туннеля (hev)	At the exact time
-В ЧС	To file
-В буфере нет ссылок https://…	The file saves settings and, for each mode (whitelists and blacklists), targets with their check addresses and policy, apps and sites that bypass the VPN, your own sources, the source blocklist, selected services and the accumulated experience of configs (where they worked). Downloaded configs and the log are not included: they are refreshed by the nightly collection. Target servers are not saved either because they contain access keys: after import they will be picked again.
-В точное время	To file: 24 hours
-В файл	To file: everything
-В файл: 24 часа	Restore
-Вернуть	Collection time
-Версия	All permission buttons (exact alarms, battery, autostart, background data) are in one place: "Settings → Background work (firmware)".
-Время сбора	All
-Время телефона	Yesterday:
-Все кнопки разрешений (точные будильники, батарея, автозапуск, данные в фоне) собраны в одном месте: «Настройки → Фоновая работа (прошивка)».	Choose an app
-Всё	Main events from the last 15 minutes of the log: server failures, network changes, search, switches.
-Вчера: 	Done 
-Готово	Data
-Данные	Check date
-Данные в фоне без ограничений	Diagnostics
-Данных ещё нет. Нажмите «Собрать сейчас» (или дождитесь ночного запуска).	Diagnostics copied
-Дата проверки	Off by default for whitelists: only the allowed sites open directly there.
-Диагностика	Option B needs usage access
-Диагностика скопирована	For each target the app keeps up to 3 verified servers and rechecks them every few hours.
-Для белых списков по умолчанию выключено: напрямую там открывается только разрешённое.	Only option A works for a site.
-Для варианта Б нужен доступ к данным об использовании	On by default for blacklists.
-Для каждой цели приложение держит до 3 проверенных серверов и перепроверяет их раз в несколько часов.	Age (days)
-Для сайта работает только вариант А.	Add
-Для чёрных списков включено по умолчанию.	Add quick settings tile
-Дни жизни	Add links from the clipboard
-Добавить	Added
-Добавить ссылки из буфера обмена	Added to the blocklist
-Добавлено {} из {}. Появятся в следующей сборке	Links added: {} of {}. They will appear in the next collection
-Добавлено в чёрный список	Added. It will appear in the next collection
-Добавлено. Появится в следующей сборке	Usage access: granted
-Добавляются к общему списку источников при каждой сборке.	Usage statistics access
-Доля — сколько конфигов ссылки отвечают среди проверенных (свежая проверка за 7 дней или опыт в текущей сети). Приоритет «высокий»: конфиги этой ссылки пробуются раньше других живых, а сама ссылка не попадает в чёрный список по аудиту. «Низкий»: её конфиги идут в самый конец очереди.	If IPv6 is not routed into the tunnel, IPv6 sites open directly, bypassing the VPN (a leak). Blocking makes apps switch to IPv4 over the VPN right away. Applied at the next connection.
-Доступ к данным об использовании: есть	If the VPN could not start or dropped, the tunnel stays on and traffic is blocked while the app looks for a working server. Off by default: then on failure the internet goes directly.
-Доступ к статистике использования	If you turn on the "Phoenix: site in browser" accessibility service, the app sees only the domain of the open site (the address bar of Chrome, Yandex, Samsung, Firefox, Opera, Edge, Brave and a few more browsers) and, when switching servers, picks one where that site opens. The domain is kept only in memory, page content is not read, nothing is sent. On Android 13 and newer, for an app not from a store first open "App info" → ⋮ menu → "Allow restricted settings".
-Если IPv6 не заводить в туннель, сайты с IPv6 открываются напрямую, мимо VPN (утечка). Блокировка заставляет приложения сразу переходить на IPv4 через VPN. Применяется при следующем подключении.	If no backup server is found, the app starts a full recheck of all configs by itself (no more than once per 30 minutes).
-Если VPN не удалось поднять или он оборвался, туннель остаётся включённым и трафик блокируется, пока приложение ищет рабочий сервер. По умолчанию выключено: тогда при сбое интернет идёт напрямую.	If the tunnel stops working (three failed checks), the app tries backup configs with the best rating.
-Если включить службу специальных возможностей «Phoenix: сайт в браузере», приложение видит только домен открытого сайта (адресная строка Chrome, Яндекс, Samsung, Firefox, Opera, Edge, Brave и ещё нескольких браузеров) и при смене сервера подбирает тот, где этот сайт открывается. Домен хранится только в памяти, содержимое страниц не читается, ничего не отправляется. На Android 13 и новее для приложения не из магазина сначала откройте «О приложении» → меню ⋮ → «Разрешить ограниченные настройки».	Alive
-Если запасной сервер не нашёлся, приложение само запускает полную перепроверку всех конфигов (не чаще раза в 30 минут).	Log
-Живые	Log copied
-Журнал	Nothing important happened in the last 15 minutes.
-Журнал скопирован	Loading the list…
-За последние 15 минут ничего важного не происходило.	Latency
-За последние сутки	Block QUIC (UDP 443)
-Загружаю список…	The test downloads up to 8 MB. By default, over Wi-Fi only.
-Задержка	Speed tests run automatically.
-Закрыть QUIC (UDP 443)	Speed tests do not run by themselves (mobile network); the "Speed" button on a card always works.
-Замер скачивает до 8 МБ. По умолчанию — только по Wi-Fi.	No entries for this filter.
-Замеры скорости сами не идут (мобильная сеть); кнопка «Скорость» на карточке работает всегда.	Rechecking…
-Записей по этому фильтру нет.	Change
-Идёт перепроверка…	Measuring speed…
-Изменить	Import done:
-Измерять скорость и по мобильной сети	Import from file
-Измеряю скорость…	Import erases nothing: lists are merged (the source blocklist only grows), targets are added to existing ones, single settings are taken from the file. The file is plain text, you can open and read it. It may contain links to your sources, so do not send it to strangers.
-Импорт выполнен:\n	Name\n
-Импорт из файла	Sources
-Импорт ничего не стирает: списки объединяются (чёрный список источников только пополняется), цели добавляются к имеющимся, одиночные настройки берутся из файла. Файл текстовый, его можно открыть и посмотреть. В нём могут быть ссылки на ваши источники — не отправляйте его посторонним.	Sources for the mode
-Копировать	Copy all
-Копировать ({})	Backup saved ({} lines)
-Лучшие сверху	Many servers do not pass UDP: apps wait for a reply and do not open even though Telegram works. With QUIC blocked they switch to plain TCP at once. Recommended to keep on. Applied at the next connection.
-Менять сервер при низкой скорости	NOT allowed
-Многие серверы не пропускают UDP: приложения ждут ответа и не открываются, хотя Telegram работает. При закрытом QUIC они сразу переходят на обычный TCP. Рекомендуется оставить включённым. Применяется при следующем подключении.	Auto-collect reliability
-Можно вернуть	Name
-НЕ разрешены	Item names depend on the firmware version. If the button did not find the right screen, the app settings will open; continue with the steps above.
-Название	Settings
-Названия пунктов зависят от версии прошивки. Если кнопка не нашла нужный экран, откроются настройки приложения — дальше по шагам выше.	Android VPN settings
-Настройки	Not blocked in Russia
-Настройки VPN в Android	Does not look like a site address
-Настройки приложения	Not tied to the clock: the period counts from the last successful collection. If the phone was off or had no network, collection runs as soon as possible and the next period counts from it. A shorter interval means fresher configs but more traffic and battery use.
-Не заблокированное в РФ	Block internet without VPN
-Не похоже на адрес сайта	Could not restore (the entry is out of date)
-Не привязан к часам: срок считается от последнего удачного сбора. Телефон был выключен или не было сети — сбор пройдёт при первой возможности, а следующий срок отсчитается от него. Меньше интервал — свежее конфиги, но больше трафика и заряда.	Could not open VPN settings
-Не удалось вернуть (запись устарела)	Could not save
-Не удалось открыть настройки VPN	Could not save the log (no entries for the chosen period?)
-Не удалось сохранить файл	No more than once per 5 minutes and 4 times per hour, so that on a bad network the app does not jump from server to server everywhere.
-Не чаще раза в 5 минут и не больше 4 раз в час, чтобы при плохой сети везде не прыгать с сервера на сервер.	A link like https://… is needed
-Нет конфигов: нажмите «Собрать сейчас»	App info
-Нечего проверять: нет конфигов или не выбран ни один сервис	Refresh
-Нужна ссылка вида https://…	Phone shells (EMUI, MIUI, ColorOS and others) unload background apps on their own. Here is what to allow on your phone.
-Нужного экрана в этой прошивке нет — открыл настройки приложения	VPN bypass and service checks
-О приложении	Common
-Обновить	Common values apply in every mode that has no settings of its own. A mode can have its own: then it follows them and the common ones do not touch it.
-Обход VPN и проверка сервисов	Battery restriction removed
-Общие	Battery restriction:
-Общие значения действуют в каждом режиме, у которого нет своих настроек. У режима можно включить свои: тогда он живёт по ним, а общие его не трогают.	Detect now
-Ограничение батареи снято	Detecting the type of blocking…
-Ограничение батареи: 	Disconnect 
-Определить сейчас	Open services
-Определять сам	The open service does not work on this server
-Определяю тип блокировок…	Open
-Отключить	Open settings
-Открытые сервисы	No differences from the common settings.
-Открытый сервис не работает на этом сервере	Cancel
-Открыть	Collection report
-Открыть настройки	Report saved: Downloads/Phoenix
-Отличий от общих настроек нет.	Estimate of the cost of checks (traffic is approximate). If the numbers are large, turn on "Focus" or quiet hours.
-Отмена	Clear
-Отчёт сбора	VPN error
-Отчёт сохранён: Загрузки/Phoenix	Reconnect automatically
-Отчёта пока нет	Recheck all configs
-Оценка расхода на проверки (трафик приблизительный). Если цифры большие, включите «Фокус» или тихие часы.	Recheck all
-Очистить	Recheck apps only
-Ошибка VPN	Recheck configs
-Переподключаться само	Rechecking servers…
-Перепроверить все конфиги	Rechecking…
-Перепроверить всё	Quick settings tile
-Перепроверить только приложения	Nothing matches the filters.
-Перепроверка конфигов	Connect VPN automatically
-Перепроверяю конфиги…	Connecting…
-Перепроверяю серверы…	Connection
-Перепроверяю…	Connect
-Плитка в шторке	Search
-Под фильтры ничего не подходит.	Search the log
-Подключать VPN само	Search by name or country
-Подключаюсь…	While an app from your targets is open (a game, a bank, a call), the app does not run heavy checks and does not switch servers because of speed. Usage access is needed.
-Подключение	Show
-Подключить	Full protection (even when the app is closed or killed by the system) is turned on only in Android settings: VPN → Phoenix → "Always-on VPN" and "Block connections without VPN".
-Поиск	Got it
-Поиск по журналу	After a recheck and in the background: working configs that have not yet been checked for the selected services get checked. If you add a service, the already checked ones are checked too.
-Поиск по имени или стране	Last mode detection
-Показать	Recent problems
-Понятно	The latest collection is loaded.
-После перепроверки и в фоне: у рабочих конфигов, которых ещё не проверяли по выбранным сервисам, проверяются они. Добавили сервис — проверятся и уже проверенные.	Pull the shade down → pencil icon (edit) → drag "Phoenix VPN" to the active tiles.
-Последнее определение режима	Permissions and background work
-Последнее определение: {}	Audit suggestions ({})
-Последние проблемы	When turned on, the current common values are copied here; after that they can be changed independently.
-Последняя сборка загружена.	The app remembers which hours of the week you use the phone (on the phone only, the file is included in the backup). After a week, in "quiet" hours heavy work does not start without charging, and before the usual start of activity the tunnel is checked in advance.
-Потяните шторку вниз → значок карандаша (изменить) → перетащите «Phoenix VPN» в активные плитки.	The app checks which sites open directly and switches the mode when two detections in a row agree. The check runs when the network changes.
-Права и фоновая работа	The app changes the source blocklist and their priorities by itself. Any such change can be undone within a day.
-При включении телефона и при открытии приложения (последний или лучший конфиг). Нужно один раз дать системное разрешение на VPN.	Apps and sites
-Приложение проверяет, какие сайты открываются напрямую, и переключает режим, когда два определения подряд совпали. Проверка идёт при смене сети.	Checked
-Приложение само меняет чёрный список источников и их приоритеты. Любое такое изменение можно отменить в течение суток.	Check
-Приложения и сайты	Service check through a config
-Проверенные	Rechecks all configs of the mode (first TCP, then real latency through the core). Runs in the background for up to 25 minutes, you can close the screen.
-Проверить	Check working configs automatically
-Проверить первые {} конфигов	Checking 0/{}…
-Проверка сервисов через конфиг	Checking servers for targets…
-Проверка утечек	Checking…
-Проверяет все конфиги режима заново (сначала TCP, потом настоящая задержка через ядро). Идёт в фоне до 25 минут, можно закрыть экран.	Protocol
-Проверять рабочие конфиги само	Firmware
-Проверяю серверы для целей…	VPN permission
-Проверяю…	Allow exact alarms
-Протокол	Mode
-Работаю…	"Focus" mode
-Раз в N часов	Blocking mode
-Разрешить точные будильники	Backup
-Режим	Russian apps
-Режим «{}»: когда он действует, берутся его настройки (если включены свои), иначе общие.	Russian sites ({} domains: .ru, .рф, Gosuslugi, banks, Yandex, VK…) open directly by default. You can add your own here. Applied at the next connection.
-Режим «Фокус»	Site
-Режим блокировок	Site in browser: not detected
-Резервная копия	Sites that bypass the VPN
-Российские приложения	Sites of these apps go directly too
-Сайт	Chooses by itself (recommended)
-Сайт в браузере: не определяется	Reset to common settings
-Сайт в браузере: определяется	Fresh checks (24 h)
-Сайты в обход VPN	Summary
-Сбросить к общим настройкам	Own quiet hours
-Свежие проверки (сутки)	Custom service
-Сводка	Today:
-Свой сервис	Servers
-Сегодня: 	Servers: list, sorting, filters 
-Сейчас	Network
-Серверов ещё нет. Нажмите «Собрать сейчас» на главном экране.	Stronger than automatic ones. Heavy background checks without charging do not start at this time.
-Серверы	Speed
-Серверы: список, сортировка, фильтры	Could not measure speed
-Сильнее автоматических. Тяжёлые фоновые проверки без зарядки в это время не запускаются.	Change server
-Система не разрешила запуск VPN из фона — откройте приложение и подключите вручную	Remove battery restriction
-Сколько VPN работал, как часто менялся сервер и на каких серверах держался дольше всего. Хранится только на телефоне, 30 дней.	Collect now
-Скорость	Status
-Скорость измерить не удалось	Saved
-Смена сервера с учётом открытого приложения	Save
-Сменить сервер	Save report
-Снять ограничение батареи	Saving the log…
-Собрать сейчас	Saving…
-Сортировка (нажмите на выбранный пункт, чтобы развернуть):	Accessibility
-Состояние	Bypass list saved
-Сохранено	Compares the address "outside the VPN" and "through the VPN". The app itself is outside the tunnel, so DNS leaks of other apps are not visible here.
-Сохранено: Загрузки/Phoenix	Link for the blocklist
-Сохранить	Link to region rules (optional)
-Сохранить отчёт	Links: share of working and priority
-Сохраняю журнал…	No links with statistics yet: they will appear after a collection.
-Сохраняю…	Statistics
-Специальные возможности	Country
-Список обхода сохранён	Consider a server slow if the speed is below (Mbit/s):
-Сравнивает адрес «мимо VPN» и «через VPN». Приложение само вне туннеля, поэтому DNS-утечки других приложений отсюда не видны.	Type of blocking
-Ссылка для чёрного списка	Quiet hours by habits
-Ссылка на правила регионов (необязательно)	Only while charging
-Ссылки: доля рабочих и приоритет	Apps only
-Ссылок со статистикой пока нет: она появится после сбора.	The same engine as in v2rayNG: usually faster. Takes effect at the next connection. 64-bit phones only; if you have sites or apps with their own server, per-app rules will not work for them, so the built-in engine stays automatically.
-Статистика	Android does not guarantee the exact time (a shift of a few minutes is possible). If there is no network or the phone is off at that time, collection runs as soon as possible.
-Страна	Exact alarms
-Считать сервер медленным, если скорость ниже (Мбит/с):	Exact alarms:
-Тип блокировок	Each mode has its own links, blocklist and audit; here you can edit any of them regardless of which mode is on now (✓). Nightly collection runs for each mode that has sources.
-Тихие часы по привычкам	Each target has a check address: it shows whether the service opens through the server. For known apps it is filled in automatically, for others only the server's operation is checked; the address can be changed with the "Address" button.
-Только при зарядке	Remove
-Только приложения	Notifications
-Тот же движок, что у v2rayNG: обычно быстрее на скорости. Вступает в силу при следующем подключении. Только 64-битные телефоны; если у вас есть сайты или приложения со своим сервером, по приложениям они работать не будут — тогда автоматически остаётся встроенный.	Phoenix notifications
-Точное время Android не гарантирует (возможен сдвиг на несколько минут). Если в это время нет сети или телефон выключен — сбор пройдёт при первой возможности.	Delete
-Точные будильники	Smart switch (for the open app)
-Точные будильники: 	A file with host:, closed:, marker:… lines. If empty or unsuitable, the built-in rules apply: which sites are closed by exit country and by which phrases the "not supported in your country" page is recognized. Updated when the app starts. 
-У каждого режима свои ссылки, чёрный список и аудит; здесь можно править любой, независимо от того, какой режим включён сейчас (✓). Ночной сбор идёт для каждого режима, у которого есть источники.	Filters:
-У каждой цели есть адрес проверки: по нему видно, открывается ли сервис через сервер. Для известных приложений он подставляется сам, для остальных проверяется просто работа сервера; адрес можно поменять кнопкой «Адрес».	Background work (firmware)
-Убрать	No targets yet. Add an app (the list is taken from the phone) or a site.
-Уведомления Phoenix	What to do if an app does not work on the current server
-Удалить	What the app does by itself
-Умная смена	What happened?
-Умная смена (под открытое приложение)	What works on this network
-Файл со строками host:, closed:, marker:… Если пусто или файл не подходит, действуют встроенные правила: какие сайты закрыты по стране выхода и по каким фразам узнаётся страница «не поддерживается в вашей стране». Обновляется при запуске приложения.	What is already allowed
-Фильтры:	To find out which app is open now. The data stays on the phone.
-Фоновая работа (прошивка)	Whose settings to edit
-Целей пока нет. Добавьте приложение (список берётся с телефона) или сайт.	Black
-Что приложение делает само	Saves battery. If the phone is not charging at this time, collection is postponed until charging.
-Что работает в этой сети	Export to file
-Что уже разрешено	Export and import
-Чтобы узнать, какое приложение открыто сейчас. Данные остаются на телефоне.	This link is already in the blocklist
-Чьи настройки править	These sources are not downloaded. Nothing is removed from the list automatically, only manually.
-Чёрные	These apps work directly, bypassing the VPN. Each mode has its own list. Changes apply at the next connection.
-Чёрные списки	Core
-Экспорт в файл	auto
-Экспорт и импорт	auto-connect, IPv6, leak protection, quick settings tile
-Эта ссылка уже в чёрном списке	whitelists/blacklists, automatic detection
-Эти источники не скачиваются. Автоматически из списка ничего не удаляется — только вручную.	block (recommended)
-Эти приложения работают напрямую, мимо VPN. У каждого режима свой список. Изменения применяются при следующем подключении.	will be requested at the first connection
-Ядро VPN	enabled
-Ядро открывает выбранные сервисы через рабочие конфиги и записывает результат к каждому конфигу (в карточке: «Проверено»; лучшие конфиги — те, через которые открывается больше сервисов). Сайты с защитой от ботов (Claude, Qwen) отвечают отказом, но это тоже считается «дотянулись».	all background permissions in one place: battery, alarms, autostart
-авто	granted
-автоподключение, IPv6, защита от утечек, плитка в шторке	disabled: the VPN service may not be shown
-белые/чёрные списки, определение автоматически	yes
-блокировать (рекомендуется)	active
-будет запрошено при первом подключении	added manually
-включены	not downloaded yet
-все разрешения для фона в одном месте: батарея, будильники, автозапуск	backup servers, option A or B
-выдано	cable
-выключены — служба VPN может не показываться	same as everywhere
-да	mobile network
-действует	directly, bypassing the VPN
-добавлено вручную	directly, bypassing the VPN (no server needed)
-ещё не было	not checked (no network response)
-ещё не скачивалась	not allowed
-запасные серверы, вариант А или Б	could not open the file
-кабель	no own server: goes through the common one
-как везде	no network
-меняю сервер…	no: scheduled collection may shift
-мобильная сеть	no: the system may unload the app
-напрямую, мимо VPN	needed only for option B (switching the VPN when an app opens)
-напрямую, мимо VPN (сервер не нужен)	detecting…
-не знаю, какой сервис открыт — откройте его и нажмите снова	disconnected
-не проверено (нет ответа сети)	app opened
-не разрешены	marked by you (the system does not allow checking); tap to open again.
-нет защищённого соединения — интернет заблокирован ({})	connected: {}
-нет своего сервера — идёт через общий	permissions as ticks, what is going on now, log size
-нет связи через этот сервер	check:
-нет связи — повторю позже	checking…
-нет связи, запасных конфигов нет	allowed
-нет связи: у сети нет интернета	backup of settings, targets, bypass, sources and log
-нет связи: у телефона нет сети	Russian apps and sites, own apps
-нет сети	"what is going on now" summary, log with filters and search, collection report
-нет — система может выгружать приложение	the system does not allow checking by itself: tap, turn it on and come back, the mark will be kept.
-нужен только для варианта Б (переключение VPN при открытии приложения)	removed
-определяю…	links for whitelists and blacklists, blocklist, audit
-отключён	file is too large for a Phoenix backup
-открытие приложения	through the server
-отмечено вами (система не даёт проверить); нажмите, чтобы открыть снова. 	★ 3+ days 
+\nЗапасных проверено: {}	\nBackup servers checked: {}
+\n⚠ Автоприменение пропускает: {}. Кнопка «В ЧС» добавит вручную.	\n⚠ Auto-apply skips: {}. The "To blocklist" button adds them manually.
+  Только проблемы	  Problems only
+  до %02d:00  	  to %02d:00  
+  с %02d:00  	  from %02d:00  
+ (вручную)	 (manual)
+ (общая: только работа сервера)	 (common: server health only)
+ (определяется автоматически)	 (detected automatically)
+ (определяется сам)	 (detected automatically)
+ · показано {}	 · shown {}
+ · проверено {}	 · checked {}
+ Сейчас недоступен на этом телефоне.	 Not available on this phone right now.
+ Сейчас: {}.	 Now: {}.
+ из 5 МБ	 of 5 MB
+%.1f МБ	%.1f MB
++ Приложение	+ App
++ Сайт	+ Site
++ Свой сервис	+ Custom service
+. Остальные автоматически нельзя (причина указана под каждой), их можно добавить кнопкой «В ЧС»	. The rest cannot be added automatically (the reason is shown under each); you can add them with the "To blocklist" button
+3+ сервиса	3+ services
+; если не работает, нажмите «Сменить сервер»	; if it does not work, tap "Change server"
+Android сам знает, какие ссылки открывает приложение (например, сайт банка). Эти сайты в браузере тоже идут мимо VPN, как и само приложение. Работает на Android 12 и новее; Telegram, YouTube, Google и подобные сюда не попадают никогда.	Android itself knows which links an app opens (for example, a bank's site). Those sites also bypass the VPN in the browser, just like the app. Works on Android 12 and newer; Telegram, YouTube, Google and similar are never included.
+Phoenix: перепроверка	Phoenix: recheck
+Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch и подобные открываются напрямую: быстрее и без лишнего трафика. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude и всё, что в России режется, остаётся в VPN. 	Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch and similar open directly: faster and with less traffic. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude and everything censored in Russia stays in the VPN. 
+V2RayNG не найден	V2RayNG not found
+VPN включён	VPN is on
+VPN выключен	VPN is off
+Xray: версия {}	Xray: version {}
+example.com или ссылка	example.com or a link
+{} (запасных {}, проверено {}){}	{} (backups {}, checked {}){}
+{} КБ	{} KB
+{} Ограничение батареи 	{} Battery restriction 
+{} Точные будильники 	{} Exact alarms 
+{} мин назад	{} min ago
+{} ч	{} h
+{} ч назад	{} h ago
+{} — TLS и Reality могут не работать; включите автоматическое время	{} — TLS and Reality may fail; turn on automatic time
+«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	"Same as everywhere" for an app means: use the choice made above for all. The other buttons (auto, A, B) set its own choice for this app.\n\nSites always use option A. An app uses A if the core can identify the app by its connection (the rest of the traffic is not affected); if it cannot, B when usage access is granted.
+А	A
+А: только оно через свой сервер	A: only it goes through its own server
+Автозапуск (MIUI / HyperOS)	Autostart (MIUI / HyperOS)
+Автозапуск и «Не выгружать из памяти» на MIUI/HyperOS, Funtouch, EMUI программно не проверить — их смотрите на странице «Фоновая работа (прошивка)».	Autostart and "Don't unload from memory" on MIUI/HyperOS, Funtouch, EMUI cannot be checked programmatically; see the "Background work (firmware)" page.
+Автозапуск и фон ({})	Autostart and background ({})
+Автоматически добавлять нечего: причины указаны под предложениями, вручную — кнопка «В ЧС»	Nothing to add automatically: reasons are shown under the suggestions; add manually with the "To blocklist" button
+Автосбор	Auto-collect
+Автосбор конфигов	Collecting configs
+Адрес	Address
+Адрес (например, https://discord.com/)	Address (for example, https://discord.com/)
+Адрес проверки должен начинаться с https://	The check address must start with https://
+Адрес сменился после проверки: данные устарели	The address changed after the check: data is out of date
+Адрес текстового файла со ссылками на подписки (по одной в строке). Можно оставить пустым и пользоваться только своими ссылками.	Address of a text file with subscription links (one per line). You can leave it empty and use only your own links.
+Адрес текстового файла со ссылками на подписки (по одной в строке). Сейчас используется встроенный список; можно указать свой. Пустое поле — вернуть встроенный.	Address of a text file with subscription links (one per line). The built-in list is used now; you can set your own. Empty field restores the built-in one.
+Адрес этого приложения не известен, подставлена общая проверка (работает ли сервер вообще). Если знаете, какой сайт использует приложение, впишите его адрес — проверка станет точнее.	The address of this app is unknown, so the general check is used (whether the server works at all). If you know which site the app uses, enter its address to make the check more accurate.
+Адрес, который открывает это приложение: через него проверяется, работает ли сервер для него.	The address this app opens: it is used to check whether a server works for it.
+Адрес, по которому проверяется, что сервер работает для этой цели. Пустое поле вернёт адрес по умолчанию. Серверы пересчитаются при ближайшей проверке.	The address used to check that a server works for this target. Empty field restores the default. Servers are recalculated at the next check.
+Б	B
+Б: переключить весь VPN	B: switch the whole VPN
+Банки, Госуслуги, ВК, Яндекс, маркетплейсы, операторы ({} шт., берутся только установленные).	Banks, Gosuslugi, VK, Yandex, marketplaces, carriers ({} items, only installed ones are used).
+Без этих разрешений Android (особенно MIUI/HyperOS) может не запустить сбор ночью, пока приложение закрыто. Тогда сбор пройдёт при первом открытии телефона или приложения.	Without these permissions Android (especially MIUI/HyperOS) may not start collection at night while the app is closed. Then collection runs when you first open the phone or the app.
+Белые	White
+Белые списки	Whitelists
+Белые списки: открываются только российские сайты. Чёрные: закрыты отдельные сайты. У каждого режима свои источники, статистика и список обхода. Ночной сбор идёт для каждого режима, у которого есть источники.	Whitelists: only Russian sites open. Blacklists: individual sites are blocked. Each mode has its own sources, statistics and bypass list. Nightly collection runs for each mode that has sources.
+Будильник: {}	Alarm: {}
+Бывает, что интернет «есть», но фото и страницы почти не грузятся. Пока вы пользуетесь телефоном, раз в 45 секунд смотрится, сколько данных идёт через сервер; если мало, делается один маленький замер (до 400 КБ), и после двух медленных подряд пробуются другие серверы. Если телефон не используется — ничего не качается.	Sometimes the internet is "there" but photos and pages barely load. While you use the phone, every 45 seconds the app checks how much data flows through the server; if it is low, one small test is made (up to 400 KB), and after two slow ones in a row other servers are tried. If the phone is not in use, nothing is downloaded.
+Быстрый движок туннеля (hev)	Fast tunnel engine (hev)
+В ЧС	To blocklist
+В буфере нет ссылок https://…	No https://… links in the clipboard
+В точное время	At the exact time
+В файл	To file
+В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы и накопленный опыт конфигов (где они работали). Скачанные конфиги и журнал не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.	The file saves settings and, for each mode (whitelists and blacklists), targets with their check addresses and policy, apps and sites that bypass the VPN, your own sources, the source blocklist, selected services and the accumulated experience of configs (where they worked). Downloaded configs and the log are not included: they are refreshed by the nightly collection. Target servers are not saved either because they contain access keys: after import they will be picked again.
+В файл: 24 часа	To file: 24 hours
+В файл: весь	To file: everything
+Вернул: {}	Restored: {}
+Вернуть	Restore
+Вернуть убранные ({})	Restore removed ({})
+Версия	Version
+Время сбора	Collection time
+Время телефона	Phone time
+Все кнопки разрешений (точные будильники, батарея, автозапуск, данные в фоне) собраны в одном месте: «Настройки → Фоновая работа (прошивка)».	All permission buttons (exact alarms, battery, autostart, background data) are in one place: "Settings → Background work (firmware)".
+Всё	All
+Вчера: 	Yesterday: 
+Выберите приложение	Choose an app
+Главные события за последние 15 минут из журнала: падения сервера, смены сети, поиск, переключения.	Main events from the last 15 minutes of the log: server failures, network changes, search, switches.
+Готово	Done
+Готово: {}	Done: {}
+Готово: живых {} из {}	Done: {} of {} alive
+Данные	Data
+Данные в фоне без ограничений	Unrestricted background data
+Данных ещё нет. Нажмите «Собрать сейчас» (или дождитесь ночного запуска).	No data yet. Tap "Collect now" (or wait for the nightly run).
+Дата проверки	Check date
+Диагностика	Diagnostics
+Диагностика скопирована	Diagnostics copied
+Для белых списков по умолчанию выключено: напрямую там открывается только разрешённое.	Off by default for whitelists: only the allowed sites open directly there.
+Для варианта Б нужен доступ к данным об использовании	Option B needs usage access
+Для каждой цели приложение держит до 3 проверенных серверов и перепроверяет их раз в несколько часов.	For each target the app keeps up to 3 verified servers and rechecks them every few hours.
+Для сайта работает только вариант А.	Only option A works for a site.
+Для чёрных списков включено по умолчанию.	On by default for blacklists.
+Дни жизни	Age (days)
+Добавить	Add
+Добавить плитку в шторку	Add quick settings tile
+Добавить ссылки из буфера обмена	Add links from the clipboard
+Добавлено	Added
+Добавлено {} из {}. Появятся в следующей сборке	Added {} of {}. They will appear in the next collection
+Добавлено в чёрный список	Added to the blocklist
+Добавлено в чёрный список: {}	Added to the blocklist: {}
+Добавлено ссылок: {} из {}. Появятся в следующей сборке	Links added: {} of {}. They will appear in the next collection
+Добавлено. Появится в следующей сборке	Added. It will appear in the next collection
+Добавляются к общему списку источников при каждой сборке.	Added to the common source list at every collection.
+Доля — сколько конфигов ссылки отвечают среди проверенных (свежая проверка за 7 дней или опыт в текущей сети). Приоритет «высокий»: конфиги этой ссылки пробуются раньше других живых, а сама ссылка не попадает в чёрный список по аудиту. «Низкий»: её конфиги идут в самый конец очереди.	Share is how many configs of the link respond among the checked ones (a fresh check within 7 days or experience on the current network). "High" priority: configs of this link are tried before other live ones, and the link itself is not blocklisted by the audit. "Low": its configs go to the very end of the queue.
+Доступ к данным об использовании: есть	Usage access: granted
+Доступ к статистике использования	Usage statistics access
+Если IPv6 не заводить в туннель, сайты с IPv6 открываются напрямую, мимо VPN (утечка). Блокировка заставляет приложения сразу переходить на IPv4 через VPN. Применяется при следующем подключении.	If IPv6 is not routed into the tunnel, IPv6 sites open directly, bypassing the VPN (a leak). Blocking makes apps switch to IPv4 over the VPN right away. Applied at the next connection.
+Если VPN не удалось поднять или он оборвался, туннель остаётся включённым и трафик блокируется, пока приложение ищет рабочий сервер. По умолчанию выключено: тогда при сбое интернет идёт напрямую.	If the VPN could not start or dropped, the tunnel stays on and traffic is blocked while the app looks for a working server. Off by default: then on failure the internet goes directly.
+Если включить службу специальных возможностей «Phoenix: сайт в браузере», приложение видит только домен открытого сайта (адресная строка Chrome, Яндекс, Samsung, Firefox, Opera, Edge, Brave и ещё нескольких браузеров) и при смене сервера подбирает тот, где этот сайт открывается. Домен хранится только в памяти, содержимое страниц не читается, ничего не отправляется. На Android 13 и новее для приложения не из магазина сначала откройте «О приложении» → меню ⋮ → «Разрешить ограниченные настройки».	If you turn on the "Phoenix: site in browser" accessibility service, the app sees only the domain of the open site (the address bar of Chrome, Yandex, Samsung, Firefox, Opera, Edge, Brave and a few more browsers) and, when switching servers, picks one where that site opens. The domain is kept only in memory, page content is not read, nothing is sent. On Android 13 and newer, for an app not from a store first open "App info" → ⋮ menu → "Allow restricted settings".
+Если запасной сервер не нашёлся, приложение само запускает полную перепроверку всех конфигов (не чаще раза в 30 минут).	If no backup server is found, the app starts a full recheck of all configs by itself (no more than once per 30 minutes).
+Если туннель перестал работать (три неудачные проверки), приложение перебирает запасные конфиги лучшего рейтинга.	If the tunnel stops working (three failed checks), the app tries backup configs with the best rating.
+Живые	Alive
+Журнал	Log
+Журнал «{}»	Log "{}"
+Журнал скопирован	Log copied
+За последние 15 минут ничего важного не происходило.	Nothing important happened in the last 15 minutes.
+За последние сутки	Last 24 hours
+Загружаю список…	Loading the list…
+Задержка	Latency
+Закрыть QUIC (UDP 443)	Block QUIC (UDP 443)
+Замер скачивает до 8 МБ. По умолчанию — только по Wi-Fi.	The test downloads up to 8 MB. By default, over Wi-Fi only.
+Замеры скорости идут сами.	Speed tests run automatically.
+Замеры скорости сами не идут (мобильная сеть); кнопка «Скорость» на карточке работает всегда.	Speed tests do not run by themselves (mobile network); the "Speed" button on a card always works.
+Записей по этому фильтру нет.	No entries for this filter.
+Записей: {} из {} (на экране последние {}; «В файл» сохраняет по фильтру: за 24 часа или весь журнал). Журнал копится до 5 МБ на режим.	Entries: {} of {} (the last {} are on screen; "To file" saves according to the filter: 24 hours or the whole log). The log grows up to 5 MB per mode.
+Идёт перепроверка…	Rechecking…
+Изменить	Change
+Измерять скорость и по мобильной сети	Measure speed on mobile network too
+Измеряю скорость…	Measuring speed…
+Импорт выполнен:\n	Import done:\n
+Импорт из файла	Import from file
+Импорт ничего не стирает: списки объединяются (чёрный список источников только пополняется), цели добавляются к имеющимся, одиночные настройки берутся из файла. Файл текстовый, его можно открыть и посмотреть. В нём могут быть ссылки на ваши источники — не отправляйте его посторонним.	Import erases nothing: lists are merged (the source blocklist only grows), targets are added to existing ones, single settings are taken from the file. The file is plain text, you can open and read it. It may contain links to your sources, so do not send it to strangers.
+Имя	Name
+Источники	Sources
+Источники для режима	Sources for the mode
+Источники, чьи конфиги уже целиком есть в другом. Автоматически добавляются в чёрный список 1-го и 15-го числа (до {} за раз); здесь можно применить сразу.	Sources whose configs are already fully present in another one. They are added to the blocklist automatically on the 1st and 15th (up to {} at a time); here you can apply them right away.
+Каждые {} ч после последнего удачного сбора	Every {} h after the last successful collection
+Каждый день в {}	Every day at {}
+Кнопка «Phoenix VPN» рядом с Wi-Fi и Bluetooth: включает и выключает VPN, долгое нажатие открывает приложение. Первый раз нужно открыть приложение, чтобы дать разрешение на VPN.	The "Phoenix VPN" button next to Wi-Fi and Bluetooth: turns the VPN on and off, a long press opens the app. The first time, open the app to grant the VPN permission.
+Когда сервер перестаёт работать и приложение само ищет другой, оно смотрит, какое приложение открыто сейчас (нужен доступ к данным об использовании), и пробует первыми серверы, на которых это приложение уже открывалось. Если у приложения есть своя цель — сначала её серверы.	When a server stops working and the app looks for another, it checks which app is open now (usage access needed) and tries servers where that app has already worked first. If the app has its own target, that target's servers go first.
+Копировать	Copy
+Копировать ({})	Copy ({})
+Копировать все ({})	Copy all ({})
+Копировать всё	Copy all
+Копия сохранена ({} строк)	Backup saved ({} lines)
+Лучшие сверху	Best first
+Лучший сейчас: {}	Best now: {}
+Менять сервер при низкой скорости	Switch server on low speed
+Многие серверы не пропускают UDP: приложения ждут ответа и не открываются, хотя Telegram работает. При закрытом QUIC они сразу переходят на обычный TCP. Рекомендуется оставить включённым. Применяется при следующем подключении.	Many servers do not pass UDP: apps wait for a reply and do not open even though Telegram works. With QUIC blocked they switch to plain TCP at once. Recommended to keep on. Applied at the next connection.
+Можно вернуть	Can be restored
+НЕ разрешены	NOT allowed
+Надёжность автосбора	Auto-collect reliability
+Название	Name
+Названия пунктов зависят от версии прошивки. Если кнопка не нашла нужный экран, откроются настройки приложения — дальше по шагам выше.	Item names depend on the firmware version. If the button did not find the right screen, the app settings will open; continue with the steps above.
+Найдено автоматически ({}): приложения с российскими пакетами, которых нет в наборе. Если приложению нужен VPN, уберите его.	Found automatically ({}): apps with Russian packages that are not in the preset. If an app needs the VPN, remove it.
+Настройки	Settings
+Настройки VPN в Android	Android VPN settings
+Настройки приложения	App settings
+Не заблокированное в РФ	Not blocked in Russia
+Не похоже на адрес сайта	Does not look like a site address
+Не привязан к часам: срок считается от последнего удачного сбора. Телефон был выключен или не было сети — сбор пройдёт при первой возможности, а следующий срок отсчитается от него. Меньше интервал — свежее конфиги, но больше трафика и заряда.	Not tied to the clock: the period counts from the last successful collection. If the phone was off or had no network, collection runs as soon as possible and the next period counts from it. A shorter interval means fresher configs but more traffic and battery use.
+Не пускать интернет без VPN	Block internet without VPN
+Не удалось вернуть (запись устарела)	Could not restore (the entry is out of date)
+Не удалось открыть настройки VPN	Could not open VPN settings
+Не удалось прочитать файл: {}	Could not read the file: {}
+Не удалось сохранить	Could not save
+Не удалось сохранить журнал (за выбранный период записей нет?)	Could not save the log (no entries for the chosen period?)
+Не удалось сохранить файл	Could not save the file
+Не удалось сохранить: {}	Could not save: {}
+Не удалось: {}	Failed: {}
+Не чаще раза в 5 минут и не больше 4 раз в час, чтобы при плохой сети везде не прыгать с сервера на сервер.	No more than once per 5 minutes and 4 times per hour, so that on a bad network the app does not jump from server to server everywhere.
+Нет конфигов: нажмите «Собрать сейчас»	No configs: tap "Collect now"
+Нечего проверять: нет конфигов или не выбран ни один сервис	Nothing to check: no configs or no service selected
+Нужна ссылка вида https://…	A link like https://… is needed
+Нужного экрана в этой прошивке нет — открыл настройки приложения	There is no such screen in this firmware — opened the app settings instead
+О приложении	App info
+Обновить	Refresh
+Оболочки телефонов (EMUI, MIUI, ColorOS и другие) сами выгружают фоновые приложения. Здесь собрано, что нужно разрешить именно на вашем телефоне.	Phone shells (EMUI, MIUI, ColorOS and others) unload background apps on their own. Here is what to allow on your phone.
+Обход VPN и проверка сервисов	VPN bypass and service checks
+Общие	Common
+Общие значения действуют в каждом режиме, у которого нет своих настроек. У режима можно включить свои: тогда он живёт по ним, а общие его не трогают.	Common values apply in every mode that has no settings of its own. A mode can have its own: then it follows them and the common ones do not touch it.
+Общий список источников — {}	Common source list — {}
+Ограничение батареи снято	Battery restriction removed
+Ограничение батареи: 	Battery restriction: 
+Определить сейчас	Detect now
+Определять сам	Detect automatically
+Определяю тип блокировок…	Detecting the type of blocking…
+Отключить	Disconnect
+Открепить	Unpin
+Открытые сервисы	Open services
+Открытый сервис не работает на этом сервере	The open service does not work on this server
+Открыть	Open
+Открыть настройки	Open settings
+Отличается от общих ({}): 	Differs from common ({}): 
+Отличий от общих настроек нет.	No differences from the common settings.
+Отмена	Cancel
+Отчёт сбора	Collection report
+Отчёт сохранён: Загрузки/Phoenix	Report saved: Downloads/Phoenix
+Отчёта пока нет	No report yet
+Оценка расхода на проверки (трафик приблизительный). Если цифры большие, включите «Фокус» или тихие часы.	Estimate of the cost of checks (traffic is approximate). If the numbers are large, turn on "Focus" or quiet hours.
+Очистить	Clear
+Ошибка VPN	VPN error
+Переподключаться само	Reconnect automatically
+Перепроверить все конфиги	Recheck all configs
+Перепроверить всё	Recheck all
+Перепроверить только приложения	Recheck apps only
+Перепроверка конфигов	Recheck configs
+Перепроверяю конфиги…	Rechecking configs…
+Перепроверяю серверы…	Rechecking servers…
+Перепроверяю…	Rechecking…
+Плитка в шторке	Quick settings tile
+Под фильтры ничего не подходит.	Nothing matches the filters.
+Подключать VPN само	Connect VPN automatically
+Подключаюсь…	Connecting…
+Подключение	Connection
+Подключить	Connect
+Поиск	Search
+Поиск по журналу	Search the log
+Поиск по имени или стране	Search by name or country
+Пока открыто приложение из ваших целей (игра, банк, звонок), приложение не запускает тяжёлые проверки и не меняет сервер по скорости. Нужен доступ к данным об использовании.	While an app from your targets is open (a game, a bank, a call), the app does not run heavy checks and does not switch servers because of speed. Usage access is needed.
+Показать	Show
+Полная защита (даже когда приложение закрыто или убито системой) включается только в настройках Android: VPN → Phoenix → «Постоянный VPN» и «Блокировать подключения без VPN».	Full protection (even when the app is closed or killed by the system) is turned on only in Android settings: VPN → Phoenix → "Always-on VPN" and "Block connections without VPN".
+Понятно	Got it
+После перепроверки и в фоне: у рабочих конфигов, которых ещё не проверяли по выбранным сервисам, проверяются они. Добавили сервис — проверятся и уже проверенные.	After a recheck and in the background: working configs that have not yet been checked for the selected services get checked. If you add a service, the already checked ones are checked too.
+Последнее определение режима	Last mode detection
+Последнее определение: {}	Last detection: {}
+Последние проблемы	Recent problems
+Последний запуск: {}	Last run: {}
+Последняя сборка загружена.	The latest collection is loaded.
+Потяните шторку вниз → значок карандаша (изменить) → перетащите «Phoenix VPN» в активные плитки.	Pull the shade down → pencil icon (edit) → drag "Phoenix VPN" to the active tiles.
+Права и фоновая работа	Permissions and background work
+Предложения аудита ({})	Audit suggestions ({})
+При включении сюда копируются текущие общие значения, дальше их можно менять независимо.	When turned on, the current common values are copied here; after that they can be changed independently.
+При включении телефона и при открытии приложения (последний или лучший конфиг). Нужно один раз дать системное разрешение на VPN.	When the phone starts and when the app opens (last or best config). The system VPN permission is needed once.
+Приложение запоминает, в какие часы недели вы пользуетесь телефоном (только на телефоне, файл входит в резервную копию). Через неделю в «тихие» часы тяжёлое без зарядки не запускается, а перед обычным началом активности туннель проверяется заранее.	The app remembers which hours of the week you use the phone (on the phone only, the file is included in the backup). After a week, in "quiet" hours heavy work does not start without charging, and before the usual start of activity the tunnel is checked in advance.
+Приложение проверяет, какие сайты открываются напрямую, и переключает режим, когда два определения подряд совпали. Проверка идёт при смене сети.	The app checks which sites open directly and switches the mode when two detections in a row agree. The check runs when the network changes.
+Приложение само меняет чёрный список источников и их приоритеты. Любое такое изменение можно отменить в течение суток.	The app changes the source blocklist and their priorities by itself. Any such change can be undone within a day.
+Приложения в обход VPN	Apps that bypass the VPN
+Приложения в обход VPN ({})	Apps that bypass the VPN ({})
+Приложения и сайты	Apps and sites
+Применить (до {})	Apply (up to {})
+Проверенные	Checked
+Проверить	Check
+Проверить первые {} конфигов	Check the first {} configs
+Проверить серверы сейчас	Check servers now
+Проверка сервисов через конфиг	Service check through a config
+Проверка утечек	Leak check
+Проверяет все конфиги режима заново (сначала TCP, потом настоящая задержка через ядро). Идёт в фоне до 25 минут, можно закрыть экран.	Rechecks all configs of the mode (first TCP, then real latency through the core). Runs in the background for up to 25 minutes, you can close the screen.
+Проверять рабочие конфиги само	Check working configs automatically
+Проверяю 0/{}…	Checking 0/{}…
+Проверяю {}/{}…	Checking {}/{}…
+Проверяю серверы для целей…	Checking servers for targets…
+Проверяю…	Checking…
+Протокол	Protocol
+Прошивка	Firmware
+Работаю…	Working…
+Раз в N часов	Every N hours
+Разрешение на VPN	VPN permission
+Разрешить точные будильники	Allow exact alarms
+Режим	Mode
+Режим «{}»: когда он действует, берутся его настройки (если включены свои), иначе общие.	Mode "{}": when it is active, its settings are used (if its own are on), otherwise the common ones.
+Режим «Фокус»	"Focus" mode
+Режим блокировок	Blocking mode
+Режим: {}	Mode: {}
+Резервная копия	Backup
+Российские приложения	Russian apps
+Российские сайты ({} доменов: .ru, .рф, Госуслуги, банки, Яндекс, ВК…) открываются напрямую по умолчанию. Здесь можно добавить свои. Применится при следующем подключении.	Russian sites ({} domains: .ru, .рф, Gosuslugi, banks, Yandex, VK…) open directly by default. You can add your own here. Applied at the next connection.
+Сайт	Site
+Сайт в браузере: не определяется	Site in browser: not detected
+Сайт в браузере: определяется	Site in browser: detected
+Сайты в обход VPN	Sites that bypass the VPN
+Сайты этих приложений тоже напрямую	Sites of these apps go directly too
+Сам перепроверять все конфиги	Recheck all configs by itself
+Само выбирает (рекомендуется)	Chooses by itself (recommended)
+Сбросить к общим настройкам	Reset to common settings
+Свежие проверки (сутки)	Fresh checks (24 h)
+Сводка	Summary
+Свои настройки для «{}»	Own settings for "{}"
+Свои приложения ({})	Own apps ({})
+Свои ссылки в пул ({})	Own links in the pool ({})
+Свои тихие часы	Own quiet hours
+Свой сервис	Custom service
+Сегодня: 	Today: 
+Сейчас	Now
+Сейчас для этого режима действуют общие настройки. Включите «Свои настройки», чтобы менять их отдельно.	Common settings apply to this mode now. Turn on "Own settings" to change them separately.
+Серверов ещё нет. Нажмите «Собрать сейчас» на главном экране.	No servers yet. Tap "Collect now" on the main screen.
+Серверов: {} · проверено живых: {}	Servers: {} · checked alive: {}
+Серверы	Servers
+Серверы: список, сортировка, фильтры	Servers: list, sorting, filters
+Сеть	Network
+Сеть сейчас: {}	Network now: {}
+Сильнее автоматических. Тяжёлые фоновые проверки без зарядки в это время не запускаются.	Stronger than automatic ones. Heavy background checks without charging do not start at this time.
+Система не разрешила запуск VPN из фона — откройте приложение и подключите вручную	The system did not allow starting the VPN from the background — open the app and connect manually
+Сколько VPN работал, как часто менялся сервер и на каких серверах держался дольше всего. Хранится только на телефоне, 30 дней.	How long the VPN worked, how often the server changed and on which servers it stayed longest. Stored only on the phone, 30 days.
+Скопировано: {}. В V2RayNG: «+» → «Импорт из буфера обмена»	Copied: {}. In V2RayNG: "+" → "Import from clipboard"
+Скорость	Speed
+Скорость измерить не удалось	Could not measure speed
+Скорость: {}	Speed: {}
+Смена сервера с учётом открытого приложения	Switch server considering the open app
+Сменить сервер	Change server
+Снять ограничение батареи	Remove battery restriction
+Собрать сейчас	Collect now
+Сортировка (нажмите на выбранный пункт, чтобы развернуть):	Sorting (tap the selected item to reverse):
+Состояние	Status
+Сохранено	Saved
+Сохранено: Загрузки/Phoenix	Saved: Downloads/Phoenix
+Сохранить	Save
+Сохранить отчёт	Save report
+Сохраняю журнал…	Saving the log…
+Сохраняю…	Saving…
+Специальные возможности	Accessibility
+Список обхода сохранён	Bypass list saved
+Сравнивает адрес «мимо VPN» и «через VPN». Приложение само вне туннеля, поэтому DNS-утечки других приложений отсюда не видны.	Compares the address "outside the VPN" and "through the VPN". The app itself is outside the tunnel, so DNS leaks of other apps are not visible here.
+Ссылка для чёрного списка	Link for the blocklist
+Ссылка на правила регионов (необязательно)	Link to region rules (optional)
+Ссылки: доля рабочих и приоритет	Links: share of working and priority
+Ссылок со статистикой пока нет: она появится после сбора.	No links with statistics yet: they will appear after a collection.
+Статистика	Statistics
+Страна	Country
+Считать сервер медленным, если скорость ниже (Мбит/с):	Consider a server slow if the speed is below (Mbit/s):
+Тип блокировок	Type of blocking
+Тихие часы по привычкам	Quiet hours by habits
+Только при зарядке	Only while charging
+Только приложения	Apps only
+Тот же движок, что у v2rayNG: обычно быстрее на скорости. Вступает в силу при следующем подключении. Только 64-битные телефоны; если у вас есть сайты или приложения со своим сервером, по приложениям они работать не будут — тогда автоматически остаётся встроенный.	The same engine as in v2rayNG: usually faster. Takes effect at the next connection. 64-bit phones only; if you have sites or apps with their own server, per-app rules will not work for them, so the built-in engine stays automatically.
+Точное время Android не гарантирует (возможен сдвиг на несколько минут). Если в это время нет сети или телефон выключен — сбор пройдёт при первой возможности.	Android does not guarantee the exact time (a shift of a few minutes is possible). If there is no network or the phone is off at that time, collection runs as soon as possible.
+Точные будильники	Exact alarms
+Точные будильники: 	Exact alarms: 
+У каждого режима свои ссылки, чёрный список и аудит; здесь можно править любой, независимо от того, какой режим включён сейчас (✓). Ночной сбор идёт для каждого режима, у которого есть источники.	Each mode has its own links, blocklist and audit; here you can edit any of them regardless of which mode is on now (✓). Nightly collection runs for each mode that has sources.
+У каждой цели есть адрес проверки: по нему видно, открывается ли сервис через сервер. Для известных приложений он подставляется сам, для остальных проверяется просто работа сервера; адрес можно поменять кнопкой «Адрес».	Each target has a check address: it shows whether the service opens through the server. For known apps it is filled in automatically, for others only the server's operation is checked; the address can be changed with the "Address" button.
+Убрать	Remove
+Уведомления	Notifications
+Уведомления Phoenix	Phoenix notifications
+Удалить	Delete
+Умная смена	Smart switch
+Умная смена (под открытое приложение)	Smart switch (for the open app)
+Файл со строками host:, closed:, marker:… Если пусто или файл не подходит, действуют встроенные правила: какие сайты закрыты по стране выхода и по каким фразам узнаётся страница «не поддерживается в вашей стране». Обновляется при запуске приложения.	A file with host:, closed:, marker:… lines. If empty or unsuitable, the built-in rules apply: which sites are closed by exit country and by which phrases the "not supported in your country" page is recognized. Updated when the app starts.
+Фильтры:	Filters:
+Фоновая работа (прошивка)	Background work (firmware)
+Целей пока нет. Добавьте приложение (список берётся с телефона) или сайт.	No targets yet. Add an app (the list is taken from the phone) or a site.
+Цель «{}»	Target "{}"
+Что делать, если приложение не работает на текущем сервере	What to do if an app does not work on the current server
+Что приложение делает само	What the app does by itself
+Что произошло?	What happened?
+Что работает в этой сети	What works on this network
+Что уже разрешено	What is already allowed
+Чтобы узнать, какое приложение открыто сейчас. Данные остаются на телефоне.	To find out which app is open now. The data stays on the phone.
+Чьи настройки править	Whose settings to edit
+Чёрные	Black
+Чёрные списки	Blacklists
+Чёрный список ({})	Blocklist ({})
+Экономит батарею. Если телефон не заряжается в это время, сбор отложится до подключения зарядки.	Saves battery. If the phone is not charging at this time, collection is postponed until charging.
+Экономия трафика: {}	Data saver: {}
+Экспорт в файл	Export to file
+Экспорт и импорт	Export and import
+Эта ссылка уже в чёрном списке	This link is already in the blocklist
+Эти источники не скачиваются. Автоматически из списка ничего не удаляется — только вручную.	These sources are not downloaded. Nothing is removed from the list automatically, only manually.
+Эти приложения работают напрямую, мимо VPN. У каждого режима свой список. Изменения применяются при следующем подключении.	These apps work directly, bypassing the VPN. Each mode has its own list. Changes apply at the next connection.
+Ядро	Core
+Ядро VPN	VPN core
+Ядро не запустилось: {}	The core did not start: {}
+Ядро открывает выбранные сервисы через рабочие конфиги и записывает результат к каждому конфигу (в карточке: «Проверено»; лучшие конфиги — те, через которые открывается больше сервисов). Сайты с защитой от ботов (Claude, Qwen) отвечают отказом, но это тоже считается «дотянулись».	The core opens the selected services through working configs and records the result for each config (in the card: "Checked"; the best configs are those through which more services open). Sites with bot protection (Claude, Qwen) respond with a refusal, but that also counts as "reached".
+авто	auto
+автоподключение, IPv6, защита от утечек, плитка в шторке	auto-connect, IPv6, leak protection, quick settings tile
+белые/чёрные списки, определение автоматически	whitelists/blacklists, automatic detection
+блокировать (рекомендуется)	block (recommended)
+будет запрошено при первом подключении	will be requested at the first connection
+верное (расхождение {} с)	correct (off by {} s)
+включены	enabled
+время или интервал сбора, только при зарядке, статус последнего запуска	collection time or interval, only while charging, last run status
+все разрешения для фона в одном месте: батарея, будильники, автозапуск	all background permissions in one place: battery, alarms, autostart
+выдано	granted
+выключены — служба VPN может не показываться	disabled: the VPN service may not be shown
+да	yes
+действует	active
+добавлено вручную	added manually
+ещё не было	not yet
+ещё не скачивалась	not downloaded yet
+живых {} из {}	{} of {} alive
+запасные серверы, вариант А или Б	backup servers, option A or B
+ищу рабочий сервер среди {}…	looking for a working server among {}…
+кабель	cable
+как везде	same as everywhere
+меняю сервер…	changing server…
+мобильная сеть	mobile network
+напрямую, мимо VPN	directly, bypassing the VPN
+напрямую, мимо VPN (сервер не нужен)	directly, bypassing the VPN (no server needed)
+не знаю, какой сервис открыт — откройте его и нажмите снова	I don't know which service is open — open it and tap again
+не проверено (нет ответа сети)	not checked (no network response)
+не разрешены	not allowed
+не трогать	leave alone
+не удалось открыть файл	could not open the file
+нет	no
+нет защищённого соединения — интернет заблокирован ({})	no secure connection — the internet is blocked ({})
+нет своего сервера — идёт через общий	no own server: goes through the common one
+нет связи через этот сервер	no connection through this server
+нет связи — повторю позже	no connection — will try again later
+нет связи, запасных конфигов нет	no connection, no backup configs
+нет связи: у сети нет интернета	no connection: the network has no internet
+нет связи: у телефона нет сети	no connection: the phone has no network
+нет сети	no network
+нет — сбор по расписанию может сдвигаться	no: scheduled collection may shift
+нет — система может выгружать приложение	no: the system may unload the app
+нужен только для варианта Б (переключение VPN при открытии приложения)	needed only for option B (switching the VPN when an app opens)
+определяю…	detecting…
+отключён	disconnected
+открытие приложения	app opened
+отмечено вами (система не даёт проверить); нажмите, чтобы открыть снова. 	marked by you (the system does not allow checking); tap to open again. 
+ошибка: {}	error: {}
+переключений сервера {} · смен режима {} · смен сети {}\nсбоев маршрутов {} · обновлений целей {} · проблемных записей {}	server switches {} · mode changes {} · network changes {}\nroute failures {} · target updates {} · problem entries {}
+перехожу на [{}]…	switching to [{}]…
+подключается: {}	connecting: {}
+подключён: {}	connected: {}
+права галочками, что сейчас, размер журнала	permissions as ticks, what is going on now, log size
+проверка: 	check: 
+проверяю сеть и туннель…	checking the network and tunnel…
+проверяю…	checking…
+разрешены	allowed
+резервная копия настроек, целей, обхода, источников и журнала	backup of settings, targets, bypass, sources and log
+российские приложения и сайты, свои приложения	Russian apps and sites, own apps
+сводка «что сейчас», журнал с фильтрами и поиском, отчёт сбора	"what is going on now" summary, log with filters and search, collection report
+серверов: {}	servers: {}
+система не даёт проверить сама: нажмите, включите и вернитесь — отметка сохранится. 	the system does not allow checking by itself: tap, turn it on and come back, the mark will be kept. 
+скорость мала — ищу сервер быстрее…	speed is low — looking for a faster server…
+снято	removed
+ссылки для белых и чёрных списков, чёрный список, аудит	links for whitelists and blacklists, blocklist, audit
+умная смена: {}	smart switch: {}
+файл слишком большой для копии Phoenix	file is too large for a Phoenix backup
+через сервер	through the server
+★ 3+ дня	★ 3+ days
+✓ открылся · ≈ отвечает, но не полностью (защита сайта; для Claude и Qwen это обычно норма) · ✗ не открылся · ? не проверялся	✓ opened · ≈ responds but not fully (site protection; for Claude and Qwen this is usually normal) · ✗ did not open · ? not checked
+📌 Открепить сервер	📌 Unpin server

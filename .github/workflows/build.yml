@@ -13,6 +13,16 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
+      - name: Fetch libv2ray.aar (Xray core)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p app/libs
+          if [ ! -f app/libs/libv2ray.aar ]; then
+            gh release download -R 2dust/AndroidLibXrayLite -p '*.aar' -D app/libs
+            ls -l app/libs
+            [ -f app/libs/libv2ray.aar ] || mv app/libs/*.aar app/libs/libv2ray.aar
+          fi
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
       - name: Build debug APK

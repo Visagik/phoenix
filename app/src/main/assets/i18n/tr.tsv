@@ -1,306 +1,437 @@
-  Только проблемы	  %02d:00'dan
-  до %02d:00  	  (elle)  
-  с %02d:00  	  (ortak: yalnızca sunucu çalışması)  
- (вручную)	 (otomatik algılanır)
- (общая: только работа сервера)	 (kendisi algılar)
- · проверено {}	 Şimdi: {}.
- Сейчас недоступен на этом телефоне.	 / 5 MB
- из 5 МБ	 + Uygulama
-%.1f МБ	+ Site
-+ Приложение	+ Özel hizmet
-+ Сайт	. Geri kalanlar otomatik eklenemez (neden her birinin altında yazıyor), «Kara listeye» düğmesiyle ekleyebilirsiniz
-+ Свой сервис	3+ hizmet
-. Остальные автоматически нельзя (причина указана под каждой), их можно добавить кнопкой «В ЧС»	Android, bir uygulamanın hangi bağlantıları açtığını kendisi bilir (örneğin bir bankanın sitesi). Bu siteler tarayıcıda da uygulama gibi VPN'i atlar. Android 12 ve üzerinde çalışır; Telegram, YouTube, Google ve benzerleri asla buraya girmez.
-3+ сервиса	Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch ve benzerleri doğrudan açılır: daha hızlı ve daha az trafikle. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude ve Rusya'da engellenen her şey VPN'de kalır.
-; если не работает, нажмите «Сменить сервер»	VPN açık
-Android сам знает, какие ссылки открывает приложение (например, сайт банка). Эти сайты в браузере тоже идут мимо VPN, как и само приложение. Работает на Android 12 и новее; Telegram, YouTube, Google и подобные сюда не попадают никогда.	VPN kapalı
-VPN включён	example.com veya bağlantı
-Xray: версия {}	{} KB
-{} КБ	{} dk önce
-{} Ограничение батареи 	{} sa 
-{} Точные будильники 	{} sa önce 
-{} мин назад	{} — TLS ve Reality çalışmayabilir; otomatik saati açın
-«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	Otomatik başlatma (MIUI / HyperOS)
-А	MIUI/HyperOS, Funtouch, EMUI'de otomatik başlatma ve «Bellekten boşaltma» program yoluyla denetlenemez; «Arka plan çalışması (yazılım)» sayfasına bakın.
-Автозапуск (MIUI / HyperOS)	Otomatik eklenecek bir şey yok: nedenler önerilerin altında yazıyor, elle eklemek için «Kara listeye» düğmesi var
-Автозапуск и «Не выгружать из памяти» на MIUI/HyperOS, Funtouch, EMUI программно не проверить — их смотрите на странице «Фоновая работа (прошивка)».	Otomatik toplama
-Автоматически добавлять нечего: причины указаны под предложениями, вручную — кнопка «В ЧС»	Adres
-Автосбор	Adres (örneğin, https://discord.com/)
-Автосбор конфигов	Denetim adresi https:// ile başlamalıdır
-Адрес	Denetimden sonra adres değişti: veriler eski
-Адрес (например, https://discord.com/)	Abonelik bağlantıları içeren metin dosyasının adresi (her satırda bir tane). Boş bırakıp yalnızca kendi bağlantılarınızı kullanabilirsiniz.
-Адрес проверки должен начинаться с https://	Abonelik bağlantıları içeren metin dosyasının adresi (her satırda bir tane). Şu anda yerleşik liste kullanılıyor; kendinizinkini verebilirsiniz. Boş alan yerleşik listeyi geri getirir.
-Адрес сменился после проверки: данные устарели	Bu uygulamanın adresi bilinmiyor, genel denetim kullanıldı (sunucu çalışıyor mu). Uygulamanın hangi siteyi kullandığını biliyorsanız adresini yazın, denetim daha doğru olur.
-Адрес текстового файла со ссылками на подписки (по одной в строке). Можно оставить пустым и пользоваться только своими ссылками.	Bu uygulamanın açtığı adres: sunucunun onun için çalışıp çalışmadığı bununla denetlenir.
-Адрес текстового файла со ссылками на подписки (по одной в строке). Сейчас используется встроенный список; можно указать свой. Пустое поле — вернуть встроенный.	Sunucunun bu hedef için çalıştığını denetleyen adres. Boş alan varsayılan adresi geri getirir. Sunucular bir sonraki denetimde yeniden hesaplanır.
-Адрес этого приложения не известен, подставлена общая проверка (работает ли сервер вообще). Если знаете, какой сайт использует приложение, впишите его адрес — проверка станет точнее.	B
-Адрес, который открывает это приложение: через него проверяется, работает ли сервер для него.	B: tüm VPN'i değiştir
-Б	Bu izinler olmadan Android (özellikle MIUI/HyperOS) uygulama kapalıyken geceleri toplamayı başlatmayabilir. O zaman toplama telefon ya da uygulama ilk açıldığında yapılır.
-Б: переключить весь VPN	Beyaz
-Без этих разрешений Android (особенно MIUI/HyperOS) может не запустить сбор ночью, пока приложение закрыто. Тогда сбор пройдёт при первом открытии телефона или приложения.	Beyaz listeler: yalnızca Rus siteleri açılır. Kara listeler: tek tek siteler engellenir. Her modun kendi kaynakları, istatistikleri ve atlama listesi vardır. Gece toplama, kaynağı olan her mod için çalışır.
-Белые списки	Bazen internet «var» ama fotoğraflar ve sayfalar neredeyse yüklenmez. Telefonu kullanırken 45 saniyede bir sunucudan ne kadar veri aktığına bakılır; azsa küçük bir ölçüm yapılır (en fazla 400 KB) ve arka arkaya iki yavaş sonuçtan sonra başka sunucular denenir. Telefon kullanılmıyorsa hiçbir şey indirilmez.
-Белые списки: открываются только российские сайты. Чёрные: закрыты отдельные сайты. У каждого режима свои источники, статистика и список обхода. Ночной сбор идёт для каждого режима, у которого есть источники.	Hızlı tünel motoru (hev)
-Бывает, что интернет «есть», но фото и страницы почти не грузятся. Пока вы пользуетесь телефоном, раз в 45 секунд смотрится, сколько данных идёт через сервер; если мало, делается один маленький замер (до 400 КБ), и после двух медленных подряд пробуются другие серверы. Если телефон не используется — ничего не качается.	Panoda https://… bağlantısı yok
-Быстрый движок туннеля (hev)	Tam zamanında
-В ЧС	Dosyaya
-В буфере нет ссылок https://…	Dosyaya ayarlar ve her mod (beyaz ve kara listeler) için hedefler (denetim adresleri ve politikasıyla), VPN'i atlayan uygulamalar ve siteler, kendi kaynaklarınız, kaynak kara listesi, seçilen hizmetler ve yapılandırmaların biriken deneyimi (nerede çalıştıkları) kaydedilir. İndirilen yapılandırmalar ve günlük dahil değildir: gece toplamayla yenilenirler. Hedef sunucuları da kaydedilmez, çünkü erişim anahtarları içerirler: içe aktarmadan sonra yeniden seçilirler.
-В точное время	Dosyaya: 24 saat
-В файл	Dosyaya: tümü
-В файл: 24 часа	Geri al
-Вернуть	Toplama saati
-Версия	Tüm izin düğmeleri (tam zamanlı alarmlar, pil, otomatik başlatma, arka plan verisi) tek yerde: «Ayarlar → Arka plan çalışması (yazılım)».
-Время сбора	Tümü
-Время телефона	Dün:
-Все кнопки разрешений (точные будильники, батарея, автозапуск, данные в фоне) собраны в одном месте: «Настройки → Фоновая работа (прошивка)».	Uygulama seçin
-Всё	Günlüğün son 15 dakikasındaki ana olaylar: sunucu çökmeleri, ağ değişiklikleri, arama, geçişler.
-Вчера: 	Hazır 
-Готово	Veri
-Данные	Denetim tarihi
-Данные в фоне без ограничений	Tanılama
-Данных ещё нет. Нажмите «Собрать сейчас» (или дождитесь ночного запуска).	Tanılama kopyalandı
-Дата проверки	Beyaz listeler için varsayılan olarak kapalı: orada yalnızca izin verilenler doğrudan açılır.
-Диагностика	B seçeneği için kullanım erişimi gerekir
-Диагностика скопирована	Her hedef için uygulama 3 denetlenmiş sunucuya kadar tutar ve birkaç saatte bir yeniden denetler.
-Для белых списков по умолчанию выключено: напрямую там открывается только разрешённое.	Site için yalnızca A seçeneği çalışır.
-Для варианта Б нужен доступ к данным об использовании	Kara listeler için varsayılan olarak açık.
-Для каждой цели приложение держит до 3 проверенных серверов и перепроверяет их раз в несколько часов.	Yaş (gün)
-Для сайта работает только вариант А.	Ekle
-Для чёрных списков включено по умолчанию.	Hızlı ayarlar kutucuğunu ekle
-Дни жизни	Panodan bağlantı ekle
-Добавить	Eklendi
-Добавить ссылки из буфера обмена	Kara listeye eklendi
-Добавлено {} из {}. Появятся в следующей сборке	Eklenen bağlantılar: {} / {}. Bir sonraki toplamada görünecek
-Добавлено в чёрный список	Eklendi. Bir sonraki toplamada görünecek
-Добавлено. Появится в следующей сборке	Kullanım erişimi: var
-Добавляются к общему списку источников при каждой сборке.	Kullanım istatistiği erişimi
-Доля — сколько конфигов ссылки отвечают среди проверенных (свежая проверка за 7 дней или опыт в текущей сети). Приоритет «высокий»: конфиги этой ссылки пробуются раньше других живых, а сама ссылка не попадает в чёрный список по аудиту. «Низкий»: её конфиги идут в самый конец очереди.	IPv6 tünele alınmazsa, IPv6'lı siteler VPN'i atlayarak doğrudan açılır (sızıntı). Engelleme, uygulamaları hemen VPN üzerinden IPv4'e geçirir. Bir sonraki bağlantıda uygulanır.
-Доступ к данным об использовании: есть	VPN başlatılamazsa veya koparsa, uygulama çalışan sunucu ararken tünel açık kalır ve trafik engellenir. Varsayılan olarak kapalı: o zaman arıza anında internet doğrudan gider.
-Доступ к статистике использования	«Phoenix: tarayıcıdaki site» erişilebilirlik hizmetini açarsanız, uygulama yalnızca açık sitenin alan adını görür (Chrome, Yandex, Samsung, Firefox, Opera, Edge, Brave ve birkaç tarayıcının adres çubuğu) ve sunucu değiştirirken o sitenin açıldığı sunucuyu seçer. Alan adı yalnızca bellekte tutulur, sayfa içeriği okunmaz, hiçbir şey gönderilmez. Android 13 ve üzerinde, mağazadan olmayan uygulama için önce «Uygulama bilgisi» → ⋮ menüsü → «Kısıtlı ayarlara izin ver» seçeneğini açın.
-Если IPv6 не заводить в туннель, сайты с IPv6 открываются напрямую, мимо VPN (утечка). Блокировка заставляет приложения сразу переходить на IPv4 через VPN. Применяется при следующем подключении.	Yedek sunucu bulunamazsa uygulama tüm yapılandırmaların tam yeniden denetimini kendisi başlatır (30 dakikada bir defadan sık değil).
-Если VPN не удалось поднять или он оборвался, туннель остаётся включённым и трафик блокируется, пока приложение ищет рабочий сервер. По умолчанию выключено: тогда при сбое интернет идёт напрямую.	Tünel çalışmayı bırakırsa (üç başarısız denetim), uygulama en iyi puanlı yedek yapılandırmaları dener.
-Если включить службу специальных возможностей «Phoenix: сайт в браузере», приложение видит только домен открытого сайта (адресная строка Chrome, Яндекс, Samsung, Firefox, Opera, Edge, Brave и ещё нескольких браузеров) и при смене сервера подбирает тот, где этот сайт открывается. Домен хранится только в памяти, содержимое страниц не читается, ничего не отправляется. На Android 13 и новее для приложения не из магазина сначала откройте «О приложении» → меню ⋮ → «Разрешить ограниченные настройки».	Canlı
-Если запасной сервер не нашёлся, приложение само запускает полную перепроверку всех конфигов (не чаще раза в 30 минут).	Günlük
-Живые	Günlük kopyalandı
-Журнал	Son 15 dakikada önemli bir şey olmadı.
-Журнал скопирован	Liste yükleniyor…
-За последние 15 минут ничего важного не происходило.	Gecikme
-За последние сутки	QUIC'i kapat (UDP 443)
-Загружаю список…	Ölçüm en fazla 8 MB indirir. Varsayılan olarak yalnızca Wi-Fi'de.
-Задержка	Hız ölçümleri kendiliğinden yapılır.
-Закрыть QUIC (UDP 443)	Hız ölçümleri kendiliğinden yapılmaz (mobil ağ); kartın «Hız» düğmesi her zaman çalışır.
-Замер скачивает до 8 МБ. По умолчанию — только по Wi-Fi.	Bu filtre için kayıt yok.
-Замеры скорости сами не идут (мобильная сеть); кнопка «Скорость» на карточке работает всегда.	Yeniden denetleniyor…
-Записей по этому фильтру нет.	Değiştir
-Идёт перепроверка…	Hız ölçülüyor…
-Изменить	İçe aktarma tamamlandı:
-Измерять скорость и по мобильной сети	Dosyadan içe aktar
-Измеряю скорость…	İçe aktarma hiçbir şeyi silmez: listeler birleştirilir (kaynak kara listesi yalnızca büyür), hedefler mevcutlara eklenir, tekil ayarlar dosyadan alınır. Dosya metindir, açıp okuyabilirsiniz. Kaynaklarınıza bağlantılar içerebilir; yabancılara göndermeyin.
-Импорт выполнен:\n	Ad\n
-Импорт из файла	Kaynaklar
-Импорт ничего не стирает: списки объединяются (чёрный список источников только пополняется), цели добавляются к имеющимся, одиночные настройки берутся из файла. Файл текстовый, его можно открыть и посмотреть. В нём могут быть ссылки на ваши источники — не отправляйте его посторонним.	Mod için kaynaklar
-Копировать	Hepsini kopyala
-Копировать ({})	Kopya kaydedildi ({} satır)
-Лучшие сверху	Birçok sunucu UDP'yi geçirmez: Telegram çalışsa da uygulamalar yanıt bekler ve açılmaz. QUIC kapalıyken doğrudan normal TCP'ye geçerler. Açık bırakmanız önerilir. Bir sonraki bağlantıda uygulanır.
-Менять сервер при низкой скорости	İzin VERİLMEDİ
-Многие серверы не пропускают UDP: приложения ждут ответа и не открываются, хотя Telegram работает. При закрытом QUIC они сразу переходят на обычный TCP. Рекомендуется оставить включённым. Применяется при следующем подключении.	Otomatik toplama güvenilirliği
-Можно вернуть	Ad
-НЕ разрешены	Öğe adları yazılım sürümüne bağlıdır. Düğme doğru ekranı bulamazsa uygulama ayarları açılır; yukarıdaki adımlarla devam edin.
-Название	Ayarlar
-Названия пунктов зависят от версии прошивки. Если кнопка не нашла нужный экран, откроются настройки приложения — дальше по шагам выше.	Android VPN ayarları
-Настройки	Rusya'da engellenmeyen
-Настройки VPN в Android	Site adresine benzemiyor
-Настройки приложения	Saate bağlı değildir: süre son başarılı toplamadan itibaren sayılır. Telefon kapalıysa ya da ağ yoksa, toplama ilk fırsatta yapılır ve sonraki süre ondan başlar. Daha kısa aralık daha taze yapılandırma demektir, ancak daha çok trafik ve pil harcar.
-Не заблокированное в РФ	VPN olmadan internete izin verme
-Не похоже на адрес сайта	Geri alınamadı (kayıt eski)
-Не привязан к часам: срок считается от последнего удачного сбора. Телефон был выключен или не было сети — сбор пройдёт при первой возможности, а следующий срок отсчитается от него. Меньше интервал — свежее конфиги, но больше трафика и заряда.	VPN ayarları açılamadı
-Не удалось вернуть (запись устарела)	Kaydedilemedi
-Не удалось открыть настройки VPN	Günlük kaydedilemedi (seçilen dönemde kayıt yok mu?)
-Не удалось сохранить файл	5 dakikada bir defadan sık değil ve saatte en fazla 4 kez; kötü ağda her yerde sunucudan sunucuya atlamamak için.
-Не чаще раза в 5 минут и не больше 4 раз в час, чтобы при плохой сети везде не прыгать с сервера на сервер.	https://… biçiminde bir bağlantı gerekli
-Нет конфигов: нажмите «Собрать сейчас»	Uygulama bilgisi
-Нечего проверять: нет конфигов или не выбран ни один сервис	Yenile
-Нужна ссылка вида https://…	Telefon kabukları (EMUI, MIUI, ColorOS ve diğerleri) arka plan uygulamalarını kendiliğinden bellekten atar. Burada tam sizin telefonunuzda nelere izin verilmesi gerektiği toplanmıştır.
-Нужного экрана в этой прошивке нет — открыл настройки приложения	VPN atlama ve hizmet denetimi
-О приложении	Ortak
-Обновить	Ortak değerler, kendi ayarı olmayan her modda geçerlidir. Bir mod için kendi ayarlarınızı açabilirsiniz: o zaman mod onlara göre çalışır, ortak olanlar ona dokunmaz.
-Обход VPN и проверка сервисов	Pil kısıtlaması kaldırıldı
-Общие	Pil kısıtlaması:
-Общие значения действуют в каждом режиме, у которого нет своих настроек. У режима можно включить свои: тогда он живёт по ним, а общие его не трогают.	Şimdi algıla
-Ограничение батареи снято	Engelleme türü algılanıyor…
-Ограничение батареи: 	Bağlantıyı kes 
-Определить сейчас	Açılan hizmetler
-Определять сам	Açık hizmet bu sunucuda çalışmıyor
-Определяю тип блокировок…	Aç
-Отключить	Ayarları aç
-Открытые сервисы	Ortak ayarlardan fark yok.
-Открытый сервис не работает на этом сервере	İptal
-Открыть	Toplama raporu
-Открыть настройки	Rapor kaydedildi: İndirilenler/Phoenix
-Отличий от общих настроек нет.	Denetim maliyeti tahmini (trafik yaklaşık). Rakamlar büyükse «Odak» veya sessiz saatleri açın.
-Отмена	Temizle
-Отчёт сбора	VPN hatası
-Отчёт сохранён: Загрузки/Phoenix	Kendiliğinden yeniden bağlan
-Отчёта пока нет	Tüm yapılandırmaları yeniden denetle
-Оценка расхода на проверки (трафик приблизительный). Если цифры большие, включите «Фокус» или тихие часы.	Hepsini yeniden denetle
-Очистить	Yalnızca uygulamaları yeniden denetle
-Ошибка VPN	Yapılandırmaları yeniden denetleme
-Переподключаться само	Sunucular yeniden denetleniyor…
-Перепроверить все конфиги	Yeniden denetleniyor…
-Перепроверить всё	Hızlı ayarlar kutucuğu
-Перепроверить только приложения	Filtrelere uyan bir şey yok.
-Перепроверка конфигов	VPN'i kendiliğinden bağla
-Перепроверяю конфиги…	Bağlanıyor…
-Перепроверяю серверы…	Bağlantı
-Перепроверяю…	Bağlan
-Плитка в шторке	Ara
-Под фильтры ничего не подходит.	Günlükte ara
-Подключать VPN само	Ada veya ülkeye göre ara
-Подключаюсь…	Hedeflerinizden bir uygulama açıkken (oyun, banka, görüşme) uygulama ağır denetimler başlatmaz ve hız nedeniyle sunucu değiştirmez. Kullanım erişimi gerekir.
-Подключение	Göster
-Подключить	Tam koruma (uygulama kapalıyken ya da sistem tarafından sonlandırıldığında bile) yalnızca Android ayarlarında açılır: VPN → Phoenix → «Her zaman açık VPN» ve «VPN olmayan bağlantıları engelle».
-Поиск	Anladım
-Поиск по журналу	Yeniden denetimden sonra ve arka planda: seçilen hizmetlerde henüz denetlenmemiş çalışan yapılandırmalar denetlenir. Hizmet eklerseniz, önceden denetlenenler de yeniden denetlenir.
-Поиск по имени или стране	Son mod algılama
-Показать	Son sorunlar
-Понятно	Son toplama yüklendi.
-После перепроверки и в фоне: у рабочих конфигов, которых ещё не проверяли по выбранным сервисам, проверяются они. Добавили сервис — проверятся и уже проверенные.	Bildirim çubuğunu aşağı çekin → kalem simgesi (düzenle) → «Phoenix VPN»'i etkin kutucuklara sürükleyin.
-Последнее определение режима	İzinler ve arka plan çalışması
-Последнее определение: {}	Denetim önerileri ({})
-Последние проблемы	Açıldığında geçerli ortak değerler buraya kopyalanır, sonra bağımsız olarak değiştirilebilir.
-Последняя сборка загружена.	Uygulama, telefonu haftanın hangi saatlerinde kullandığınızı hatırlar (yalnızca telefonda, dosya yedeğe dahildir). Bir hafta sonra «sessiz» saatlerde şarjsız ağır işler başlamaz, olağan etkinlik başlamadan önce de tünel önceden denetlenir.
-Потяните шторку вниз → значок карандаша (изменить) → перетащите «Phoenix VPN» в активные плитки.	Uygulama, hangi sitelerin doğrudan açıldığını denetler ve art arda iki algılama uyuşunca modu değiştirir. Denetim ağ değiştiğinde yapılır.
-Права и фоновая работа	Uygulama kaynak kara listesini ve önceliklerini kendisi değiştirir. Böyle her değişiklik bir gün içinde geri alınabilir.
-При включении телефона и при открытии приложения (последний или лучший конфиг). Нужно один раз дать системное разрешение на VPN.	Uygulamalar ve siteler
-Приложение проверяет, какие сайты открываются напрямую, и переключает режим, когда два определения подряд совпали. Проверка идёт при смене сети.	Denetlenenler
-Приложение само меняет чёрный список источников и их приоритеты. Любое такое изменение можно отменить в течение суток.	Denetle
-Приложения и сайты	Yapılandırma üzerinden hizmet denetimi
-Проверенные	Modun tüm yapılandırmalarını baştan denetler (önce TCP, sonra çekirdek üzerinden gerçek gecikme). Arka planda 25 dakikaya kadar sürer, ekranı kapatabilirsiniz.
-Проверить	Çalışan yapılandırmaları kendiliğinden denetle
-Проверить первые {} конфигов	Denetleniyor 0/{}…
-Проверка сервисов через конфиг	Hedefler için sunucular denetleniyor…
-Проверка утечек	Denetleniyor…
-Проверяет все конфиги режима заново (сначала TCP, потом настоящая задержка через ядро). Идёт в фоне до 25 минут, можно закрыть экран.	Protokol
-Проверять рабочие конфиги само	Yazılım
-Проверяю серверы для целей…	VPN izni
-Проверяю…	Tam zamanlı alarmlara izin ver
-Протокол	Mod
-Работаю…	«Odak» modu
-Раз в N часов	Engelleme modu
-Разрешить точные будильники	Yedek
-Режим	Rus uygulamaları
-Режим «{}»: когда он действует, берутся его настройки (если включены свои), иначе общие.	Rus siteleri ({} alan adı: .ru, .рф, Gosuslugi, bankalar, Yandex, VK…) varsayılan olarak doğrudan açılır. Buraya kendinizinkini ekleyebilirsiniz. Bir sonraki bağlantıda uygulanır.
-Режим «Фокус»	Site
-Режим блокировок	Tarayıcıdaki site: algılanmıyor
-Резервная копия	VPN'i atlayan siteler
-Российские приложения	Bu uygulamaların siteleri de doğrudan
-Сайт	Kendisi seçer (önerilir)
-Сайт в браузере: не определяется	Ortak ayarlara sıfırla
-Сайт в браузере: определяется	Taze denetimler (24 sa)
-Сайты в обход VPN	Özet
-Сбросить к общим настройкам	Kendi sessiz saatlerim
-Свежие проверки (сутки)	Özel hizmet
-Сводка	Bugün:
-Свой сервис	Sunucular
-Сегодня: 	Sunucular: liste, sıralama, filtreler 
-Сейчас	Ağ
-Серверов ещё нет. Нажмите «Собрать сейчас» на главном экране.	Otomatik olanlardan daha güçlü. Bu saatlerde şarjsız ağır arka plan denetimleri başlamaz.
-Серверы	Hız
-Серверы: список, сортировка, фильтры	Hız ölçülemedi
-Сильнее автоматических. Тяжёлые фоновые проверки без зарядки в это время не запускаются.	Sunucuyu değiştir
-Система не разрешила запуск VPN из фона — откройте приложение и подключите вручную	Pil kısıtlamasını kaldır
-Сколько VPN работал, как часто менялся сервер и на каких серверах держался дольше всего. Хранится только на телефоне, 30 дней.	Şimdi topla
-Скорость	Durum
-Скорость измерить не удалось	Kaydedildi
-Смена сервера с учётом открытого приложения	Kaydet
-Сменить сервер	Raporu kaydet
-Снять ограничение батареи	Günlük kaydediliyor…
-Собрать сейчас	Kaydediliyor…
-Сортировка (нажмите на выбранный пункт, чтобы развернуть):	Erişilebilirlik
-Состояние	Atlama listesi kaydedildi
-Сохранено	«VPN dışı» ve «VPN üzerinden» adresini karşılaştırır. Uygulamanın kendisi tünelin dışındadır, bu yüzden diğer uygulamaların DNS sızıntıları buradan görünmez.
-Сохранено: Загрузки/Phoenix	Kara liste için bağlantı
-Сохранить	Bölge kurallarına bağlantı (isteğe bağlı)
-Сохранить отчёт	Bağlantılar: çalışanların payı ve öncelik
-Сохраняю журнал…	Henüz istatistikli bağlantı yok: toplamadan sonra görünecek.
-Сохраняю…	İstatistik
-Специальные возможности	Ülke
-Список обхода сохранён	Hız şunun altındaysa sunucuyu yavaş say (Mbit/sn):
-Сравнивает адрес «мимо VPN» и «через VPN». Приложение само вне туннеля, поэтому DNS-утечки других приложений отсюда не видны.	Engelleme türü
-Ссылка для чёрного списка	Alışkanlıklara göre sessiz saatler
-Ссылка на правила регионов (необязательно)	Yalnızca şarj olurken
-Ссылки: доля рабочих и приоритет	Yalnızca uygulamalar
-Ссылок со статистикой пока нет: она появится после сбора.	v2rayNG ile aynı motor: genellikle daha hızlı. Bir sonraki bağlantıda geçerli olur. Yalnızca 64 bit telefonlar; kendi sunucusu olan siteleriniz veya uygulamalarınız varsa, uygulama bazlı kurallar onlar için çalışmaz, bu durumda yerleşik motor otomatik kalır.
-Статистика	Android tam saati garanti etmez (birkaç dakikalık kayma olabilir). O saatte ağ yoksa veya telefon kapalıysa toplama ilk fırsatta yapılır.
-Страна	Tam zamanlı alarmlar
-Считать сервер медленным, если скорость ниже (Мбит/с):	Tam zamanlı alarmlar:
-Тип блокировок	Her modun kendi bağlantıları, kara listesi ve denetimi vardır; burada şu an hangi mod açık olursa olsun (✓) istediğinizi düzenleyebilirsiniz. Gece toplama, kaynağı olan her mod için çalışır.
-Тихие часы по привычкам	Her hedefin bir denetim adresi vardır: hizmetin sunucudan açılıp açılmadığı onunla görülür. Bilinen uygulamalar için kendiliğinden doldurulur, diğerleri için yalnızca sunucunun çalışması denetlenir; adres «Adres» düğmesiyle değiştirilebilir.
-Только при зарядке	Kaldır
-Только приложения	Bildirimler
-Тот же движок, что у v2rayNG: обычно быстрее на скорости. Вступает в силу при следующем подключении. Только 64-битные телефоны; если у вас есть сайты или приложения со своим сервером, по приложениям они работать не будут — тогда автоматически остаётся встроенный.	Phoenix bildirimleri
-Точное время Android не гарантирует (возможен сдвиг на несколько минут). Если в это время нет сети или телефон выключен — сбор пройдёт при первой возможности.	Sil
-Точные будильники	Akıllı değiştirme (açık uygulamaya göre)
-Точные будильники: 	host:, closed:, marker:… satırlı dosya. Boşsa veya uygun değilse yerleşik kurallar geçerlidir: çıkış ülkesine göre hangi siteler kapalı ve «ülkenizde desteklenmiyor» sayfası hangi ifadelerle tanınır. Uygulama başlarken güncellenir. 
-У каждого режима свои ссылки, чёрный список и аудит; здесь можно править любой, независимо от того, какой режим включён сейчас (✓). Ночной сбор идёт для каждого режима, у которого есть источники.	Filtreler:
-У каждой цели есть адрес проверки: по нему видно, открывается ли сервис через сервер. Для известных приложений он подставляется сам, для остальных проверяется просто работа сервера; адрес можно поменять кнопкой «Адрес».	Arka plan çalışması (yazılım)
-Убрать	Henüz hedef yok. Bir uygulama (liste telefondan alınır) veya site ekleyin.
-Уведомления Phoenix	Uygulama mevcut sunucuda çalışmazsa ne yapılsın
-Удалить	Uygulama kendiliğinden ne yapar
-Умная смена	Ne oldu?
-Умная смена (под открытое приложение)	Bu ağda neler çalışıyor
-Файл со строками host:, closed:, marker:… Если пусто или файл не подходит, действуют встроенные правила: какие сайты закрыты по стране выхода и по каким фразам узнаётся страница «не поддерживается в вашей стране». Обновляется при запуске приложения.	Şimdiye kadar nelere izin verildi
-Фильтры:	Şu anda hangi uygulamanın açık olduğunu öğrenmek için. Veriler telefonda kalır.
-Фоновая работа (прошивка)	Kimin ayarları düzenlensin
-Целей пока нет. Добавьте приложение (список берётся с телефона) или сайт.	Kara
-Что приложение делает само	Pil tasarrufu sağlar. Telefon o sırada şarj olmuyorsa toplama şarj bağlanana kadar ertelenir.
-Что работает в этой сети	Dosyaya aktar
-Что уже разрешено	Dışa ve içe aktarma
-Чтобы узнать, какое приложение открыто сейчас. Данные остаются на телефоне.	Bu bağlantı zaten kara listede
-Чьи настройки править	Bu kaynaklar indirilmez. Listeden otomatik olarak hiçbir şey silinmez, yalnızca elle.
-Чёрные	Bu uygulamalar VPN'i atlayarak doğrudan çalışır. Her modun kendi listesi vardır. Değişiklikler bir sonraki bağlantıda uygulanır.
-Чёрные списки	Çekirdek
-Экспорт в файл	otomatik
-Экспорт и импорт	otomatik bağlanma, IPv6, sızıntı koruması, hızlı ayarlar kutucuğu
-Эта ссылка уже в чёрном списке	beyaz/kara listeler, otomatik algılama
-Эти источники не скачиваются. Автоматически из списка ничего не удаляется — только вручную.	engelle (önerilir)
-Эти приложения работают напрямую, мимо VPN. У каждого режима свой список. Изменения применяются при следующем подключении.	ilk bağlantıda istenecek
-Ядро VPN	açık
-Ядро открывает выбранные сервисы через рабочие конфиги и записывает результат к каждому конфигу (в карточке: «Проверено»; лучшие конфиги — те, через которые открывается больше сервисов). Сайты с защитой от ботов (Claude, Qwen) отвечают отказом, но это тоже считается «дотянулись».	arka plan için tüm izinler tek yerde: pil, alarmlar, otomatik başlatma
-авто	verildi
-автоподключение, IPv6, защита от утечек, плитка в шторке	kapalı — VPN hizmeti gösterilmeyebilir
-белые/чёрные списки, определение автоматически	evet
-блокировать (рекомендуется)	geçerli
-будет запрошено при первом подключении	elle eklendi
-включены	henüz indirilmedi
-все разрешения для фона в одном месте: батарея, будильники, автозапуск	yedek sunucular, A veya B seçeneği
-выдано	kablo
-выключены — служба VPN может не показываться	her yerdeki gibi
-да	mobil ağ
-действует	doğrudan, VPN'i atlayarak
-добавлено вручную	doğrudan, VPN'i atlayarak (sunucu gerekmez)
-ещё не было	denetlenmedi (ağ yanıtı yok)
-ещё не скачивалась	izin verilmedi
-запасные серверы, вариант А или Б	dosya açılamadı
-кабель	kendi sunucusu yok: ortak olandan geçer
-как везде	ağ yok
-меняю сервер…	hayır — zamanlanmış toplama kayabilir
-мобильная сеть	hayır — sistem uygulamayı bellekten atabilir
-напрямую, мимо VPN	yalnızca B seçeneği için gerekli (uygulama açılınca VPN'i değiştirme)
-напрямую, мимо VPN (сервер не нужен)	algılanıyor…
-не знаю, какой сервис открыт — откройте его и нажмите снова	bağlantı kesildi
-не проверено (нет ответа сети)	uygulama açıldı
-не разрешены	sizin tarafınızdan işaretlendi (sistem denetlemeye izin vermiyor); yeniden açmak için dokunun.
-нет защищённого соединения — интернет заблокирован ({})	bağlandı: {}
-нет своего сервера — идёт через общий	izinler işaretlerle, şu an ne oluyor, günlük boyutu
-нет связи через этот сервер	denetim:
-нет связи — повторю позже	denetleniyor…
-нет связи, запасных конфигов нет	izin verildi
-нет связи: у сети нет интернета	ayarların, hedeflerin, atlamanın, kaynakların ve günlüğün yedeği
-нет связи: у телефона нет сети	Rus uygulamaları ve siteleri, kendi uygulamalarım
-нет сети	«şu an ne oluyor» özeti, filtreli ve aramalı günlük, toplama raporu
-нет — система может выгружать приложение	sistem kendisi denetlemeye izin vermiyor: dokunun, açın ve geri dönün, işaret saklanır.
-нужен только для варианта Б (переключение VPN при открытии приложения)	kaldırıldı
-определяю…	beyaz ve kara listeler için bağlantılar, kara liste, denetim
-отключён	dosya Phoenix yedeği için çok büyük
-открытие приложения	sunucu üzerinden
-отмечено вами (система не даёт проверить); нажмите, чтобы открыть снова. 	★ 3+ gün 
+\nЗапасных проверено: {}	\nDenetlenen yedek: {}
+\n⚠ Автоприменение пропускает: {}. Кнопка «В ЧС» добавит вручную.	\n⚠ Otomatik uygulama atlıyor: {}. «Kara listeye» düğmesi elle ekler.
+  Только проблемы	  Yalnızca sorunlar
+  до %02d:00  	  %02d:00'a kadar  
+  с %02d:00  	  %02d:00'dan  
+ (вручную)	 (elle)
+ (общая: только работа сервера)	 (ortak: yalnızca sunucu çalışması)
+ (определяется автоматически)	 (otomatik algılanır)
+ (определяется сам)	 (kendisi algılar)
+ · показано {}	 · gösterilen {}
+ · проверено {}	 · denetlenen {}
+ Сейчас недоступен на этом телефоне.	 Şu anda bu telefonda kullanılamıyor.
+ Сейчас: {}.	 Şimdi: {}.
+ из 5 МБ	 / 5 MB
+%.1f МБ	%.1f MB
++ Приложение	+ Uygulama
++ Сайт	+ Site
++ Свой сервис	+ Özel hizmet
+. Остальные автоматически нельзя (причина указана под каждой), их можно добавить кнопкой «В ЧС»	. Geri kalanlar otomatik eklenemez (neden her birinin altında yazıyor), «Kara listeye» düğmesiyle ekleyebilirsiniz
+3+ сервиса	3+ hizmet
+; если не работает, нажмите «Сменить сервер»	; çalışmazsa «Sunucuyu değiştir»e dokunun
+Android сам знает, какие ссылки открывает приложение (например, сайт банка). Эти сайты в браузере тоже идут мимо VPN, как и само приложение. Работает на Android 12 и новее; Telegram, YouTube, Google и подобные сюда не попадают никогда.	Android, bir uygulamanın hangi bağlantıları açtığını kendisi bilir (örneğin bir bankanın sitesi). Bu siteler tarayıcıda da uygulama gibi VPN'i atlar. Android 12 ve üzerinde çalışır; Telegram, YouTube, Google ve benzerleri asla buraya girmez.
+Phoenix: перепроверка	Phoenix: yeniden denetim
+Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch и подобные открываются напрямую: быстрее и без лишнего трафика. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude и всё, что в России режется, остаётся в VPN. 	Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch ve benzerleri doğrudan açılır: daha hızlı ve daha az trafikle. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude ve Rusya'da engellenen her şey VPN'de kalır. 
+V2RayNG не найден	V2RayNG bulunamadı
+VPN включён	VPN açık
+VPN выключен	VPN kapalı
+Xray: версия {}	Xray: sürüm {}
+example.com или ссылка	example.com veya bağlantı
+{} (запасных {}, проверено {}){}	{} (yedek {}, denetlenen {}){}
+{} КБ	{} KB
+{} Ограничение батареи 	{} Pil kısıtlaması 
+{} Точные будильники 	{} Tam zamanlı alarmlar 
+{} мин назад	{} dk önce
+{} ч	{} sa
+{} ч назад	{} sa önce
+{} — TLS и Reality могут не работать; включите автоматическое время	{} — TLS ve Reality çalışmayabilir; otomatik saati açın
+«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	Bir uygulama için «her yerde olduğu gibi» yukarıdaki seçimi herkes için kullanmak demektir. Diğer düğmeler (otomatik, A, B) bu uygulama için kendi seçimini belirler.\n\nSiteler her zaman A seçeneğini kullanır. Uygulama, çekirdek uygulamayı bağlantısından tanıyabiliyorsa A'yı kullanır (diğer trafiğe dokunulmaz); tanıyamıyorsa, kullanım erişimi verilmişse B'yi kullanır.
+А	A
+А: только оно через свой сервер	A: yalnızca o kendi sunucusundan geçer
+Автозапуск (MIUI / HyperOS)	Otomatik başlatma (MIUI / HyperOS)
+Автозапуск и «Не выгружать из памяти» на MIUI/HyperOS, Funtouch, EMUI программно не проверить — их смотрите на странице «Фоновая работа (прошивка)».	MIUI/HyperOS, Funtouch, EMUI'de otomatik başlatma ve «Bellekten boşaltma» program yoluyla denetlenemez; «Arka plan çalışması (yazılım)» sayfasına bakın.
+Автозапуск и фон ({})	Otomatik başlatma ve arka plan ({})
+Автоматически добавлять нечего: причины указаны под предложениями, вручную — кнопка «В ЧС»	Otomatik eklenecek bir şey yok: nedenler önerilerin altında yazıyor, elle eklemek için «Kara listeye» düğmesi var
+Автосбор	Otomatik toplama
+Автосбор конфигов	Yapılandırma toplama
+Адрес	Adres
+Адрес (например, https://discord.com/)	Adres (örneğin, https://discord.com/)
+Адрес проверки должен начинаться с https://	Denetim adresi https:// ile başlamalıdır
+Адрес сменился после проверки: данные устарели	Denetimden sonra adres değişti: veriler eski
+Адрес текстового файла со ссылками на подписки (по одной в строке). Можно оставить пустым и пользоваться только своими ссылками.	Abonelik bağlantıları içeren metin dosyasının adresi (her satırda bir tane). Boş bırakıp yalnızca kendi bağlantılarınızı kullanabilirsiniz.
+Адрес текстового файла со ссылками на подписки (по одной в строке). Сейчас используется встроенный список; можно указать свой. Пустое поле — вернуть встроенный.	Abonelik bağlantıları içeren metin dosyasının adresi (her satırda bir tane). Şu anda yerleşik liste kullanılıyor; kendinizinkini verebilirsiniz. Boş alan yerleşik listeyi geri getirir.
+Адрес этого приложения не известен, подставлена общая проверка (работает ли сервер вообще). Если знаете, какой сайт использует приложение, впишите его адрес — проверка станет точнее.	Bu uygulamanın adresi bilinmiyor, genel denetim kullanıldı (sunucu çalışıyor mu). Uygulamanın hangi siteyi kullandığını biliyorsanız adresini yazın, denetim daha doğru olur.
+Адрес, который открывает это приложение: через него проверяется, работает ли сервер для него.	Bu uygulamanın açtığı adres: sunucunun onun için çalışıp çalışmadığı bununla denetlenir.
+Адрес, по которому проверяется, что сервер работает для этой цели. Пустое поле вернёт адрес по умолчанию. Серверы пересчитаются при ближайшей проверке.	Sunucunun bu hedef için çalıştığını denetleyen adres. Boş alan varsayılan adresi geri getirir. Sunucular bir sonraki denetimde yeniden hesaplanır.
+Б	B
+Б: переключить весь VPN	B: tüm VPN'i değiştir
+Банки, Госуслуги, ВК, Яндекс, маркетплейсы, операторы ({} шт., берутся только установленные).	Bankalar, Gosuslugi, VK, Yandex, pazar yerleri, operatörler ({} adet, yalnızca yüklü olanlar alınır).
+Без этих разрешений Android (особенно MIUI/HyperOS) может не запустить сбор ночью, пока приложение закрыто. Тогда сбор пройдёт при первом открытии телефона или приложения.	Bu izinler olmadan Android (özellikle MIUI/HyperOS) uygulama kapalıyken geceleri toplamayı başlatmayabilir. O zaman toplama telefon ya da uygulama ilk açıldığında yapılır.
+Белые	Beyaz
+Белые списки	Beyaz listeler
+Белые списки: открываются только российские сайты. Чёрные: закрыты отдельные сайты. У каждого режима свои источники, статистика и список обхода. Ночной сбор идёт для каждого режима, у которого есть источники.	Beyaz listeler: yalnızca Rus siteleri açılır. Kara listeler: tek tek siteler engellenir. Her modun kendi kaynakları, istatistikleri ve atlama listesi vardır. Gece toplama, kaynağı olan her mod için çalışır.
+Будильник: {}	Alarm: {}
+Бывает, что интернет «есть», но фото и страницы почти не грузятся. Пока вы пользуетесь телефоном, раз в 45 секунд смотрится, сколько данных идёт через сервер; если мало, делается один маленький замер (до 400 КБ), и после двух медленных подряд пробуются другие серверы. Если телефон не используется — ничего не качается.	Bazen internet «var» ama fotoğraflar ve sayfalar neredeyse yüklenmez. Telefonu kullanırken 45 saniyede bir sunucudan ne kadar veri aktığına bakılır; azsa küçük bir ölçüm yapılır (en fazla 400 KB) ve arka arkaya iki yavaş sonuçtan sonra başka sunucular denenir. Telefon kullanılmıyorsa hiçbir şey indirilmez.
+Быстрый движок туннеля (hev)	Hızlı tünel motoru (hev)
+В ЧС	Kara listeye
+В буфере нет ссылок https://…	Panoda https://… bağlantısı yok
+В точное время	Tam zamanında
+В файл	Dosyaya
+В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы и накопленный опыт конфигов (где они работали). Скачанные конфиги и журнал не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.	Dosyaya ayarlar ve her mod (beyaz ve kara listeler) için hedefler (denetim adresleri ve politikasıyla), VPN'i atlayan uygulamalar ve siteler, kendi kaynaklarınız, kaynak kara listesi, seçilen hizmetler ve yapılandırmaların biriken deneyimi (nerede çalıştıkları) kaydedilir. İndirilen yapılandırmalar ve günlük dahil değildir: gece toplamayla yenilenirler. Hedef sunucuları da kaydedilmez, çünkü erişim anahtarları içerirler: içe aktarmadan sonra yeniden seçilirler.
+В файл: 24 часа	Dosyaya: 24 saat
+В файл: весь	Dosyaya: tümü
+Вернул: {}	Geri alındı: {}
+Вернуть	Geri al
+Вернуть убранные ({})	Kaldırılanları geri al ({})
+Версия	Sürüm
+Время сбора	Toplama saati
+Время телефона	Telefon saati
+Все кнопки разрешений (точные будильники, батарея, автозапуск, данные в фоне) собраны в одном месте: «Настройки → Фоновая работа (прошивка)».	Tüm izin düğmeleri (tam zamanlı alarmlar, pil, otomatik başlatma, arka plan verisi) tek yerde: «Ayarlar → Arka plan çalışması (yazılım)».
+Всё	Tümü
+Вчера: 	Dün: 
+Выберите приложение	Uygulama seçin
+Главные события за последние 15 минут из журнала: падения сервера, смены сети, поиск, переключения.	Günlüğün son 15 dakikasındaki ana olaylar: sunucu çökmeleri, ağ değişiklikleri, arama, geçişler.
+Готово	Hazır
+Готово: {}	Hazır: {}
+Готово: живых {} из {}	Hazır: {} / {} canlı
+Данные	Veri
+Данные в фоне без ограничений	Kısıtlamasız arka plan verisi
+Данных ещё нет. Нажмите «Собрать сейчас» (или дождитесь ночного запуска).	Henüz veri yok. «Şimdi topla»ya dokunun (ya da gece çalışmasını bekleyin).
+Дата проверки	Denetim tarihi
+Диагностика	Tanılama
+Диагностика скопирована	Tanılama kopyalandı
+Для белых списков по умолчанию выключено: напрямую там открывается только разрешённое.	Beyaz listeler için varsayılan olarak kapalı: orada yalnızca izin verilenler doğrudan açılır.
+Для варианта Б нужен доступ к данным об использовании	B seçeneği için kullanım erişimi gerekir
+Для каждой цели приложение держит до 3 проверенных серверов и перепроверяет их раз в несколько часов.	Her hedef için uygulama 3 denetlenmiş sunucuya kadar tutar ve birkaç saatte bir yeniden denetler.
+Для сайта работает только вариант А.	Site için yalnızca A seçeneği çalışır.
+Для чёрных списков включено по умолчанию.	Kara listeler için varsayılan olarak açık.
+Дни жизни	Yaş (gün)
+Добавить	Ekle
+Добавить плитку в шторку	Hızlı ayarlar kutucuğunu ekle
+Добавить ссылки из буфера обмена	Panodan bağlantı ekle
+Добавлено	Eklendi
+Добавлено {} из {}. Появятся в следующей сборке	{} / {} eklendi. Bir sonraki toplamada görünecek
+Добавлено в чёрный список	Kara listeye eklendi
+Добавлено в чёрный список: {}	Kara listeye eklendi: {}
+Добавлено ссылок: {} из {}. Появятся в следующей сборке	Eklenen bağlantılar: {} / {}. Bir sonraki toplamada görünecek
+Добавлено. Появится в следующей сборке	Eklendi. Bir sonraki toplamada görünecek
+Добавляются к общему списку источников при каждой сборке.	Her toplamada ortak kaynak listesine eklenir.
+Доля — сколько конфигов ссылки отвечают среди проверенных (свежая проверка за 7 дней или опыт в текущей сети). Приоритет «высокий»: конфиги этой ссылки пробуются раньше других живых, а сама ссылка не попадает в чёрный список по аудиту. «Низкий»: её конфиги идут в самый конец очереди.	Pay, denetlenenler arasında bağlantının kaç yapılandırmasının yanıt verdiğidir (7 günlük taze denetim veya mevcut ağdaki deneyim). «Yüksek» öncelik: bu bağlantının yapılandırmaları diğer canlılardan önce denenir ve bağlantı denetim sonucunda kara listeye alınmaz. «Düşük»: yapılandırmaları kuyruğun en sonuna gider.
+Доступ к данным об использовании: есть	Kullanım erişimi: var
+Доступ к статистике использования	Kullanım istatistiği erişimi
+Если IPv6 не заводить в туннель, сайты с IPv6 открываются напрямую, мимо VPN (утечка). Блокировка заставляет приложения сразу переходить на IPv4 через VPN. Применяется при следующем подключении.	IPv6 tünele alınmazsa, IPv6'lı siteler VPN'i atlayarak doğrudan açılır (sızıntı). Engelleme, uygulamaları hemen VPN üzerinden IPv4'e geçirir. Bir sonraki bağlantıda uygulanır.
+Если VPN не удалось поднять или он оборвался, туннель остаётся включённым и трафик блокируется, пока приложение ищет рабочий сервер. По умолчанию выключено: тогда при сбое интернет идёт напрямую.	VPN başlatılamazsa veya koparsa, uygulama çalışan sunucu ararken tünel açık kalır ve trafik engellenir. Varsayılan olarak kapalı: o zaman arıza anında internet doğrudan gider.
+Если включить службу специальных возможностей «Phoenix: сайт в браузере», приложение видит только домен открытого сайта (адресная строка Chrome, Яндекс, Samsung, Firefox, Opera, Edge, Brave и ещё нескольких браузеров) и при смене сервера подбирает тот, где этот сайт открывается. Домен хранится только в памяти, содержимое страниц не читается, ничего не отправляется. На Android 13 и новее для приложения не из магазина сначала откройте «О приложении» → меню ⋮ → «Разрешить ограниченные настройки».	«Phoenix: tarayıcıdaki site» erişilebilirlik hizmetini açarsanız, uygulama yalnızca açık sitenin alan adını görür (Chrome, Yandex, Samsung, Firefox, Opera, Edge, Brave ve birkaç tarayıcının adres çubuğu) ve sunucu değiştirirken o sitenin açıldığı sunucuyu seçer. Alan adı yalnızca bellekte tutulur, sayfa içeriği okunmaz, hiçbir şey gönderilmez. Android 13 ve üzerinde, mağazadan olmayan uygulama için önce «Uygulama bilgisi» → ⋮ menüsü → «Kısıtlı ayarlara izin ver» seçeneğini açın.
+Если запасной сервер не нашёлся, приложение само запускает полную перепроверку всех конфигов (не чаще раза в 30 минут).	Yedek sunucu bulunamazsa uygulama tüm yapılandırmaların tam yeniden denetimini kendisi başlatır (30 dakikada bir defadan sık değil).
+Если туннель перестал работать (три неудачные проверки), приложение перебирает запасные конфиги лучшего рейтинга.	Tünel çalışmayı bırakırsa (üç başarısız denetim), uygulama en iyi puanlı yedek yapılandırmaları dener.
+Живые	Canlı
+Журнал	Günlük
+Журнал «{}»	Günlük «{}»
+Журнал скопирован	Günlük kopyalandı
+За последние 15 минут ничего важного не происходило.	Son 15 dakikada önemli bir şey olmadı.
+За последние сутки	Son 24 saat
+Загружаю список…	Liste yükleniyor…
+Задержка	Gecikme
+Закрыть QUIC (UDP 443)	QUIC'i kapat (UDP 443)
+Замер скачивает до 8 МБ. По умолчанию — только по Wi-Fi.	Ölçüm en fazla 8 MB indirir. Varsayılan olarak yalnızca Wi-Fi'de.
+Замеры скорости идут сами.	Hız ölçümleri kendiliğinden yapılır.
+Замеры скорости сами не идут (мобильная сеть); кнопка «Скорость» на карточке работает всегда.	Hız ölçümleri kendiliğinden yapılmaz (mobil ağ); kartın «Hız» düğmesi her zaman çalışır.
+Записей по этому фильтру нет.	Bu filtre için kayıt yok.
+Записей: {} из {} (на экране последние {}; «В файл» сохраняет по фильтру: за 24 часа или весь журнал). Журнал копится до 5 МБ на режим.	Kayıt: {} / {} (ekranda son {}; «Dosyaya» filtreye göre kaydeder: 24 saat veya tüm günlük). Günlük mod başına 5 MB'a kadar birikir.
+Идёт перепроверка…	Yeniden denetleniyor…
+Изменить	Değiştir
+Измерять скорость и по мобильной сети	Hızı mobil ağda da ölç
+Измеряю скорость…	Hız ölçülüyor…
+Импорт выполнен:\n	İçe aktarma tamamlandı:\n
+Импорт из файла	Dosyadan içe aktar
+Импорт ничего не стирает: списки объединяются (чёрный список источников только пополняется), цели добавляются к имеющимся, одиночные настройки берутся из файла. Файл текстовый, его можно открыть и посмотреть. В нём могут быть ссылки на ваши источники — не отправляйте его посторонним.	İçe aktarma hiçbir şeyi silmez: listeler birleştirilir (kaynak kara listesi yalnızca büyür), hedefler mevcutlara eklenir, tekil ayarlar dosyadan alınır. Dosya metindir, açıp okuyabilirsiniz. Kaynaklarınıza bağlantılar içerebilir; yabancılara göndermeyin.
+Имя	Ad
+Источники	Kaynaklar
+Источники для режима	Mod için kaynaklar
+Источники, чьи конфиги уже целиком есть в другом. Автоматически добавляются в чёрный список 1-го и 15-го числа (до {} за раз); здесь можно применить сразу.	Yapılandırmaları zaten tamamen başka bir kaynakta olan kaynaklar. Ayın 1'inde ve 15'inde otomatik olarak kara listeye eklenirler (bir seferde {} adede kadar); burada hemen uygulayabilirsiniz.
+Каждые {} ч после последнего удачного сбора	Son başarılı toplamadan {} saat sonra
+Каждый день в {}	Her gün saat {}
+Кнопка «Phoenix VPN» рядом с Wi-Fi и Bluetooth: включает и выключает VPN, долгое нажатие открывает приложение. Первый раз нужно открыть приложение, чтобы дать разрешение на VPN.	Wi-Fi ve Bluetooth'un yanındaki «Phoenix VPN» düğmesi: VPN'i açar ve kapatır, uzun basış uygulamayı açar. İlk seferde VPN izni vermek için uygulamayı açmanız gerekir.
+Когда сервер перестаёт работать и приложение само ищет другой, оно смотрит, какое приложение открыто сейчас (нужен доступ к данным об использовании), и пробует первыми серверы, на которых это приложение уже открывалось. Если у приложения есть своя цель — сначала её серверы.	Bir sunucu çalışmayı bırakıp uygulama başkasını aradığında, şu anda hangi uygulamanın açık olduğuna bakar (kullanım erişimi gerekir) ve önce o uygulamanın daha önce açıldığı sunucuları dener. Uygulamanın kendi hedefi varsa önce onun sunucuları denenir.
+Копировать	Kopyala
+Копировать ({})	Kopyala ({})
+Копировать все ({})	Tümünü kopyala ({})
+Копировать всё	Hepsini kopyala
+Копия сохранена ({} строк)	Kopya kaydedildi ({} satır)
+Лучшие сверху	En iyiler üstte
+Лучший сейчас: {}	Şimdi en iyisi: {}
+Менять сервер при низкой скорости	Düşük hızda sunucuyu değiştir
+Многие серверы не пропускают UDP: приложения ждут ответа и не открываются, хотя Telegram работает. При закрытом QUIC они сразу переходят на обычный TCP. Рекомендуется оставить включённым. Применяется при следующем подключении.	Birçok sunucu UDP'yi geçirmez: Telegram çalışsa da uygulamalar yanıt bekler ve açılmaz. QUIC kapalıyken doğrudan normal TCP'ye geçerler. Açık bırakmanız önerilir. Bir sonraki bağlantıda uygulanır.
+Можно вернуть	Geri alınabilir
+НЕ разрешены	İzin VERİLMEDİ
+Надёжность автосбора	Otomatik toplama güvenilirliği
+Название	Ad
+Названия пунктов зависят от версии прошивки. Если кнопка не нашла нужный экран, откроются настройки приложения — дальше по шагам выше.	Öğe adları yazılım sürümüne bağlıdır. Düğme doğru ekranı bulamazsa uygulama ayarları açılır; yukarıdaki adımlarla devam edin.
+Найдено автоматически ({}): приложения с российскими пакетами, которых нет в наборе. Если приложению нужен VPN, уберите его.	Otomatik bulundu ({}): sette olmayan Rus paketli uygulamalar. Uygulamanın VPN'e ihtiyacı varsa kaldırın.
+Настройки	Ayarlar
+Настройки VPN в Android	Android VPN ayarları
+Настройки приложения	Uygulama ayarları
+Не заблокированное в РФ	Rusya'da engellenmeyen
+Не похоже на адрес сайта	Site adresine benzemiyor
+Не привязан к часам: срок считается от последнего удачного сбора. Телефон был выключен или не было сети — сбор пройдёт при первой возможности, а следующий срок отсчитается от него. Меньше интервал — свежее конфиги, но больше трафика и заряда.	Saate bağlı değildir: süre son başarılı toplamadan itibaren sayılır. Telefon kapalıysa ya da ağ yoksa, toplama ilk fırsatta yapılır ve sonraki süre ondan başlar. Daha kısa aralık daha taze yapılandırma demektir, ancak daha çok trafik ve pil harcar.
+Не пускать интернет без VPN	VPN olmadan internete izin verme
+Не удалось вернуть (запись устарела)	Geri alınamadı (kayıt eski)
+Не удалось открыть настройки VPN	VPN ayarları açılamadı
+Не удалось прочитать файл: {}	Dosya okunamadı: {}
+Не удалось сохранить	Kaydedilemedi
+Не удалось сохранить журнал (за выбранный период записей нет?)	Günlük kaydedilemedi (seçilen dönemde kayıt yok mu?)
+Не удалось сохранить файл	Dosya kaydedilemedi
+Не удалось сохранить: {}	Kaydedilemedi: {}
+Не удалось: {}	Başarısız: {}
+Не чаще раза в 5 минут и не больше 4 раз в час, чтобы при плохой сети везде не прыгать с сервера на сервер.	5 dakikada bir defadan sık değil ve saatte en fazla 4 kez; kötü ağda her yerde sunucudan sunucuya atlamamak için.
+Нет конфигов: нажмите «Собрать сейчас»	Yapılandırma yok: «Şimdi topla»ya dokunun
+Нечего проверять: нет конфигов или не выбран ни один сервис	Denetlenecek bir şey yok: yapılandırma yok veya hiçbir hizmet seçilmedi
+Нужна ссылка вида https://…	https://… biçiminde bir bağlantı gerekli
+Нужного экрана в этой прошивке нет — открыл настройки приложения	Bu yazılımda böyle bir ekran yok — uygulama ayarları açıldı
+О приложении	Uygulama bilgisi
+Обновить	Yenile
+Оболочки телефонов (EMUI, MIUI, ColorOS и другие) сами выгружают фоновые приложения. Здесь собрано, что нужно разрешить именно на вашем телефоне.	Telefon kabukları (EMUI, MIUI, ColorOS ve diğerleri) arka plan uygulamalarını kendiliğinden bellekten atar. Burada tam sizin telefonunuzda nelere izin verilmesi gerektiği toplanmıştır.
+Обход VPN и проверка сервисов	VPN atlama ve hizmet denetimi
+Общие	Ortak
+Общие значения действуют в каждом режиме, у которого нет своих настроек. У режима можно включить свои: тогда он живёт по ним, а общие его не трогают.	Ortak değerler, kendi ayarı olmayan her modda geçerlidir. Bir mod için kendi ayarlarınızı açabilirsiniz: o zaman mod onlara göre çalışır, ortak olanlar ona dokunmaz.
+Общий список источников — {}	Ortak kaynak listesi — {}
+Ограничение батареи снято	Pil kısıtlaması kaldırıldı
+Ограничение батареи: 	Pil kısıtlaması: 
+Определить сейчас	Şimdi algıla
+Определять сам	Kendisi algılasın
+Определяю тип блокировок…	Engelleme türü algılanıyor…
+Отключить	Bağlantıyı kes
+Открепить	Sabitlemeyi kaldır
+Открытые сервисы	Açılan hizmetler
+Открытый сервис не работает на этом сервере	Açık hizmet bu sunucuda çalışmıyor
+Открыть	Aç
+Открыть настройки	Ayarları aç
+Отличается от общих ({}): 	Ortak olandan farklı ({}): 
+Отличий от общих настроек нет.	Ortak ayarlardan fark yok.
+Отмена	İptal
+Отчёт сбора	Toplama raporu
+Отчёт сохранён: Загрузки/Phoenix	Rapor kaydedildi: İndirilenler/Phoenix
+Отчёта пока нет	Henüz rapor yok
+Оценка расхода на проверки (трафик приблизительный). Если цифры большие, включите «Фокус» или тихие часы.	Denetim maliyeti tahmini (trafik yaklaşık). Rakamlar büyükse «Odak» veya sessiz saatleri açın.
+Очистить	Temizle
+Ошибка VPN	VPN hatası
+Переподключаться само	Kendiliğinden yeniden bağlan
+Перепроверить все конфиги	Tüm yapılandırmaları yeniden denetle
+Перепроверить всё	Hepsini yeniden denetle
+Перепроверить только приложения	Yalnızca uygulamaları yeniden denetle
+Перепроверка конфигов	Yapılandırmaları yeniden denetleme
+Перепроверяю конфиги…	Yapılandırmalar yeniden denetleniyor…
+Перепроверяю серверы…	Sunucular yeniden denetleniyor…
+Перепроверяю…	Yeniden denetleniyor…
+Плитка в шторке	Hızlı ayarlar kutucuğu
+Под фильтры ничего не подходит.	Filtrelere uyan bir şey yok.
+Подключать VPN само	VPN'i kendiliğinden bağla
+Подключаюсь…	Bağlanıyor…
+Подключение	Bağlantı
+Подключить	Bağlan
+Поиск	Ara
+Поиск по журналу	Günlükte ara
+Поиск по имени или стране	Ada veya ülkeye göre ara
+Пока открыто приложение из ваших целей (игра, банк, звонок), приложение не запускает тяжёлые проверки и не меняет сервер по скорости. Нужен доступ к данным об использовании.	Hedeflerinizden bir uygulama açıkken (oyun, banka, görüşme) uygulama ağır denetimler başlatmaz ve hız nedeniyle sunucu değiştirmez. Kullanım erişimi gerekir.
+Показать	Göster
+Полная защита (даже когда приложение закрыто или убито системой) включается только в настройках Android: VPN → Phoenix → «Постоянный VPN» и «Блокировать подключения без VPN».	Tam koruma (uygulama kapalıyken ya da sistem tarafından sonlandırıldığında bile) yalnızca Android ayarlarında açılır: VPN → Phoenix → «Her zaman açık VPN» ve «VPN olmayan bağlantıları engelle».
+Понятно	Anladım
+После перепроверки и в фоне: у рабочих конфигов, которых ещё не проверяли по выбранным сервисам, проверяются они. Добавили сервис — проверятся и уже проверенные.	Yeniden denetimden sonra ve arka planda: seçilen hizmetlerde henüz denetlenmemiş çalışan yapılandırmalar denetlenir. Hizmet eklerseniz, önceden denetlenenler de yeniden denetlenir.
+Последнее определение режима	Son mod algılama
+Последнее определение: {}	Son algılama: {}
+Последние проблемы	Son sorunlar
+Последний запуск: {}	Son çalıştırma: {}
+Последняя сборка загружена.	Son toplama yüklendi.
+Потяните шторку вниз → значок карандаша (изменить) → перетащите «Phoenix VPN» в активные плитки.	Bildirim çubuğunu aşağı çekin → kalem simgesi (düzenle) → «Phoenix VPN»'i etkin kutucuklara sürükleyin.
+Права и фоновая работа	İzinler ve arka plan çalışması
+Предложения аудита ({})	Denetim önerileri ({})
+При включении сюда копируются текущие общие значения, дальше их можно менять независимо.	Açıldığında geçerli ortak değerler buraya kopyalanır, sonra bağımsız olarak değiştirilebilir.
+При включении телефона и при открытии приложения (последний или лучший конфиг). Нужно один раз дать системное разрешение на VPN.	Telefon açıldığında ve uygulama açıldığında (son veya en iyi yapılandırma). Sistemin VPN iznini bir kez vermeniz gerekir.
+Приложение запоминает, в какие часы недели вы пользуетесь телефоном (только на телефоне, файл входит в резервную копию). Через неделю в «тихие» часы тяжёлое без зарядки не запускается, а перед обычным началом активности туннель проверяется заранее.	Uygulama, telefonu haftanın hangi saatlerinde kullandığınızı hatırlar (yalnızca telefonda, dosya yedeğe dahildir). Bir hafta sonra «sessiz» saatlerde şarjsız ağır işler başlamaz, olağan etkinlik başlamadan önce de tünel önceden denetlenir.
+Приложение проверяет, какие сайты открываются напрямую, и переключает режим, когда два определения подряд совпали. Проверка идёт при смене сети.	Uygulama, hangi sitelerin doğrudan açıldığını denetler ve art arda iki algılama uyuşunca modu değiştirir. Denetim ağ değiştiğinde yapılır.
+Приложение само меняет чёрный список источников и их приоритеты. Любое такое изменение можно отменить в течение суток.	Uygulama kaynak kara listesini ve önceliklerini kendisi değiştirir. Böyle her değişiklik bir gün içinde geri alınabilir.
+Приложения в обход VPN	VPN'i atlayan uygulamalar
+Приложения в обход VPN ({})	VPN'i atlayan uygulamalar ({})
+Приложения и сайты	Uygulamalar ve siteler
+Применить (до {})	Uygula (en çok {})
+Проверенные	Denetlenenler
+Проверить	Denetle
+Проверить первые {} конфигов	İlk {} yapılandırmayı denetle
+Проверить серверы сейчас	Sunucuları şimdi denetle
+Проверка сервисов через конфиг	Yapılandırma üzerinden hizmet denetimi
+Проверка утечек	Sızıntı denetimi
+Проверяет все конфиги режима заново (сначала TCP, потом настоящая задержка через ядро). Идёт в фоне до 25 минут, можно закрыть экран.	Modun tüm yapılandırmalarını baştan denetler (önce TCP, sonra çekirdek üzerinden gerçek gecikme). Arka planda 25 dakikaya kadar sürer, ekranı kapatabilirsiniz.
+Проверять рабочие конфиги само	Çalışan yapılandırmaları kendiliğinden denetle
+Проверяю 0/{}…	Denetleniyor 0/{}…
+Проверяю {}/{}…	Denetleniyor {}/{}…
+Проверяю серверы для целей…	Hedefler için sunucular denetleniyor…
+Проверяю…	Denetleniyor…
+Протокол	Protokol
+Прошивка	Yazılım
+Работаю…	Çalışıyor…
+Раз в N часов	N saatte bir
+Разрешение на VPN	VPN izni
+Разрешить точные будильники	Tam zamanlı alarmlara izin ver
+Режим	Mod
+Режим «{}»: когда он действует, берутся его настройки (если включены свои), иначе общие.	«{}» modu: etkin olduğunda kendi ayarları kullanılır (kendi ayarları açıksa), aksi halde ortak olanlar.
+Режим «Фокус»	«Odak» modu
+Режим блокировок	Engelleme modu
+Режим: {}	Mod: {}
+Резервная копия	Yedek
+Российские приложения	Rus uygulamaları
+Российские сайты ({} доменов: .ru, .рф, Госуслуги, банки, Яндекс, ВК…) открываются напрямую по умолчанию. Здесь можно добавить свои. Применится при следующем подключении.	Rus siteleri ({} alan adı: .ru, .рф, Gosuslugi, bankalar, Yandex, VK…) varsayılan olarak doğrudan açılır. Buraya kendinizinkini ekleyebilirsiniz. Bir sonraki bağlantıda uygulanır.
+Сайт	Site
+Сайт в браузере: не определяется	Tarayıcıdaki site: algılanmıyor
+Сайт в браузере: определяется	Tarayıcıdaki site: algılanıyor
+Сайты в обход VPN	VPN'i atlayan siteler
+Сайты этих приложений тоже напрямую	Bu uygulamaların siteleri de doğrudan
+Сам перепроверять все конфиги	Tüm yapılandırmaları kendiliğinden yeniden denetle
+Само выбирает (рекомендуется)	Kendisi seçer (önerilir)
+Сбросить к общим настройкам	Ortak ayarlara sıfırla
+Свежие проверки (сутки)	Taze denetimler (24 sa)
+Сводка	Özet
+Свои настройки для «{}»	«{}» için kendi ayarları
+Свои приложения ({})	Kendi uygulamalarım ({})
+Свои ссылки в пул ({})	Havuza kendi bağlantılarım ({})
+Свои тихие часы	Kendi sessiz saatlerim
+Свой сервис	Özel hizmet
+Сегодня: 	Bugün: 
+Сейчас	Şimdi
+Сейчас для этого режима действуют общие настройки. Включите «Свои настройки», чтобы менять их отдельно.	Bu mod için şu an ortak ayarlar geçerli. Ayrı değiştirmek için «Kendi ayarları»nı açın.
+Серверов ещё нет. Нажмите «Собрать сейчас» на главном экране.	Henüz sunucu yok. Ana ekranda «Şimdi topla»ya dokunun.
+Серверов: {} · проверено живых: {}	Sunucular: {} · denetlenen canlı: {}
+Серверы	Sunucular
+Серверы: список, сортировка, фильтры	Sunucular: liste, sıralama, filtreler
+Сеть	Ağ
+Сеть сейчас: {}	Şimdiki ağ: {}
+Сильнее автоматических. Тяжёлые фоновые проверки без зарядки в это время не запускаются.	Otomatik olanlardan daha güçlü. Bu saatlerde şarjsız ağır arka plan denetimleri başlamaz.
+Система не разрешила запуск VPN из фона — откройте приложение и подключите вручную	Sistem VPN'in arka plandan başlatılmasına izin vermedi — uygulamayı açıp elle bağlanın
+Сколько VPN работал, как часто менялся сервер и на каких серверах держался дольше всего. Хранится только на телефоне, 30 дней.	VPN'in ne kadar çalıştığı, sunucunun ne sıklıkla değiştiği ve en uzun hangi sunucularda kaldığı. Yalnızca telefonda saklanır, 30 gün.
+Скопировано: {}. В V2RayNG: «+» → «Импорт из буфера обмена»	Kopyalandı: {}. V2RayNG'de: «+» → «Panodan içe aktar»
+Скорость	Hız
+Скорость измерить не удалось	Hız ölçülemedi
+Скорость: {}	Hız: {}
+Смена сервера с учётом открытого приложения	Açık uygulamaya göre sunucu değiştirme
+Сменить сервер	Sunucuyu değiştir
+Снять ограничение батареи	Pil kısıtlamasını kaldır
+Собрать сейчас	Şimdi topla
+Сортировка (нажмите на выбранный пункт, чтобы развернуть):	Sıralama (ters çevirmek için seçili öğeye dokunun):
+Состояние	Durum
+Сохранено	Kaydedildi
+Сохранено: Загрузки/Phoenix	Kaydedildi: İndirilenler/Phoenix
+Сохранить	Kaydet
+Сохранить отчёт	Raporu kaydet
+Сохраняю журнал…	Günlük kaydediliyor…
+Сохраняю…	Kaydediliyor…
+Специальные возможности	Erişilebilirlik
+Список обхода сохранён	Atlama listesi kaydedildi
+Сравнивает адрес «мимо VPN» и «через VPN». Приложение само вне туннеля, поэтому DNS-утечки других приложений отсюда не видны.	«VPN dışı» ve «VPN üzerinden» adresini karşılaştırır. Uygulamanın kendisi tünelin dışındadır, bu yüzden diğer uygulamaların DNS sızıntıları buradan görünmez.
+Ссылка для чёрного списка	Kara liste için bağlantı
+Ссылка на правила регионов (необязательно)	Bölge kurallarına bağlantı (isteğe bağlı)
+Ссылки: доля рабочих и приоритет	Bağlantılar: çalışanların payı ve öncelik
+Ссылок со статистикой пока нет: она появится после сбора.	Henüz istatistikli bağlantı yok: toplamadan sonra görünecek.
+Статистика	İstatistik
+Страна	Ülke
+Считать сервер медленным, если скорость ниже (Мбит/с):	Hız şunun altındaysa sunucuyu yavaş say (Mbit/sn):
+Тип блокировок	Engelleme türü
+Тихие часы по привычкам	Alışkanlıklara göre sessiz saatler
+Только при зарядке	Yalnızca şarj olurken
+Только приложения	Yalnızca uygulamalar
+Тот же движок, что у v2rayNG: обычно быстрее на скорости. Вступает в силу при следующем подключении. Только 64-битные телефоны; если у вас есть сайты или приложения со своим сервером, по приложениям они работать не будут — тогда автоматически остаётся встроенный.	v2rayNG ile aynı motor: genellikle daha hızlı. Bir sonraki bağlantıda geçerli olur. Yalnızca 64 bit telefonlar; kendi sunucusu olan siteleriniz veya uygulamalarınız varsa, uygulama bazlı kurallar onlar için çalışmaz, bu durumda yerleşik motor otomatik kalır.
+Точное время Android не гарантирует (возможен сдвиг на несколько минут). Если в это время нет сети или телефон выключен — сбор пройдёт при первой возможности.	Android tam saati garanti etmez (birkaç dakikalık kayma olabilir). O saatte ağ yoksa veya telefon kapalıysa toplama ilk fırsatta yapılır.
+Точные будильники	Tam zamanlı alarmlar
+Точные будильники: 	Tam zamanlı alarmlar: 
+У каждого режима свои ссылки, чёрный список и аудит; здесь можно править любой, независимо от того, какой режим включён сейчас (✓). Ночной сбор идёт для каждого режима, у которого есть источники.	Her modun kendi bağlantıları, kara listesi ve denetimi vardır; burada şu an hangi mod açık olursa olsun (✓) istediğinizi düzenleyebilirsiniz. Gece toplama, kaynağı olan her mod için çalışır.
+У каждой цели есть адрес проверки: по нему видно, открывается ли сервис через сервер. Для известных приложений он подставляется сам, для остальных проверяется просто работа сервера; адрес можно поменять кнопкой «Адрес».	Her hedefin bir denetim adresi vardır: hizmetin sunucudan açılıp açılmadığı onunla görülür. Bilinen uygulamalar için kendiliğinden doldurulur, diğerleri için yalnızca sunucunun çalışması denetlenir; adres «Adres» düğmesiyle değiştirilebilir.
+Убрать	Kaldır
+Уведомления	Bildirimler
+Уведомления Phoenix	Phoenix bildirimleri
+Удалить	Sil
+Умная смена	Akıllı değiştirme
+Умная смена (под открытое приложение)	Akıllı değiştirme (açık uygulamaya göre)
+Файл со строками host:, closed:, marker:… Если пусто или файл не подходит, действуют встроенные правила: какие сайты закрыты по стране выхода и по каким фразам узнаётся страница «не поддерживается в вашей стране». Обновляется при запуске приложения.	host:, closed:, marker:… satırlı dosya. Boşsa veya uygun değilse yerleşik kurallar geçerlidir: çıkış ülkesine göre hangi siteler kapalı ve «ülkenizde desteklenmiyor» sayfası hangi ifadelerle tanınır. Uygulama başlarken güncellenir.
+Фильтры:	Filtreler:
+Фоновая работа (прошивка)	Arka plan çalışması (yazılım)
+Целей пока нет. Добавьте приложение (список берётся с телефона) или сайт.	Henüz hedef yok. Bir uygulama (liste telefondan alınır) veya site ekleyin.
+Цель «{}»	Hedef «{}»
+Что делать, если приложение не работает на текущем сервере	Uygulama mevcut sunucuda çalışmazsa ne yapılsın
+Что приложение делает само	Uygulama kendiliğinden ne yapar
+Что произошло?	Ne oldu?
+Что работает в этой сети	Bu ağda neler çalışıyor
+Что уже разрешено	Şimdiye kadar nelere izin verildi
+Чтобы узнать, какое приложение открыто сейчас. Данные остаются на телефоне.	Şu anda hangi uygulamanın açık olduğunu öğrenmek için. Veriler telefonda kalır.
+Чьи настройки править	Kimin ayarları düzenlensin
+Чёрные	Kara
+Чёрные списки	Kara listeler
+Чёрный список ({})	Kara liste ({})
+Экономит батарею. Если телефон не заряжается в это время, сбор отложится до подключения зарядки.	Pil tasarrufu sağlar. Telefon o sırada şarj olmuyorsa toplama şarj bağlanana kadar ertelenir.
+Экономия трафика: {}	Veri tasarrufu: {}
+Экспорт в файл	Dosyaya aktar
+Экспорт и импорт	Dışa ve içe aktarma
+Эта ссылка уже в чёрном списке	Bu bağlantı zaten kara listede
+Эти источники не скачиваются. Автоматически из списка ничего не удаляется — только вручную.	Bu kaynaklar indirilmez. Listeden otomatik olarak hiçbir şey silinmez, yalnızca elle.
+Эти приложения работают напрямую, мимо VPN. У каждого режима свой список. Изменения применяются при следующем подключении.	Bu uygulamalar VPN'i atlayarak doğrudan çalışır. Her modun kendi listesi vardır. Değişiklikler bir sonraki bağlantıda uygulanır.
+Ядро	Çekirdek
+Ядро VPN	VPN çekirdeği
+Ядро не запустилось: {}	Çekirdek başlamadı: {}
+Ядро открывает выбранные сервисы через рабочие конфиги и записывает результат к каждому конфигу (в карточке: «Проверено»; лучшие конфиги — те, через которые открывается больше сервисов). Сайты с защитой от ботов (Claude, Qwen) отвечают отказом, но это тоже считается «дотянулись».	Çekirdek seçilen hizmetleri çalışan yapılandırmalar üzerinden açar ve sonucu her yapılandırmaya yazar (kartta: «Denetlendi»; en iyi yapılandırmalar daha çok hizmetin açıldığı olanlardır). Bot korumalı siteler (Claude, Qwen) ret ile yanıt verir, ancak bu da «ulaşıldı» sayılır.
+авто	otomatik
+автоподключение, IPv6, защита от утечек, плитка в шторке	otomatik bağlanma, IPv6, sızıntı koruması, hızlı ayarlar kutucuğu
+белые/чёрные списки, определение автоматически	beyaz/kara listeler, otomatik algılama
+блокировать (рекомендуется)	engelle (önerilir)
+будет запрошено при первом подключении	ilk bağlantıda istenecek
+верное (расхождение {} с)	doğru ({} sn fark)
+включены	açık
+время или интервал сбора, только при зарядке, статус последнего запуска	toplama saati veya aralığı, yalnızca şarjda, son çalıştırma durumu
+все разрешения для фона в одном месте: батарея, будильники, автозапуск	arka plan için tüm izinler tek yerde: pil, alarmlar, otomatik başlatma
+выдано	verildi
+выключены — служба VPN может не показываться	kapalı — VPN hizmeti gösterilmeyebilir
+да	evet
+действует	geçerli
+добавлено вручную	elle eklendi
+ещё не было	henüz yok
+ещё не скачивалась	henüz indirilmedi
+живых {} из {}	{} / {} canlı
+запасные серверы, вариант А или Б	yedek sunucular, A veya B seçeneği
+ищу рабочий сервер среди {}…	{} arasında çalışan sunucu aranıyor…
+кабель	kablo
+как везде	her yerdeki gibi
+меняю сервер…	sunucu değiştiriliyor…
+мобильная сеть	mobil ağ
+напрямую, мимо VPN	doğrudan, VPN'i atlayarak
+напрямую, мимо VPN (сервер не нужен)	doğrudan, VPN'i atlayarak (sunucu gerekmez)
+не знаю, какой сервис открыт — откройте его и нажмите снова	Hangi hizmetin açık olduğunu bilmiyorum — açıp yeniden dokunun
+не проверено (нет ответа сети)	denetlenmedi (ağ yanıtı yok)
+не разрешены	izin verilmedi
+не трогать	dokunma
+не удалось открыть файл	dosya açılamadı
+нет	hayır
+нет защищённого соединения — интернет заблокирован ({})	güvenli bağlantı yok — internet engellendi ({})
+нет своего сервера — идёт через общий	kendi sunucusu yok: ortak olandan geçer
+нет связи через этот сервер	bu sunucu üzerinden bağlantı yok
+нет связи — повторю позже	bağlantı yok — daha sonra yeniden deneyeceğim
+нет связи, запасных конфигов нет	bağlantı yok, yedek yapılandırma yok
+нет связи: у сети нет интернета	bağlantı yok: ağda internet yok
+нет связи: у телефона нет сети	bağlantı yok: telefonda ağ yok
+нет сети	ağ yok
+нет — сбор по расписанию может сдвигаться	hayır — zamanlanmış toplama kayabilir
+нет — система может выгружать приложение	hayır — sistem uygulamayı bellekten atabilir
+нужен только для варианта Б (переключение VPN при открытии приложения)	yalnızca B seçeneği için gerekli (uygulama açılınca VPN'i değiştirme)
+определяю…	algılanıyor…
+отключён	bağlantı kesildi
+открытие приложения	uygulama açıldı
+отмечено вами (система не даёт проверить); нажмите, чтобы открыть снова. 	sizin tarafınızdan işaretlendi (sistem denetlemeye izin vermiyor); yeniden açmak için dokunun. 
+ошибка: {}	hata: {}
+переключений сервера {} · смен режима {} · смен сети {}\nсбоев маршрутов {} · обновлений целей {} · проблемных записей {}	sunucu geçişleri {} · mod değişiklikleri {} · ağ değişiklikleri {}\nrota arızaları {} · hedef güncellemeleri {} · sorunlu kayıtlar {}
+перехожу на [{}]…	[{}] sunucusuna geçiliyor…
+подключается: {}	bağlanıyor: {}
+подключён: {}	bağlandı: {}
+права галочками, что сейчас, размер журнала	izinler işaretlerle, şu an ne oluyor, günlük boyutu
+проверка: 	denetim: 
+проверяю сеть и туннель…	ağ ve tünel denetleniyor…
+проверяю…	denetleniyor…
+разрешены	izin verildi
+резервная копия настроек, целей, обхода, источников и журнала	ayarların, hedeflerin, atlamanın, kaynakların ve günlüğün yedeği
+российские приложения и сайты, свои приложения	Rus uygulamaları ve siteleri, kendi uygulamalarım
+сводка «что сейчас», журнал с фильтрами и поиском, отчёт сбора	«şu an ne oluyor» özeti, filtreli ve aramalı günlük, toplama raporu
+серверов: {}	sunucu: {}
+система не даёт проверить сама: нажмите, включите и вернитесь — отметка сохранится. 	sistem kendisi denetlemeye izin vermiyor: dokunun, açın ve geri dönün, işaret saklanır. 
+скорость мала — ищу сервер быстрее…	hız düşük — daha hızlı sunucu aranıyor…
+снято	kaldırıldı
+ссылки для белых и чёрных списков, чёрный список, аудит	beyaz ve kara listeler için bağlantılar, kara liste, denetim
+умная смена: {}	akıllı değiştirme: {}
+файл слишком большой для копии Phoenix	dosya Phoenix yedeği için çok büyük
+через сервер	sunucu üzerinden
+★ 3+ дня	★ 3+ gün
+✓ открылся · ≈ отвечает, но не полностью (защита сайта; для Claude и Qwen это обычно норма) · ✗ не открылся · ? не проверялся	✓ açıldı · ≈ yanıt veriyor ama tam değil (site koruması; Claude ve Qwen için bu genelde normaldir) · ✗ açılmadı · ? denetlenmedi
+📌 Открепить сервер	📌 Sunucunun sabitlemesini kaldır

@@ -167,3 +167,22 @@ object QueueMix {
         return out
     }
 }
+
+/**
+ * Первый запуск без истории (нет бэкапа, ни одного успешного сбора): всё надо проверять с нуля, десятки тысяч
+ * конфигов. Чтобы телефон не захлёбывался (приложение «не отвечает»), первый сбор откладывается на минуту-полторы,
+ * а первая перепроверка идёт втрое меньшим числом параллельных проверок.
+ */
+object ColdStart {
+    const val FIRST_DELAY_SEC = 90L
+
+    fun isFirstRun(lastSuccessAt: Long): Boolean = lastSuccessAt <= 0L
+
+    /** Сколько проверок через ядро одновременно при перепроверке; [base] — обычное число для телефона. */
+    fun recheckParallel(base: Int, lastSuccessAt: Long): Int =
+        if (isFirstRun(lastSuccessAt)) (base / 3).coerceAtLeast(2) else base
+
+    /** Задержка запуска «догона» при старте процесса; ручной запуск и будильник не откладываются. */
+    fun catchUpDelaySec(trigger: String, lastSuccessAt: Long): Long =
+        if (trigger == "catch-up" && isFirstRun(lastSuccessAt)) FIRST_DELAY_SEC else 0L
+}

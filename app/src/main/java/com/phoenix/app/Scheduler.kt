@@ -50,6 +50,7 @@ object Scheduler {
         scheduleNightly(context, replace = false)
         AlarmScheduler.arm(context)
         TargetsWorker.schedulePeriodic(context)
+        UpdateChecker.schedule(context)
         catchUpIfNeeded(context, trigger = "catch-up")
     }
 

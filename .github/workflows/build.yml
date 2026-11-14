@@ -19,7 +19,9 @@ jobs:
         run: |
           mkdir -p app/libs
           if [ ! -f app/libs/libv2ray.aar ]; then
-            gh release download -R 2dust/AndroidLibXrayLite -p '*.aar' -D app/libs
+            . tools/core.lock
+            if [ -n "$TAG" ]; then gh release download "$TAG" -R 2dust/AndroidLibXrayLite -p '*.aar' -D app/libs
+            else gh release download -R 2dust/AndroidLibXrayLite -p '*.aar' -D app/libs; fi
             ls -l app/libs
             [ -f app/libs/libv2ray.aar ] || mv app/libs/*.aar app/libs/libv2ray.aar
           fi

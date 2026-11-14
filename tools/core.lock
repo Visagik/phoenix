@@ -1,0 +1,5 @@
+# Ядро Xray, которое попадает в выпуск. Заполните один раз и меняйте только осознанно.
+# TAG — тег релиза в github.com/2dust/AndroidLibXrayLite, SHA256 — сумма файла libv2ray.aar:
+#   sha256sum app/libs/libv2ray.aar
+TAG=
+SHA256=

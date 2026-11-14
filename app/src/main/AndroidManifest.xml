@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Только для кнопки «Скачать и установить» новую версию: пользователь отдельно разрешает установку из Phoenix в системных настройках -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Нужно только для варианта Б (переключить VPN, когда открыто приложение); выдаётся вручную в настройках -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 
@@ -54,6 +56,7 @@
         </activity>
 
         <receiver android:name=".AlarmReceiver" android:exported="false" />
+        <receiver android:name=".InstallResultReceiver" android:exported="false" />
 
         <receiver android:name=".BootReceiver" android:exported="false"> <!-- системные BOOT_COMPLETED и MY_PACKAGE_REPLACED приходят и в закрытый приёмник; чужие приложения ему писать не должны -->
             <intent-filter>

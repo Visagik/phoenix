@@ -22,4 +22,3 @@ tools/kt-harness/out/
 phoenix-log*.txt
 __pycache__/
 *.pyc
-*.apk

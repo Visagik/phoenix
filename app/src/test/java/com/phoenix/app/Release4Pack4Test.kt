@@ -42,4 +42,26 @@ class Release4Pack4Test {
         assertEquals(1, store.load().size)
         f.delete()
     }
+
+    @Test fun geminiIsJudgedByNotebookOracle() {
+        assertEquals("notebook", GoogleDiag.oracleKey("gemini"))
+        assertEquals("notebook", GoogleDiag.oracleKey("notebook"))
+        assertEquals(null, GoogleDiag.oracleKey(null))
+    }
+
+    @Test fun checkResultServiceStatusForMatrix() {
+        val r = CheckResult("2026-11-14", 100L, mapOf("TG" to 80L, "CL" to CheckServices.PARTIAL, "YT" to -1L))
+        assertEquals(ServiceStatus.OPEN, r.status("TG"))
+        assertEquals(ServiceStatus.PARTIAL, r.status("CL"))
+        assertEquals(ServiceStatus.CLOSED, r.status("YT"))
+        assertEquals(ServiceStatus.UNKNOWN, r.status("NT"))
+    }
+
+    @Test fun notebookLmUsesGeminiServiceCheck() {
+        val gem = CheckService("GE", "Gemini", "https://gemini.google.com/")
+        val tg = CheckService("TG", "Telegram", "https://web.telegram.org/")
+        assertEquals(gem, ServiceMatch.serviceFor("https://notebooklm.google.com/", listOf(tg, gem)))
+        assertEquals(gem, ServiceMatch.serviceFor("https://notebook.google.com/", listOf(tg, gem)))
+        assertEquals(null, ServiceMatch.serviceFor("https://notebooklm.google.com/", listOf(tg)))
+    }
 }

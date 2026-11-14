@@ -38,7 +38,7 @@ import kotlinx.coroutines.withContext
 data class PermCheck(val title: String, val ok: Boolean, val detail: String, val optional: Boolean = false, val fix: (() -> Unit)? = null)
 
 object StateInfo {
-    fun permissions(context: Context): List<PermCheck> {
+    fun permissions(context: Context, withClock: Boolean = true): List<PermCheck> {
         val bg = Background.status(context)
         val nm = context.getSystemService(NotificationManager::class.java)
         val vpnOk = try { VpnService.prepare(context) == null } catch (_: Throwable) { false }
@@ -50,7 +50,8 @@ object StateInfo {
                 fix = { Background.requestIgnoreBatteryOptimization(context) }),
             PermCheck(tr("Точные будильники"), bg.exactAlarmAllowed, if (bg.exactAlarmAllowed) tr("разрешены") else tr("нет — сбор по расписанию может сдвигаться"),
                 fix = { Background.requestExactAlarm(context) }),
-            clockCheck(context),
+            // проверка часов ходит в сеть до 8 с — без неё список прав показывается сразу, часы дописываются вторым проходом
+            if (withClock) clockCheck(context) else PermCheck(tr("Время телефона"), false, tr("проверяю…"), optional = true),
             run {
                 val st = AppSettings(context)
                 val v = Background.vendor()
@@ -146,21 +147,27 @@ fun StatePage(vm: MainViewModel) {
     }
     LaunchedEffect(tick) {
         withContext(Dispatchers.IO) {
-            perms = StateInfo.permissions(context)
+            perms = StateInfo.permissions(context, withClock = false)
             summary = vm.diagSummary()
             sizes = StateInfo.sizes(context)
+            perms = StateInfo.permissions(context)
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
         Text(tr("Права и фоновая работа"), style = MaterialTheme.typography.titleMedium)
         perms.forEach { p ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (p.ok) "✓" else if (p.optional) "–" else "✗", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(end = 8.dp))
+                Text(
+                    if (p.ok) "✓" else if (p.optional) "–" else "✗",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (p.ok) PhoenixTheme.ok(androidx.compose.foundation.isSystemInDarkTheme()) else if (p.optional) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
                 Column(Modifier.weight(1f)) {
                     Text(p.title, style = MaterialTheme.typography.bodyMedium)
                     Text(p.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (!p.ok && p.fix != null) TextButton(onClick = { p.fix.invoke() }) { Text(tr("Открыть")) }
+                if ((!p.ok || p.optional) && p.fix != null) TextButton(onClick = { p.fix.invoke() }) { Text(tr("Открыть")) }
             }
         }
         Text(
@@ -170,17 +177,7 @@ fun StatePage(vm: MainViewModel) {
             modifier = Modifier.padding(top = 4.dp),
         )
         Spacer(Modifier.height(10.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(10.dp))
-        Text(tr("Сейчас"), style = MaterialTheme.typography.titleMedium)
-        summary.forEach { (k, v) ->
-            Column(Modifier.padding(vertical = 3.dp)) {
-                Text(k, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(v, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(10.dp))
         Text(tr("Статистика"), style = MaterialTheme.typography.titleMedium)
         Text(
@@ -190,7 +187,7 @@ fun StatePage(vm: MainViewModel) {
         )
         stats.forEach { Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 2.dp)) }
         Spacer(Modifier.height(10.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(10.dp))
         Text(tr("Что произошло?"), style = MaterialTheme.typography.titleMedium)
         Text(
@@ -205,7 +202,7 @@ fun StatePage(vm: MainViewModel) {
         }
         if (energy.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
-            HorizontalDivider()
+            Spacer(Modifier.height(4.dp))
             Spacer(Modifier.height(10.dp))
             Text(tr("Что приложение делает само"), style = MaterialTheme.typography.titleMedium)
             Text(
@@ -217,7 +214,7 @@ fun StatePage(vm: MainViewModel) {
         }
         if (undoList.isNotEmpty() || undoNote.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
-            HorizontalDivider()
+            Spacer(Modifier.height(4.dp))
             Spacer(Modifier.height(10.dp))
             Text(tr("Можно вернуть"), style = MaterialTheme.typography.titleMedium)
             Text(
@@ -241,7 +238,7 @@ fun StatePage(vm: MainViewModel) {
             if (undoNote.isNotEmpty()) Text(undoNote, style = MaterialTheme.typography.bodySmall)
         }
         Spacer(Modifier.height(10.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(10.dp))
         Text(tr("Проверка утечек"), style = MaterialTheme.typography.titleMedium)
         Text(
@@ -252,7 +249,7 @@ fun StatePage(vm: MainViewModel) {
         TextButton(onClick = { leakTick++ }) { Text(tr("Проверить")) }
         if (leakText.isNotEmpty()) Text(leakText, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(10.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(10.dp))
         Text(tr("Данные"), style = MaterialTheme.typography.titleMedium)
         sizes.forEach { (k, v) ->

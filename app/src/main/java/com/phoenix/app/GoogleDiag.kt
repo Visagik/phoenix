@@ -30,6 +30,9 @@ object GoogleDiag {
      * по которому отмечать запрет и упорядочивать кандидатов. Возвращает узел того же сервиса из [urls] только
      * для действительно относящихся к Gemini/NotebookLM приложений и сайтов — иначе null, как и раньше.
      */
+    /** Какой узел судит о закрытости: страница Gemini отвечает 200 даже из закрытых стран, поэтому и для Gemini судит NotebookLM. */
+    fun oracleKey(label: String?): String? = if (label == "gemini") "notebook" else label
+
     fun fallbackCheckUrl(pkg: String?, site: String?): String? {
         if (!relevant(pkg, site)) return null
         return urls.firstOrNull { it.first == labelFor(pkg, site) }?.second

@@ -61,3 +61,7 @@ I18nDictionariesTest.kt
 CarryOverTest.kt
 SourceTagTest.kt
 Release4Pack4Test.kt
+UpdateCheckTest.kt
+RelTimeTest.kt
+ShortUrlTest.kt
+BackgroundHealthTest.kt

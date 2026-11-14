@@ -322,7 +322,7 @@ class PhoenixVpnService : VpnService() {
                 val explicit = link.isNotBlank() // конфиг выбран пользователем (кнопка «Подключить» у конфига)
                 // Сначала сразу поднимаем уведомление: Android требует вызвать startForeground за считаные секунды после
                 // startForegroundService, иначе приложение «падает». Выбор конфига (рейтинг тысяч конфигов) — уже в фоне.
-                showForeground(title.ifBlank { "Phoenix" }, "Подключение…")
+                showForeground(title.ifBlank { "Phoenix" }, tr("Подключение…"))
                 startPending = true
                 pendingLink = link
                 scope.launch {
@@ -332,7 +332,7 @@ class PhoenixVpnService : VpnService() {
                             QuickConnect.pickEx(this@PhoenixVpnService)?.let { p -> link = p.link; title = p.title; foreign = p.foreign }
                         }
                         if (link.isBlank()) {
-                            fail("Нет конфига для подключения: выберите его в списке", title)
+                            fail(tr("Нет конфига для подключения: выберите его в списке"), title)
                         } else {
                             pendingLink = link
                             connect(link, title, foreign)
@@ -340,7 +340,7 @@ class PhoenixVpnService : VpnService() {
                         }
                     } catch (e: Throwable) {
                         storage.log("VPN: ошибка запуска: ${e.javaClass.simpleName}: ${e.message}")
-                        fail("Ошибка запуска: ${e.message ?: e.javaClass.simpleName}", title)
+                        fail(tr("Ошибка запуска: {}", e.message ?: e.javaClass.simpleName), title)
                     }
                 }
             }
@@ -428,7 +428,7 @@ class PhoenixVpnService : VpnService() {
                 controller = null
                 activeRoutes = emptyList()
                 VpnState.set(VpnStatus(VpnPhase.CONNECTED, title, note = tr("нет защищённого соединения — интернет заблокирован ({})", message), link = link))
-                showForeground(title.ifBlank { "Phoenix" }, "Интернет заблокирован: ищу сервер")
+                showForeground(title.ifBlank { "Phoenix" }, tr("Интернет заблокирован: ищу сервер"))
                 startMonitors()
             } else {
                 teardown()
@@ -464,7 +464,7 @@ class PhoenixVpnService : VpnService() {
         // закреплённый вручную сервер помечаем, чтобы было видно, почему автоперебор молчит
         val shown = if (manualPinLink != null && manualPinLink == mainLink) "📌 закреплён" + (if (note.isBlank()) "" else " · $note") else note
         VpnState.set(VpnStatus(VpnPhase.CONNECTED, mainTitle, note = shown, link = mainLink))
-        showForeground(mainTitle.ifBlank { "Phoenix" }, shown.ifBlank { "Подключено" })
+        showForeground(mainTitle.ifBlank { "Phoenix" }, shown.ifBlank { tr("Подключено") })
     }
 
     private fun uidOf(pkg: String): String? = try {
@@ -1296,7 +1296,7 @@ class PhoenixVpnService : VpnService() {
                 // судит о Gemini по NotebookLM, см. GoogleAi.needsOracle) — поэтому реальный признак закрытости даёт только
                 // notebook, даже когда открыт именно Gemini; раньше здесь проверялось closedBy["gemini"], который почти
                 // никогда не становится true, и ветка смены сервера просто не срабатывала (находка Фейбла №1)
-                val closedKey = if (want == "gemini") "notebook" else want
+                val closedKey = GoogleDiag.oracleKey(want)
                 // у открытого приложения может не быть своей цели (например, сам NotebookLM без сайта/цели) — тогда
                 // ctx.checkUrl == null, и раньше DIAG только писал «закрыт» в журнал и ничего не делал (находка №2);
                 // подставляем адрес того же узла Google, который уже проверили выше
@@ -1431,11 +1431,50 @@ class PhoenixVpnService : VpnService() {
         storage.log("SMART: вывод: ${v.text}")
         if (!v.switchServer) {
             VpnState.set(VpnStatus(VpnPhase.CONNECTED, mainTitle, note = tr("умная смена: {}", v.text), link = mainLink))
-            showForeground(mainTitle.ifBlank { "Phoenix" }, "Умная смена: ${v.text}")
+            showForeground(mainTitle.ifBlank { "Phoenix" }, tr("Умная смена: {}", v.text))
             return
         }
         smartVerdictText = v.text
-        failover(forced = true, smart = true)
+        // Gemini/NotebookLM: страна выхода решает всё, а прежняя «умная смена» этого не учитывала (журнал 14.11, 18:55): текущий сервер
+        // [🤖 AI] открывал NotebookLM, но смена всё равно ушла на Польшу, где он закрыт, потому что новый сервер под этот сервис не проверялся
+        val targets = TargetStore(storage.targetsFile).load()
+        val ctx = try { AppContext.now(this, targets) } catch (_: Throwable) { null }
+        var verifyUrl: String? = null
+        var pinCtx: AppContext.Now? = null
+        if (ctx != null && GoogleDiag.relevant(ctx.pkg, ctx.site)) {
+            val oracle = GoogleDiag.urls.firstOrNull { it.first == GoogleDiag.oracleKey(GoogleDiag.labelFor(ctx.pkg, ctx.site)) }?.second
+            val closed = if (oracle != null) withContext(Dispatchers.IO) { oracleClosed(oracle) } else null
+            if (closed == false) {
+                storage.log("SMART: ${ctx.logLabel} на этом сервере открывается — менять сервер не нужно")
+                VpnState.set(VpnStatus(VpnPhase.CONNECTED, mainTitle, note = tr("умная смена: {} здесь открывается, сервер оставлен", ctx.label), link = mainLink))
+                showForeground(mainTitle.ifBlank { "Phoenix" }, tr("{} здесь открывается — сервер оставлен", ctx.label))
+                return
+            }
+            verifyUrl = oracle
+            pinCtx = ctx
+            if (closed == true) {
+                val checkUrl = ctx.checkUrl ?: GoogleDiag.fallbackCheckUrl(ctx.pkg, ctx.site)
+                if (checkUrl != null) {
+                    markServiceClosed(mainLink, checkUrl, targets)
+                    storage.log("SMART: ${ctx.logLabel} закрыт на [$mainTitle] — исключаю сервер на 3 дня для этого сервиса")
+                }
+            }
+        }
+        diagCtx = pinCtx
+        try { failover(forced = true, smart = true, verifyUrl = verifyUrl) } finally { diagCtx = null }
+    }
+
+    /** Открывается ли страница сервиса через туннель: true — закрыта по региону, false — открыта, null — проверить не удалось. */
+    private fun oracleClosed(url: String): Boolean? {
+        val port = LocalProxy.port
+        val auth = LocalProxy.auth ?: return null
+        if (port <= 0) return null
+        return try {
+            LocalSocks.get(port, auth, url, connectTimeoutMs = 8_000, readTimeoutMs = 8_000, follow = true, maxRedirects = 8,
+                userAgent = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36").use { r -> RegionBlock.closed(r, r.head(65_536)) }
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     /**

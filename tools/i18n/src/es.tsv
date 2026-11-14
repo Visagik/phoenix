@@ -33,7 +33,7 @@ example.com или ссылка	example.com o un enlace
 {} ч назад	hace {} h
 {} — TLS и Reality могут не работать; включите автоматическое время	{} — TLS y Reality pueden fallar; active la hora automática
 «как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	«Como en todas partes» para una aplicación significa: usar la elección hecha arriba para todas. Los demás botones (auto, A, B) fijan su propia elección para esta aplicación.\n\nLos sitios siempre usan la opción A. Una aplicación usa A si el núcleo puede reconocerla por su conexión (el resto del tráfico no se toca); si no puede, usa B cuando se ha concedido acceso al uso.
-А	A
+Только это	Solo esto
 А: только оно через свой сервер	A: solo ella por su propio servidor
 Автозапуск (MIUI / HyperOS)	Inicio automático (MIUI / HyperOS)
 Автозапуск и «Не выгружать из памяти» на MIUI/HyperOS, Funtouch, EMUI программно не проверить — их смотрите на странице «Фоновая работа (прошивка)».	El inicio automático y «No descargar de la memoria» en MIUI/HyperOS, Funtouch y EMUI no se pueden comprobar por programa; consúltelos en la página «Trabajo en segundo plano (firmware)».
@@ -50,7 +50,7 @@ example.com или ссылка	example.com o un enlace
 Адрес этого приложения не известен, подставлена общая проверка (работает ли сервер вообще). Если знаете, какой сайт использует приложение, впишите его адрес — проверка станет точнее.	Se desconoce la dirección de esta aplicación, se usa la comprobación general (si el servidor funciona). Si sabe qué sitio usa la aplicación, escriba su dirección y la comprobación será más precisa.
 Адрес, который открывает это приложение: через него проверяется, работает ли сервер для него.	La dirección que abre esta aplicación: con ella se comprueba si el servidor funciona para ella.
 Адрес, по которому проверяется, что сервер работает для этой цели. Пустое поле вернёт адрес по умолчанию. Серверы пересчитаются при ближайшей проверке.	La dirección con la que se comprueba que el servidor funciona para este objetivo. Un campo vacío restablece la predeterminada. Los servidores se recalcularán en la próxima comprobación.
-Б	B
+Весь VPN	Toda la VPN
 Б: переключить весь VPN	B: cambiar toda la VPN
 Банки, Госуслуги, ВК, Яндекс, маркетплейсы, операторы ({} шт., берутся только установленные).	Bancos, Gosuslugi, VK, Yandex, marketplaces, operadores ({} uds., solo los instalados).
 Без этих разрешений Android (особенно MIUI/HyperOS) может не запустить сбор ночью, пока приложение закрыто. Тогда сбор пройдёт при первом открытии телефона или приложения.	Sin estos permisos Android (sobre todo MIUI/HyperOS) puede no iniciar la recopilación por la noche con la aplicación cerrada. Entonces se hará al abrir por primera vez el teléfono o la aplicación.
@@ -64,7 +64,7 @@ example.com или ссылка	example.com o un enlace
 В буфере нет ссылок https://…	No hay enlaces https://… en el portapapeles
 В точное время	A la hora exacta
 В файл	A un archivo
-В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы и накопленный опыт конфигов (где они работали). Скачанные конфиги и журнал не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.	En el archivo se guardan los ajustes y, para cada modo (listas blancas y negras), los objetivos con sus direcciones de comprobación y política, las aplicaciones y sitios que evitan la VPN, sus fuentes, la lista negra de fuentes, los servicios elegidos y la experiencia acumulada de las configuraciones (dónde funcionaron). No se incluyen las configuraciones descargadas ni el registro: se renuevan con la recopilación nocturna. Los servidores de los objetivos tampoco se guardan porque contienen claves de acceso: tras importar se volverán a elegir.
+В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы, накопленный опыт конфигов (где они работали) и журнал (при импорте он сливается с текущим). Скачанные конфиги не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.	En el archivo se guardan los ajustes y, para cada modo (listas blancas y negras), los objetivos con sus direcciones de comprobación y política, las aplicaciones y sitios que evitan la VPN, sus fuentes, la lista negra de fuentes, los servicios elegidos y la experiencia acumulada de las configuraciones (dónde funcionaron). El registro sí se incluye (al importar se combina con el actual). No se incluyen las configuraciones descargadas: se renuevan con la recopilación nocturna. Los servidores de los objetivos tampoco se guardan porque contienen claves de acceso: tras importar se volverán a elegir.
 В файл: 24 часа	A un archivo: 24 horas
 В файл: весь	A un archivo: todo
 Вернул: {}	Restaurado: {}
@@ -88,9 +88,9 @@ example.com или ссылка	example.com o un enlace
 Диагностика	Diagnóstico
 Диагностика скопирована	Diagnóstico copiado
 Для белых списков по умолчанию выключено: напрямую там открывается только разрешённое.	Desactivado por defecto en listas blancas: allí solo se abre directamente lo permitido.
-Для варианта Б нужен доступ к данным об использовании	La opción B necesita acceso al uso
+Для режима «Весь VPN» нужен доступ к данным об использовании	«Toda la VPN» necesita acceso al uso
 Для каждой цели приложение держит до 3 проверенных серверов и перепроверяет их раз в несколько часов.	Para cada objetivo la aplicación mantiene hasta 3 servidores comprobados y los vuelve a comprobar cada pocas horas.
-Для сайта работает только вариант А.	Para un sitio solo funciona la opción A.
+Для сайта работает только режим «Только это».	Para un sitio solo funciona «Solo esto».
 Для чёрных списков включено по умолчанию.	Activado por defecto en listas negras.
 Дни жизни	Días de vida
 Добавить	Añadir
@@ -440,3 +440,105 @@ V2RayNG не найден	V2RayNG no encontrado
 Выкл	Desact.
 {} дн.	{} d
 Если сбор скачал не все источники, конфиги, которые раньше работали, не пропадают, а смешиваются с новыми (повторы убираются). Срок считается с последнего раза, когда источник их отдавал.	Si una recopilación no descargó todas las fuentes, los configs que antes funcionaban no se pierden, sino que se mezclan con los nuevos (se eliminan duplicados). El plazo cuenta desde la última vez que la fuente los ofreció.
+Обновления	Actualizaciones
+проверка новой версии раз в сутки, кнопка «Проверить сейчас»	comprobación de nueva versión una vez al día, botón «Comprobar ahora»
+Phoenix: обновления	Phoenix: actualizaciones
+Phoenix: доступно обновление {}	Phoenix: actualización {} disponible
+Нажмите, чтобы открыть страницу загрузки	Toque para abrir la página de descarga
+Доступна новая версия {}	Nueva versión {} disponible
+Открыть страницу загрузки	Abrir página de descarga
+Текущая версия: {}	Versión actual: {}
+Последняя проверка: {}	Última comprobación: {}
+ещё не проверялось	aún no comprobado
+Новая версия: {}	Nueva versión: {}
+Установлена последняя версия	Tiene la última versión
+Проверить сейчас	Comprobar ahora
+Проверяю…	Comprobando…
+Не удалось проверить: нет связи с GitHub	No se pudo comprobar: sin conexión con GitHub
+Приложение раз в сутки смотрит страницу релизов на GitHub; при выходе новой версии придёт отдельное уведомление. Установить её можно кнопкой «Скачать и установить» или вручную: скачайте APK на странице релиза.	Una vez al día la aplicación consulta la página de versiones de GitHub; si hay una nueva, recibirá una notificación aparte. Puede instalarla con el botón «Descargar e instalar» o a mano: descargue el APK desde la página de la versión.
+Скачать и установить	Descargar e instalar
+Скачиваю… {}%	Descargando… {}%
+Проверяю файл…	Comprobando el archivo…
+Передаю на установку: подтвердите в системном окне	Enviado a instalar: confirme en la ventana del sistema
+Разрешите Phoenix устанавливать приложения, затем нажмите «Скачать и установить» ещё раз	Permita que Phoenix instale aplicaciones y pulse de nuevo «Descargar e instalar»
+Открыть разрешение	Abrir permiso
+Не удалось: {}	No se pudo: {}
+Не удалось установить обновление: {}	No se pudo instalar la actualización: {}
+Слишком много для буфера обмена ({}). Используйте «В файл»	Demasiado para el portapapeles ({}). Use «A archivo»
+Не удалось скопировать: слишком много данных. Используйте «В файл»	No se pudo copiar: demasiados datos. Use «A archivo»
+Да	Sí
+Очистить журнал?	¿Borrar el registro?
+Записи будут удалены без возможности вернуть.	Las entradas se eliminarán sin posibilidad de recuperarlas.
+Убрать цель?	¿Quitar el objetivo?
+Цель «{}» и её серверы будут удалены.	El objetivo «{}» y sus servidores se eliminarán.
+Убрать сервис из проверки?	¿Quitar el servicio de las comprobaciones?
+Сервис «{}» исчезнет из списка проверки.	El servicio «{}» desaparecerá de la lista de comprobación.
+Они нужны, чтобы видеть состояние VPN и сбора и быстро отключать VPN. Без них служба работает, но ничего не показывает.	Sirven para ver el estado de la VPN y de la recopilación y desconectar la VPN rápidamente. Sin ellas el servicio funciona, pero no muestra nada.
+Продолжить	Continuar
+Не сейчас	Ahora no
+VPN не подключён — менять нечего.	La VPN no está conectada: no hay nada que cambiar.
+Серверов в списке нет. Сначала соберите и проверьте конфиги.	No hay servidores en la lista. Primero recopile y compruebe las configuraciones.
+Автоматически — лучший другой	Automático: el mejor otro
+приложение само найдёт и проверит рабочий сервер	la aplicación encontrará y comprobará un servidor que funcione
+  — сейчас	  — actual
+ · не проверен	 · sin comprobar
+скрыть причины	ocultar motivos
+почему этот сервер?	¿por qué este servidor?
+Закрыть	Cerrar
+умная смена: {} здесь открывается, сервер оставлен	cambio inteligente: {} se abre aquí, servidor conservado
+{} здесь открывается — сервер оставлен	{} se abre aquí: servidor conservado
+Режим и сеть	Modo y red
+Переключения	Cambios
+Цели	Objetivos
+Проверки	Comprobaciones
+Обход и источники	Exclusión y fuentes
+Высокий	Alto
+Низкий	Bajo
+Обычный	Normal
+MIUI: Настройки → Приложения → Phoenix → Контроль активности → «Нет ограничений»; закрепите Phoenix в списке недавних (замок).	MIUI: Ajustes → Aplicaciones → Phoenix → Control de actividad → «Sin restricciones»; fije Phoenix en la lista de recientes (candado).
+Скрыть сортировку и фильтры ▲	Ocultar orden y filtros ▲
+Сортировка, фильтры и действия ▼	Orden, filtros y acciones ▼
+Исправить	Corregir
+Главная	Inicio
+Правила	Reglas
+Ещё	Más
+Свой сервер	Servidor propio
+Мимо VPN	Fuera de la VPN
+Всего {} · проверено {} · живых {}	Total {} · comprobados {} · activos {}
+не отвечает	no responde
+{} мс	{} ms
+{} Мбит/с	{} Mbit/s
+сервисов: {}	servicios: {}
+проверен {}	comprobado {}
+Подключение…	Conectando…
+Нет конфига для подключения: выберите его в списке	No hay configuración para conectar: elija una de la lista
+Ошибка запуска: {}	Error de inicio: {}
+Интернет заблокирован: ищу сервер	Internet bloqueado: busco un servidor
+Подключено	Conectado
+Умная смена: {}	Cambio inteligente: {}
+Назад	Atrás
+Защищено	Protegido
+Не защищено	Sin protección
+Серверов: {} · живых: {}	Servidores: {} · activos: {}
+Серверы и источники	Servidores y fuentes
+Работа в фоне	Trabajo en segundo plano
+Диагностика и данные	Diagnóstico y datos
+Цели и сервисы	Objetivos y servicios
+открыт	abierto
+частично	parcial
+закрыт	cerrado
+не проверен	sin comprobar
+сегодня {}	hoy {}
+вчера {}	ayer {}
+завтра {}	mañana {}
+Смена сервера	Cambio de servidor
+Тихие часы	Horas de silencio
+Запуск и защита	Inicio y protección
+{} мин	{} min
+живых за сутки	vivos en 24 h
+конфигов всего	configs en total
+с перепроверки	desde la revisión
+Автосбор сработает вовремя	La recopilación automática se ejecutará a tiempo
+Автосбор может не сработать	La recopilación automática puede no ejecutarse
+Автосбор не запланирован	La recopilación automática no está programada
+Следующий сбор: {}	Próxima recopilación: {}

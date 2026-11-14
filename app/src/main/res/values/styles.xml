@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Phoenix" parent="android:Theme.Material.NoActionBar" />
+    <!-- светлая тема окна: раньше окно всегда было тёмным — при светлой теме приложения белые значки строки состояния и тёмная вспышка при запуске -->
+    <style name="Theme.Phoenix" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>

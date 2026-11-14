@@ -85,3 +85,7 @@ ServerTable.kt
 I18n.kt
 CarryOver.kt
 SourceTag.kt
+UpdateCheck.kt
+RelTime.kt
+ShortUrl.kt
+BackgroundHealth.kt

@@ -219,6 +219,30 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
         get() = prefs.getInt("carry_days", 3).coerceIn(0, 14)
         set(v) = prefs.edit().putInt("carry_days", v.coerceIn(0, 14)).apply()
 
+    /** Последняя найденная на GitHub версия приложения и ссылка на её страницу (см. [UpdateChecker]); о какой версии уже уведомили; когда проверяли. */
+    var updateTag: String
+        get() = prefs.getString("update_tag", "") ?: ""
+        set(v) = prefs.edit().putString("update_tag", v).apply()
+    var updateUrl: String
+        get() = prefs.getString("update_url", "") ?: ""
+        set(v) = prefs.edit().putString("update_url", v).apply()
+    /** Файл новой версии: ссылка, контрольная сумма и размер (для скачивания по выбору пользователя). */
+    var updateApkUrl: String
+        get() = prefs.getString("update_apk_url", "") ?: ""
+        set(v) = prefs.edit().putString("update_apk_url", v).apply()
+    var updateApkSha: String
+        get() = prefs.getString("update_apk_sha", "") ?: ""
+        set(v) = prefs.edit().putString("update_apk_sha", v).apply()
+    var updateApkSize: Long
+        get() = prefs.getLong("update_apk_size", 0L)
+        set(v) = prefs.edit().putLong("update_apk_size", v).apply()
+    var updateNotified: String
+        get() = prefs.getString("update_notified", "") ?: ""
+        set(v) = prefs.edit().putString("update_notified", v).apply()
+    var updateCheckedAt: Long
+        get() = prefs.getLong("update_checked_at", 0L)
+        set(v) = prefs.edit().putLong("update_checked_at", v).apply()
+
     /** Когда последний раз сбор удался для всех режимов (мс); нужен режиму «раз в несколько часов». */
     var lastSuccessAt: Long
         get() = prefs.getLong("last_success_at", 0L)

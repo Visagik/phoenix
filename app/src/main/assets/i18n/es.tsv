@@ -20,6 +20,8 @@
 3+ сервиса	3+ servicios
 ; если не работает, нажмите «Сменить сервер»	; si no funciona, pulse «Cambiar de servidor»
 Android сам знает, какие ссылки открывает приложение (например, сайт банка). Эти сайты в браузере тоже идут мимо VPN, как и само приложение. Работает на Android 12 и новее; Telegram, YouTube, Google и подобные сюда не попадают никогда.	Android sabe qué enlaces abre una aplicación (por ejemplo, el sitio de un banco). Esos sitios también van sin VPN en el navegador, igual que la propia aplicación. Funciona en Android 12 y posteriores; Telegram, YouTube, Google y similares nunca se incluyen.
+Phoenix: доступно обновление {}	Phoenix: actualización {} disponible
+Phoenix: обновления	Phoenix: actualizaciones
 Phoenix: перепроверка	Phoenix: nueva comprobación
 Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch и подобные открываются напрямую: быстрее и без лишнего трафика. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude и всё, что в России режется, остаётся в VPN. 	Steam, GitHub, Wikipedia, Microsoft, Apple, Amazon, AliExpress, Zoom, Twitch y similares se abren directamente: más rápido y con menos tráfico. Telegram, YouTube, Instagram, Discord, ChatGPT, Claude y todo lo que se bloquea en Rusia permanece en la VPN. 
 V2RayNG не найден	V2RayNG no encontrado
@@ -31,12 +33,13 @@ example.com или ссылка	example.com o un enlace
 {} КБ	{} KB
 {} Ограничение батареи 	{} Restricción de batería 
 {} Точные будильники 	{} Alarmas exactas 
+{} дн.	{} d
 {} мин назад	hace {} min
 {} ч	{} h
 {} ч назад	hace {} h
 {} — TLS и Reality могут не работать; включите автоматическое время	{} — TLS y Reality pueden fallar; active la hora automática
 «как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	«Como en todas partes» para una aplicación significa: usar la elección hecha arriba para todas. Los demás botones (auto, A, B) fijan su propia elección para esta aplicación.\n\nLos sitios siempre usan la opción A. Una aplicación usa A si el núcleo puede reconocerla por su conexión (el resto del tráfico no se toca); si no puede, usa B cuando se ha concedido acceso al uso.
-А	A
+Только это	Solo esto
 А: только оно через свой сервер	A: solo ella por su propio servidor
 Автозапуск (MIUI / HyperOS)	Inicio automático (MIUI / HyperOS)
 Автозапуск и «Не выгружать из памяти» на MIUI/HyperOS, Funtouch, EMUI программно не проверить — их смотрите на странице «Фоновая работа (прошивка)».	El inicio automático y «No descargar de la memoria» en MIUI/HyperOS, Funtouch y EMUI no se pueden comprobar por programa; consúltelos en la página «Trabajo en segundo plano (firmware)».
@@ -53,7 +56,7 @@ example.com или ссылка	example.com o un enlace
 Адрес этого приложения не известен, подставлена общая проверка (работает ли сервер вообще). Если знаете, какой сайт использует приложение, впишите его адрес — проверка станет точнее.	Se desconoce la dirección de esta aplicación, se usa la comprobación general (si el servidor funciona). Si sabe qué sitio usa la aplicación, escriba su dirección y la comprobación será más precisa.
 Адрес, который открывает это приложение: через него проверяется, работает ли сервер для него.	La dirección que abre esta aplicación: con ella se comprueba si el servidor funciona para ella.
 Адрес, по которому проверяется, что сервер работает для этой цели. Пустое поле вернёт адрес по умолчанию. Серверы пересчитаются при ближайшей проверке.	La dirección con la que se comprueba que el servidor funciona para este objetivo. Un campo vacío restablece la predeterminada. Los servidores se recalcularán en la próxima comprobación.
-Б	B
+Весь VPN	Toda la VPN
 Б: переключить весь VPN	B: cambiar toda la VPN
 Банки, Госуслуги, ВК, Яндекс, маркетплейсы, операторы ({} шт., берутся только установленные).	Bancos, Gosuslugi, VK, Yandex, marketplaces, operadores ({} uds., solo los instalados).
 Без этих разрешений Android (особенно MIUI/HyperOS) может не запустить сбор ночью, пока приложение закрыто. Тогда сбор пройдёт при первом открытии телефона или приложения.	Sin estos permisos Android (sobre todo MIUI/HyperOS) puede no iniciar la recopilación por la noche con la aplicación cerrada. Entonces se hará al abrir por primera vez el teléfono o la aplicación.
@@ -67,7 +70,7 @@ example.com или ссылка	example.com o un enlace
 В буфере нет ссылок https://…	No hay enlaces https://… en el portapapeles
 В точное время	A la hora exacta
 В файл	A un archivo
-В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы и накопленный опыт конфигов (где они работали). Скачанные конфиги и журнал не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.	En el archivo se guardan los ajustes y, para cada modo (listas blancas y negras), los objetivos con sus direcciones de comprobación y política, las aplicaciones y sitios que evitan la VPN, sus fuentes, la lista negra de fuentes, los servicios elegidos y la experiencia acumulada de las configuraciones (dónde funcionaron). No se incluyen las configuraciones descargadas ni el registro: se renuevan con la recopilación nocturna. Los servidores de los objetivos tampoco se guardan porque contienen claves de acceso: tras importar se volverán a elegir.
+В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы, накопленный опыт конфигов (где они работали) и журнал (при импорте он сливается с текущим). Скачанные конфиги не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.	En el archivo se guardan los ajustes y, para cada modo (listas blancas y negras), los objetivos con sus direcciones de comprobación y política, las aplicaciones y sitios que evitan la VPN, sus fuentes, la lista negra de fuentes, los servicios elegidos y la experiencia acumulada de las configuraciones (dónde funcionaron). El registro sí se incluye (al importar se combina con el actual). No se incluyen las configuraciones descargadas: se renuevan con la recopilación nocturna. Los servidores de los objetivos tampoco se guardan porque contienen claves de acceso: tras importar se volverán a elegir.
 В файл: 24 часа	A un archivo: 24 horas
 В файл: весь	A un archivo: todo
 Вернул: {}	Restaurado: {}
@@ -80,6 +83,7 @@ example.com или ссылка	example.com o un enlace
 Всё	Todo
 Вчера: 	Ayer: 
 Выберите приложение	Elija una aplicación
+Выкл	Desact.
 Главные события за последние 15 минут из журнала: падения сервера, смены сети, поиск, переключения.	Eventos principales de los últimos 15 minutos del registro: caídas del servidor, cambios de red, búsqueda, cambios.
 Готово	Listo
 Готово: {}	Listo: {}
@@ -91,9 +95,9 @@ example.com или ссылка	example.com o un enlace
 Диагностика	Diagnóstico
 Диагностика скопирована	Diagnóstico copiado
 Для белых списков по умолчанию выключено: напрямую там открывается только разрешённое.	Desactivado por defecto en listas blancas: allí solo se abre directamente lo permitido.
-Для варианта Б нужен доступ к данным об использовании	La opción B necesita acceso al uso
+Для режима «Весь VPN» нужен доступ к данным об использовании	«Toda la VPN» necesita acceso al uso
 Для каждой цели приложение держит до 3 проверенных серверов и перепроверяет их раз в несколько часов.	Para cada objetivo la aplicación mantiene hasta 3 servidores comprobados y los vuelve a comprobar cada pocas horas.
-Для сайта работает только вариант А.	Para un sitio solo funciona la opción A.
+Для сайта работает только режим «Только это».	Para un sitio solo funciona «Solo esto».
 Для чёрных списков включено по умолчанию.	Activado por defecto en listas negras.
 Дни жизни	Días de vida
 Добавить	Añadir
@@ -109,10 +113,12 @@ example.com или ссылка	example.com o un enlace
 Доля — сколько конфигов ссылки отвечают среди проверенных (свежая проверка за 7 дней или опыт в текущей сети). Приоритет «высокий»: конфиги этой ссылки пробуются раньше других живых, а сама ссылка не попадает в чёрный список по аудиту. «Низкий»: её конфиги идут в самый конец очереди.	La proporción es cuántas configuraciones del enlace responden entre las comprobadas (comprobación reciente de 7 días o experiencia en la red actual). Prioridad «alta»: las configuraciones de este enlace se prueban antes que otras activas y el enlace no entra en la lista negra por auditoría. «Baja»: sus configuraciones van al final de la cola.
 Доступ к данным об использовании: есть	Acceso al uso: concedido
 Доступ к статистике использования	Acceso a estadísticas de uso
+Доступна новая версия {}	Nueva versión {} disponible
 Если IPv6 не заводить в туннель, сайты с IPv6 открываются напрямую, мимо VPN (утечка). Блокировка заставляет приложения сразу переходить на IPv4 через VPN. Применяется при следующем подключении.	Si IPv6 no se mete en el túnel, los sitios con IPv6 se abren directamente, sin VPN (fuga). El bloqueo hace que las aplicaciones pasen enseguida a IPv4 por la VPN. Se aplica en la próxima conexión.
 Если VPN не удалось поднять или он оборвался, туннель остаётся включённым и трафик блокируется, пока приложение ищет рабочий сервер. По умолчанию выключено: тогда при сбое интернет идёт напрямую.	Si la VPN no se pudo levantar o se cortó, el túnel sigue activo y el tráfico se bloquea mientras la aplicación busca un servidor que funcione. Desactivado por defecto: entonces, ante un fallo, internet va directamente.
 Если включить службу специальных возможностей «Phoenix: сайт в браузере», приложение видит только домен открытого сайта (адресная строка Chrome, Яндекс, Samsung, Firefox, Opera, Edge, Brave и ещё нескольких браузеров) и при смене сервера подбирает тот, где этот сайт открывается. Домен хранится только в памяти, содержимое страниц не читается, ничего не отправляется. На Android 13 и новее для приложения не из магазина сначала откройте «О приложении» → меню ⋮ → «Разрешить ограниченные настройки».	Si activa el servicio de accesibilidad «Phoenix: sitio en el navegador», la aplicación ve solo el dominio del sitio abierto (la barra de direcciones de Chrome, Yandex, Samsung, Firefox, Opera, Edge, Brave y algunos navegadores más) y, al cambiar de servidor, elige uno donde ese sitio se abra. El dominio se guarda solo en memoria, no se lee el contenido de las páginas ni se envía nada. En Android 13 y posteriores, para una aplicación que no es de una tienda, abra primero «Información de la aplicación» → menú ⋮ → «Permitir ajustes restringidos».
 Если запасной сервер не нашёлся, приложение само запускает полную перепроверку всех конфигов (не чаще раза в 30 минут).	Si no se encuentra un servidor de reserva, la aplicación inicia por sí sola una nueva comprobación completa de todas las configuraciones (no más de una vez cada 30 minutos).
+Если сбор скачал не все источники, конфиги, которые раньше работали, не пропадают, а смешиваются с новыми (повторы убираются). Срок считается с последнего раза, когда источник их отдавал.	Si una recopilación no descargó todas las fuentes, los configs que antes funcionaban no se pierden, sino que se mezclan con los nuevos (se eliminan duplicados). El plazo cuenta desde la última vez que la fuente los ofreció.
 Если туннель перестал работать (три неудачные проверки), приложение перебирает запасные конфиги лучшего рейтинга.	Si el túnel deja de funcionar (tres comprobaciones fallidas), la aplicación prueba las configuraciones de reserva de mejor puntuación.
 Живые	Activos
 Журнал	Registro
@@ -155,6 +161,7 @@ example.com или ссылка	example.com o un enlace
 Можно вернуть	Se puede restaurar
 НЕ разрешены	NO permitidos
 Надёжность автосбора	Fiabilidad de la recopilación automática
+Нажмите, чтобы открыть страницу загрузки	Toque para abrir la página de descarga
 Название	Nombre
 Названия пунктов зависят от версии прошивки. Если кнопка не нашла нужный экран, откроются настройки приложения — дальше по шагам выше.	Los nombres de los elementos dependen de la versión del firmware. Si el botón no encontró la pantalla, se abrirán los ajustes de la aplicación; continúe con los pasos anteriores.
 Найдено автоматически ({}): приложения с российскими пакетами, которых нет в наборе. Если приложению нужен VPN, уберите его.	Encontradas automáticamente ({}): aplicaciones con paquetes rusos que no están en el conjunto. Si una aplicación necesita VPN, quítela.
@@ -167,19 +174,23 @@ example.com или ссылка	example.com o un enlace
 Не пускать интернет без VPN	No permitir internet sin VPN
 Не удалось вернуть (запись устарела)	No se pudo restaurar (el registro está desactualizado)
 Не удалось открыть настройки VPN	No se pudieron abrir los ajustes de VPN
+Не удалось проверить: нет связи с GitHub	No se pudo comprobar: sin conexión con GitHub
 Не удалось прочитать файл: {}	No se pudo leer el archivo: {}
 Не удалось сохранить	No se pudo guardar
 Не удалось сохранить журнал (за выбранный период записей нет?)	No se pudo guardar el registro (¿no hay entradas del período elegido?)
 Не удалось сохранить файл	No se pudo guardar el archivo
 Не удалось сохранить: {}	No se pudo guardar: {}
-Не удалось: {}	Error: {}
+Не удалось установить обновление: {}	No se pudo instalar la actualización: {}
+Не удалось: {}	No se pudo: {}
 Не чаще раза в 5 минут и не больше 4 раз в час, чтобы при плохой сети везде не прыгать с сервера на сервер.	No más de una vez cada 5 minutos y no más de 4 veces por hora, para no saltar de servidor en servidor con mala red.
 Нет конфигов: нажмите «Собрать сейчас»	No hay configuraciones: pulse «Recopilar ahora»
 Нечего проверять: нет конфигов или не выбран ни один сервис	Nada que comprobar: no hay configuraciones o no se eligió ningún servicio
+Новая версия: {}	Nueva versión: {}
 Нужна ссылка вида https://…	Se necesita un enlace del tipo https://…
 Нужного экрана в этой прошивке нет — открыл настройки приложения	Esa pantalla no existe en este firmware: se abrieron los ajustes de la aplicación
 О приложении	Información de la aplicación
 Обновить	Actualizar
+Обновления	Actualizaciones
 Оболочки телефонов (EMUI, MIUI, ColorOS и другие) сами выгружают фоновые приложения. Здесь собрано, что нужно разрешить именно на вашем телефоне.	Las capas de los teléfonos (EMUI, MIUI, ColorOS y otras) descargan solas las aplicaciones en segundo plano. Aquí se recoge lo que hay que permitir en su teléfono.
 Обход VPN и проверка сервисов	Exclusión de VPN y comprobación de servicios
 Общие	Comunes
@@ -196,6 +207,8 @@ example.com или ссылка	example.com o un enlace
 Открытый сервис не работает на этом сервере	El servicio abierto no funciona en este servidor
 Открыть	Abrir
 Открыть настройки	Abrir ajustes
+Открыть разрешение	Abrir permiso
+Открыть страницу загрузки	Abrir página de descarga
 Отличается от общих ({}): 	Difiere de los comunes ({}): 
 Отличий от общих настроек нет.	No hay diferencias con los ajustes comunes.
 Отмена	Cancelar
@@ -205,6 +218,7 @@ example.com или ссылка	example.com o un enlace
 Оценка расхода на проверки (трафик приблизительный). Если цифры большие, включите «Фокус» или тихие часы.	Estimación del coste de las comprobaciones (tráfico aproximado). Si las cifras son grandes, active «Concentración» o las horas de silencio.
 Очистить	Borrar
 Ошибка VPN	Error de VPN
+Передаю на установку: подтвердите в системном окне	Enviado a instalar: confirme en la ventana del sistema
 Переподключаться само	Reconectar automáticamente
 Перепроверить все конфиги	Volver a comprobar todas las configuraciones
 Перепроверить всё	Volver a comprobar todo
@@ -231,6 +245,7 @@ example.com или ссылка	example.com o un enlace
 Последнее определение: {}	Última detección: {}
 Последние проблемы	Problemas recientes
 Последний запуск: {}	Última ejecución: {}
+Последняя проверка: {}	Última comprobación: {}
 Последняя сборка загружена.	Se cargó la última recopilación.
 Потяните шторку вниз → значок карандаша (изменить) → перетащите «Phoenix VPN» в активные плитки.	Deslice la cortina hacia abajo → icono de lápiz (editar) → arrastre «Phoenix VPN» a los mosaicos activos.
 Права и фоновая работа	Permisos y trabajo en segundo plano
@@ -239,6 +254,7 @@ example.com или ссылка	example.com o un enlace
 При включении телефона и при открытии приложения (последний или лучший конфиг). Нужно один раз дать системное разрешение на VPN.	Al encender el teléfono y al abrir la aplicación (última o mejor configuración). Hay que conceder una vez el permiso del sistema para VPN.
 Приложение запоминает, в какие часы недели вы пользуетесь телефоном (только на телефоне, файл входит в резервную копию). Через неделю в «тихие» часы тяжёлое без зарядки не запускается, а перед обычным началом активности туннель проверяется заранее.	La aplicación recuerda en qué horas de la semana usa el teléfono (solo en el teléfono, el archivo entra en la copia de seguridad). Tras una semana, en horas «tranquilas» no se inician tareas pesadas sin cargador, y antes del inicio habitual de actividad se comprueba el túnel con antelación.
 Приложение проверяет, какие сайты открываются напрямую, и переключает режим, когда два определения подряд совпали. Проверка идёт при смене сети.	La aplicación comprueba qué sitios se abren directamente y cambia el modo cuando dos detecciones seguidas coinciden. La comprobación se hace al cambiar la red.
+Приложение раз в сутки смотрит страницу релизов на GitHub; при выходе новой версии придёт отдельное уведомление. Установить её можно кнопкой «Скачать и установить» или вручную: скачайте APK на странице релиза.	Una vez al día la aplicación consulta la página de versiones de GitHub; si hay una nueva, recibirá una notificación aparte. Puede instalarla con el botón «Descargar e instalar» o a mano: descargue el APK desde la página de la versión.
 Приложение само меняет чёрный список источников и их приоритеты. Любое такое изменение можно отменить в течение суток.	La aplicación cambia sola la lista negra de fuentes y sus prioridades. Cualquier cambio así se puede deshacer en un día.
 Приложения в обход VPN	Aplicaciones que evitan la VPN
 Приложения в обход VPN ({})	Aplicaciones que evitan la VPN ({})
@@ -247,6 +263,7 @@ example.com или ссылка	example.com o un enlace
 Проверенные	Comprobados
 Проверить	Comprobar
 Проверить первые {} конфигов	Comprobar las primeras {} configuraciones
+Проверить сейчас	Comprobar ahora
 Проверить серверы сейчас	Comprobar servidores ahora
 Проверка сервисов через конфиг	Comprobación de servicios mediante configuración
 Проверка утечек	Comprobación de fugas
@@ -255,12 +272,16 @@ example.com или ссылка	example.com o un enlace
 Проверяю 0/{}…	Comprobando 0/{}…
 Проверяю {}/{}…	Comprobando {}/{}…
 Проверяю серверы для целей…	Comprobando servidores para los objetivos…
+Проверяю файл…	Comprobando el archivo…
 Проверяю…	Comprobando…
 Протокол	Protocolo
 Прошивка	Firmware
 Работаю…	Trabajando…
+Рабочие конфиги прошлого сбора не переносятся	Los configs que funcionaban en la recopilación anterior no se conservan
+Рабочие конфиги прошлого сбора остаются в списке ещё {} дн., если источник их не отдал	Los configs que funcionaban en la recopilación anterior permanecen {} d más en la lista si la fuente deja de ofrecerlos
 Раз в N часов	Cada N horas
 Разрешение на VPN	Permiso de VPN
+Разрешите Phoenix устанавливать приложения, затем нажмите «Скачать и установить» ещё раз	Permita que Phoenix instale aplicaciones y pulse de nuevo «Descargar e instalar»
 Разрешить точные будильники	Permitir alarmas exactas
 Режим	Modo
 Режим «{}»: когда он действует, берутся его настройки (если включены свои), иначе общие.	Modo «{}»: cuando está activo, se usan sus ajustes (si están activados los propios), si no, los comunes.
@@ -296,6 +317,8 @@ example.com или ссылка	example.com o un enlace
 Сеть сейчас: {}	Red ahora: {}
 Сильнее автоматических. Тяжёлые фоновые проверки без зарядки в это время не запускаются.	Más fuertes que los automáticos. En ese horario no se inician comprobaciones pesadas en segundo plano sin cargador.
 Система не разрешила запуск VPN из фона — откройте приложение и подключите вручную	El sistema no permitió iniciar la VPN desde segundo plano: abra la aplicación y conecte manualmente
+Скачать и установить	Descargar e instalar
+Скачиваю… {}%	Descargando… {}%
 Сколько VPN работал, как часто менялся сервер и на каких серверах держался дольше всего. Хранится только на телефоне, 30 дней.	Cuánto funcionó la VPN, con qué frecuencia cambió el servidor y en qué servidores se mantuvo más tiempo. Se guarda solo en el teléfono, 30 días.
 Скопировано: {}. В V2RayNG: «+» → «Импорт из буфера обмена»	Copiado: {}. En V2RayNG: «+» → «Importar desde el portapapeles»
 Скорость	Velocidad
@@ -323,6 +346,7 @@ example.com или ссылка	example.com o un enlace
 Статистика	Estadísticas
 Страна	País
 Считать сервер медленным, если скорость ниже (Мбит/с):	Considerar lento un servidor si la velocidad es inferior a (Mbit/s):
+Текущая версия: {}	Versión actual: {}
 Тип блокировок	Tipo de bloqueo
 Тихие часы по привычкам	Horas de silencio según hábitos
 Только при зарядке	Solo al cargar
@@ -339,6 +363,7 @@ example.com или ссылка	example.com o un enlace
 Удалить	Eliminar
 Умная смена	Cambio inteligente
 Умная смена (под открытое приложение)	Cambio inteligente (según la aplicación abierta)
+Установлена последняя версия	Tiene la última versión
 Файл со строками host:, closed:, marker:… Если пусто или файл не подходит, действуют встроенные правила: какие сайты закрыты по стране выхода и по каким фразам узнаётся страница «не поддерживается в вашей стране». Обновляется при запуске приложения.	Archivo con líneas host:, closed:, marker:… Si está vacío o no es adecuado, rigen las reglas integradas: qué sitios están cerrados según el país de salida y por qué frases se reconoce la página «no disponible en su país». Se actualiza al iniciar la aplicación.
 Фильтры:	Filtros:
 Фоновая работа (прошивка)	Trabajo en segundo plano (firmware)
@@ -380,6 +405,7 @@ example.com или ссылка	example.com o un enlace
 действует	activa
 добавлено вручную	añadido manualmente
 ещё не было	aún no ha habido
+ещё не проверялось	aún no comprobado
 ещё не скачивалась	aún no se ha descargado
 живых {} из {}	{} de {} activos
 запасные серверы, вариант А или Б	servidores de reserva, opción A o B
@@ -417,6 +443,7 @@ example.com или ссылка	example.com o un enlace
 подключается: {}	conectando: {}
 подключён: {}	conectado: {}
 права галочками, что сейчас, размер журнала	permisos con marcas, qué pasa ahora, tamaño del registro
+проверка новой версии раз в сутки, кнопка «Проверить сейчас»	comprobación de nueva versión una vez al día, botón «Comprobar ahora»
 проверка: 	comprobación: 
 проверяю сеть и туннель…	comprobando la red y el túnel…
 проверяю…	comprobando…
@@ -435,8 +462,81 @@ example.com или ссылка	example.com o un enlace
 ★ 3+ дня	★ 3+ días
 ✓ открылся · ≈ отвечает, но не полностью (защита сайта; для Claude и Qwen это обычно норма) · ✗ не открылся · ? не проверялся	✓ se abrió · ≈ responde pero no del todo (protección del sitio; para Claude y Qwen suele ser normal) · ✗ no se abrió · ? sin comprobar
 📌 Открепить сервер	📌 Desanclar servidor
-Рабочие конфиги прошлого сбора не переносятся	Los configs que funcionaban en la recopilación anterior no se conservan
-Рабочие конфиги прошлого сбора остаются в списке ещё {} дн., если источник их не отдал	Los configs que funcionaban en la recopilación anterior permanecen {} d más en la lista si la fuente deja de ofrecerlos
-Выкл	Desact.
-{} дн.	{} d
-Если сбор скачал не все источники, конфиги, которые раньше работали, не пропадают, а смешиваются с новыми (повторы убираются). Срок считается с последнего раза, когда источник их отдавал.	Si una recopilación no descargó todas las fuentes, los configs que antes funcionaban no se pierden, sino que se mezclan con los nuevos (se eliminan duplicados). El plazo cuenta desde la última vez que la fuente los ofreció.
+Слишком много для буфера обмена ({}). Используйте «В файл»	Demasiado para el portapapeles ({}). Use «A archivo»
+Не удалось скопировать: слишком много данных. Используйте «В файл»	No se pudo copiar: demasiados datos. Use «A archivo»
+Да	Sí
+Очистить журнал?	¿Borrar el registro?
+Записи будут удалены без возможности вернуть.	Las entradas se eliminarán sin posibilidad de recuperarlas.
+Убрать цель?	¿Quitar el objetivo?
+Цель «{}» и её серверы будут удалены.	El objetivo «{}» y sus servidores se eliminarán.
+Убрать сервис из проверки?	¿Quitar el servicio de las comprobaciones?
+Сервис «{}» исчезнет из списка проверки.	El servicio «{}» desaparecerá de la lista de comprobación.
+Они нужны, чтобы видеть состояние VPN и сбора и быстро отключать VPN. Без них служба работает, но ничего не показывает.	Sirven para ver el estado de la VPN y de la recopilación y desconectar la VPN rápidamente. Sin ellas el servicio funciona, pero no muestra nada.
+Продолжить	Continuar
+Не сейчас	Ahora no
+VPN не подключён — менять нечего.	La VPN no está conectada: no hay nada que cambiar.
+Серверов в списке нет. Сначала соберите и проверьте конфиги.	No hay servidores en la lista. Primero recopile y compruebe las configuraciones.
+Автоматически — лучший другой	Automático: el mejor otro
+приложение само найдёт и проверит рабочий сервер	la aplicación encontrará y comprobará un servidor que funcione
+  — сейчас	  — actual
+ · не проверен	 · sin comprobar
+скрыть причины	ocultar motivos
+почему этот сервер?	¿por qué este servidor?
+Закрыть	Cerrar
+умная смена: {} здесь открывается, сервер оставлен	cambio inteligente: {} se abre aquí, servidor conservado
+{} здесь открывается — сервер оставлен	{} se abre aquí: servidor conservado
+Режим и сеть	Modo y red
+Переключения	Cambios
+Цели	Objetivos
+Проверки	Comprobaciones
+Обход и источники	Exclusión y fuentes
+Высокий	Alto
+Низкий	Bajo
+Обычный	Normal
+MIUI: Настройки → Приложения → Phoenix → Контроль активности → «Нет ограничений»; закрепите Phoenix в списке недавних (замок).	MIUI: Ajustes → Aplicaciones → Phoenix → Control de actividad → «Sin restricciones»; fije Phoenix en la lista de recientes (candado).
+Скрыть сортировку и фильтры ▲	Ocultar orden y filtros ▲
+Сортировка, фильтры и действия ▼	Orden, filtros y acciones ▼
+Исправить	Corregir
+Главная	Inicio
+Правила	Reglas
+Ещё	Más
+Свой сервер	Servidor propio
+Мимо VPN	Fuera de la VPN
+Всего {} · проверено {} · живых {}	Total {} · comprobados {} · activos {}
+не отвечает	no responde
+{} мс	{} ms
+{} Мбит/с	{} Mbit/s
+сервисов: {}	servicios: {}
+проверен {}	comprobado {}
+Подключение…	Conectando…
+Нет конфига для подключения: выберите его в списке	No hay configuración para conectar: elija una de la lista
+Ошибка запуска: {}	Error de inicio: {}
+Интернет заблокирован: ищу сервер	Internet bloqueado: busco un servidor
+Подключено	Conectado
+Умная смена: {}	Cambio inteligente: {}
+Назад	Atrás
+Защищено	Protegido
+Не защищено	Sin protección
+Серверов: {} · живых: {}	Servidores: {} · activos: {}
+Серверы и источники	Servidores y fuentes
+Работа в фоне	Trabajo en segundo plano
+Диагностика и данные	Diagnóstico y datos
+Цели и сервисы	Objetivos y servicios
+открыт	abierto
+частично	parcial
+закрыт	cerrado
+не проверен	sin comprobar
+сегодня {}	hoy {}
+вчера {}	ayer {}
+завтра {}	mañana {}
+Смена сервера	Cambio de servidor
+Тихие часы	Horas de silencio
+Запуск и защита	Inicio y protección
+{} мин	{} min
+живых за сутки	vivos en 24 h
+конфигов всего	configs en total
+с перепроверки	desde la revisión
+Автосбор сработает вовремя	La recopilación automática se ejecutará a tiempo
+Автосбор может не сработать	La recopilación automática puede no ejecutarse
+Автосбор не запланирован	La recopilación automática no está programada
+Следующий сбор: {}	Próxima recopilación: {}

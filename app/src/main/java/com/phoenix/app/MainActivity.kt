@@ -5,6 +5,44 @@ package com.phoenix.app
 import android.Manifest
 import android.app.Activity
 import android.app.Application
+import android.content.Intent
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.CardDefaults
 import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
@@ -36,9 +74,14 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -88,7 +131,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         handleSwitchIntent(intent)
         setContent {
-            MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
+            MaterialTheme(colorScheme = if (isSystemInDarkTheme()) PhoenixTheme.dark else PhoenixTheme.light) {
                 MainScreen()
                 ServerSwitchHost()
             }
@@ -113,6 +156,10 @@ class MainActivity : ComponentActivity() {
                 android.widget.Toast.makeText(this, tr("Добавлено ссылок: {} из {}. Появятся в следующей сборке", added, links.size), android.widget.Toast.LENGTH_LONG).show()
             }
             intent.action = android.content.Intent.ACTION_MAIN
+        }
+        if (intent?.getBooleanExtra(SwitchRequest.EXTRA_UPDATE, false) == true) {
+            SwitchRequest.openUpdate.value = true
+            intent.removeExtra(SwitchRequest.EXTRA_UPDATE)
         }
         if (intent?.getBooleanExtra(SwitchRequest.EXTRA_SHOW, false) == true) {
             SwitchRequest.show.value = true
@@ -254,6 +301,44 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setCarryDays(d: Int) {
         settings.carryDays = d
         _carryDays.value = settings.carryDays
+    }
+
+    /** Состояние проверки обновлений для плашки и страницы «Обновления». */
+    data class UpdateUi(val tag: String = "", val url: String = "", val checkedAt: Long = 0L, val busy: Boolean = false, val failed: Boolean = false) {
+        fun newer(current: String) = UpdateCheck.isNewer(tag, current)
+    }
+
+    private fun updateFromSettings(busy: Boolean = false, failed: Boolean = false) =
+        AppSettings(getApplication()).let { UpdateUi(it.updateTag, it.updateUrl, it.updateCheckedAt, busy, failed) }
+
+    private val _update = MutableStateFlow(updateFromSettings())
+    val update: StateFlow<UpdateUi> = _update.asStateFlow()
+
+    /** [force] — по кнопке; без неё проверяет только если с прошлого раза прошло больше суток. */
+    fun checkUpdate(force: Boolean) {
+        val app = getApplication<Application>()
+        if (_update.value.busy || (!force && !UpdateChecker.due(app))) return
+        _update.value = updateFromSettings(busy = true)
+        Thread {
+            val out = try { UpdateChecker.run(app) } catch (_: Throwable) { null }
+            _update.value = updateFromSettings(failed = out == null || !out.reached)
+        }.start()
+    }
+
+    private val _install = MutableStateFlow(InstallProgress())
+    val install: StateFlow<InstallProgress> = _install.asStateFlow()
+
+    init {
+        // отмена или ошибка в окне системного установщика приходит через приёмник — возвращаем кнопку «Скачать и установить»
+        viewModelScope.launch { UpdateInstaller.external.collect { _install.value = it } }
+    }
+
+    /** «Скачать и установить» по выбору пользователя: скачивание и проверка идут в фоне, окно подтверждения покажет сама система. */
+    fun installUpdate() {
+        val app = getApplication<Application>()
+        val st = _install.value.stage
+        if (st == InstallProgress.Stage.DOWNLOADING || st == InstallProgress.Stage.VERIFYING || st == InstallProgress.Stage.INSTALLING) return
+        Thread { UpdateInstaller.downloadAndInstall(app) { _install.value = it } }.start()
     }
 
     private val _intervalHours = MutableStateFlow(settings.intervalHours)
@@ -680,6 +765,37 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         return out
     }
 
+    /** Три крупных числа сверху диагностики: живые конфиги за сутки, всего конфигов, возраст последней перепроверки. */
+    fun diagBig(): List<Pair<String, String>> {
+        val today = LocalDate.now()
+        val checks = CheckStore(storage.checksFile).load()
+        val fresh = checks.values.filter { it.date >= today.minusDays(1).toString() }
+        val re = settings.lastRecheckAt
+        val age = if (re <= 0) "—" else {
+            val m = (System.currentTimeMillis() - re) / 60_000
+            if (m < 90) tr("{} мин", m) else tr("{} ч", m / 60)
+        }
+        val total = try { ConfigRepository.load(storage).size } catch (_: Throwable) { 0 }
+        return listOf(
+            fresh.count { !it.dead }.toString() to tr("живых за сутки"),
+            total.toString() to tr("конфигов всего"),
+            age to tr("с перепроверки"),
+        )
+    }
+
+    /** Столбцы (выбранные сервисы) и строки (цели) таблицы «цели × сервисы». */
+    fun diagMatrix(): Pair<List<CheckService>, List<MatrixRow>> {
+        val checks = CheckStore(storage.checksFile).load()
+        val svc = storage.checkSelection().selected()
+        val rows = TargetStore(storage.targetsFile).load().map { t ->
+            val first = t.servers.firstOrNull()
+            val name = if (t.isDirect) tr("напрямую, мимо VPN") else first?.let { LinkParser.parse(it)?.title?.let { s -> urlDecode(s) } }.orEmpty().ifBlank { tr("нет") }
+            val res = first?.let { checks[CheckStore.keyOf(it)] }
+            MatrixRow(t.label, name, svc.map { s -> res?.status(s.id) ?: ServiceStatus.UNKNOWN })
+        }
+        return svc to rows
+    }
+
     fun clearLogs() {
         val app = getApplication<Application>()
         Mode.entries.forEach { m -> Storage(app, m).logFile.takeIf { it.exists() }?.writeTextAtomic("") }
@@ -1004,6 +1120,7 @@ private enum class Page(val title: String, val hint: String) {
     FIRMWARE("Фоновая работа (прошивка)", "все разрешения для фона в одном месте: батарея, будильники, автозапуск"),
     SOURCES("Источники", "ссылки для белых и чёрных списков, чёрный список, аудит"),
     BACKUP("Экспорт и импорт", "резервная копия настроек, целей, обхода, источников и журнала"),
+    UPDATE("Обновления", "проверка новой версии раз в сутки, кнопка «Проверить сейчас»"),
     DIAG("Диагностика", "сводка «что сейчас», журнал с фильтрами и поиском, отчёт сбора"),
 }
 
@@ -1019,17 +1136,41 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
         resumeOwner.lifecycle.addObserver(obs)
         onDispose { resumeOwner.lifecycle.removeObserver(obs) }
     }
-    var page by remember { mutableStateOf<Page?>(null) }
-    var inSettings by remember { mutableStateOf(false) }
-    var inServers by remember { mutableStateOf(false) }
+    // положение в меню переживает поворот экрана, смену темы и размера шрифта (раньше возвращало на главный экран)
+    var page by rememberSaveable(stateSaver = androidx.compose.runtime.saveable.Saver<Page?, String>(
+        save = { it?.name ?: "" },
+        restore = { n -> Page.entries.firstOrNull { it.name == n } },
+    )) { mutableStateOf<Page?>(null) }
+    var inSettings by rememberSaveable { mutableStateOf(false) }
+    var inServers by rememberSaveable { mutableStateOf(false) }
 
     // Разрешение на уведомления (Android 13+): без него не видно статус сбора и кнопку «Отключить».
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+    // сначала объясняем, зачем, и только потом показываем системный запрос (раньше он выскакивал в первый кадр без слов)
+    var askNotifications by rememberSaveable {
+        mutableStateOf(
+            Build.VERSION.SDK_INT >= 33 &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED,
+        )
     }
+    if (askNotifications) {
+        AlertDialog(
+            onDismissRequest = { askNotifications = false },
+            title = { Text(tr("Уведомления")) },
+            text = { Text(tr("Они нужны, чтобы видеть состояние VPN и сбора и быстро отключать VPN. Без них служба работает, но ничего не показывает.")) },
+            confirmButton = { TextButton(onClick = { askNotifications = false; notifications.launch(Manifest.permission.POST_NOTIFICATIONS) }) { Text(tr("Продолжить")) } },
+            dismissButton = { TextButton(onClick = { askNotifications = false }) { Text(tr("Не сейчас")) } },
+        )
+    }
+
+    // уведомление об обновлении открывает страницу «Обновления»
+    val wantUpdate by SwitchRequest.openUpdate.collectAsStateWithLifecycle()
+    LaunchedEffect(wantUpdate) {
+        if (wantUpdate) { inServers = false; inSettings = true; page = Page.UPDATE; SwitchRequest.openUpdate.value = false }
+    }
+
+    // Новая версия: если за сутки не проверяли (фоновая проверка могла не сработать), смотрим при открытии
+    LaunchedEffect(Unit) { vm.checkUpdate(force = false) }
 
     // Автоподключение при открытии приложения (если включено в настройках; один раз за запуск экрана)
     var autoDone by rememberSaveable { mutableStateOf(false) }
@@ -1075,25 +1216,51 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
         }
     }
 
+    // четыре раздела внизу, под большим пальцем: Главная, Серверы, Правила (цели и обход), Ещё (остальные настройки)
+    val tab = when {
+        inServers -> 1
+        !inSettings -> 0
+        page == Page.TARGETS || page == Page.BYPASS -> 2
+        else -> 3
+    }
     BackHandler(enabled = inSettings || inServers) {
-        if (inServers) inServers = false else if (page != null) page = null else inSettings = false
+        if (inServers) inServers = false else if (tab == 3 && page != null) page = null else inSettings = false
+    }
+
+    fun goTab(t: Int) {
+        inServers = t == 1
+        inSettings = t >= 2
+        page = when (t) { 2 -> Page.TARGETS; else -> null }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (inServers) tr("Серверы") else if (!inSettings) "Phoenix" else page?.title?.let { tr(it) } ?: tr("Настройки")) },
+                title = { Text(if (inServers) tr("Серверы") else if (!inSettings) "Phoenix" else if (tab == 2) tr("Правила") else page?.title?.let { tr(it) } ?: tr("Ещё")) },
                 navigationIcon = {
-                    if (inServers) TextButton(onClick = { inServers = false }) { Text("←") }
-                    else if (inSettings) TextButton(onClick = { if (page != null) page = null else inSettings = false }) { Text("←") }
-                },
-                actions = {
-                    if (!inSettings && !inServers) {
-                        TextButton(onClick = { inServers = true }) { Text(tr("Серверы")) }
-                        TextButton(onClick = { inSettings = true }) { Text("⚙") }
+                    // «назад» нужен только внутри подстраницы «Ещё»; разделы переключаются нижней панелью
+                    if (inSettings && tab == 3 && page != null) IconButton(onClick = { page = null }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Назад"))
                     }
                 },
             )
+        },
+        bottomBar = {
+            NavigationBar {
+                listOf(
+                    Icons.Filled.Home to tr("Главная"),
+                    Icons.Filled.LocationOn to tr("Серверы"),
+                    Icons.Filled.Build to tr("Правила"),
+                    Icons.Filled.Menu to tr("Ещё"),
+                ).forEachIndexed { i, (icon, label) ->
+                    NavigationBarItem(
+                        selected = tab == i,
+                        onClick = { goTab(i) },
+                        icon = { Icon(icon, contentDescription = null) },
+                        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    )
+                }
+            }
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
@@ -1101,34 +1268,81 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                 ServersPage(vm) { row -> inServers = false; connect(row) }
             } else if (!inSettings) {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    UpdateBanner(vm) { inSettings = true; page = Page.UPDATE }
                     VpnCard(vm, mode, onConnect = { connect(null) })
                     HomePanel(vm) { inServers = true }
                 }
             } else when (page) {
-                null -> SettingsMenu(onOpen = { page = it })
+                null -> SettingsMenu(modeTitle = tr(mode.title), version = remember { UpdateChecker.currentVersion(context) }, onOpen = { page = it })
                 Page.STATE -> StatePage(vm)
                 Page.MODE -> ModePage(vm)
-                Page.TARGETS -> TargetsPage(vm)
-                Page.BYPASS -> VpnTab(vm)
+                Page.TARGETS, Page.BYPASS -> Column(Modifier.fillMaxSize()) {
+                    // «Правила»: две вкладки — свой сервер для целей и обход VPN
+                    TabRow(selectedTabIndex = if (page == Page.BYPASS) 1 else 0) {
+                        Tab(selected = page == Page.TARGETS, onClick = { page = Page.TARGETS }, text = { Text(tr("Свой сервер"), maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                        Tab(selected = page == Page.BYPASS, onClick = { page = Page.BYPASS }, text = { Text(tr("Мимо VPN"), maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                    }
+                    if (page == Page.BYPASS) VpnTab(vm) else TargetsPage(vm)
+                }
                 Page.CONNECTION -> ConnectionPage(vm)
                 Page.COLLECT -> SettingsTab(vm)
                 Page.FIRMWARE -> FirmwarePage()
                 Page.SOURCES -> SourcesTab(vm)
                 Page.BACKUP -> BackupPage(vm)
+                Page.UPDATE -> UpdatePage(vm)
                 Page.DIAG -> DiagPage(vm)
             }
         }
     }
 }
 
+/** Раздел «Ещё»: четыре группы, строки со значком, подписью и текущим значением справа. */
 @Composable
-private fun SettingsMenu(onOpen: (Page) -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Page.entries.forEach { p ->
-            Card(Modifier.fillMaxWidth().clickable { onOpen(p) }) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(tr(p.title), style = MaterialTheme.typography.titleMedium)
-                    Text(tr(p.hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun SettingsMenu(modeTitle: String, version: String, onOpen: (Page) -> Unit) {
+    val groups = listOf(
+        "Подключение" to listOf(Page.MODE, Page.CONNECTION),
+        "Серверы и источники" to listOf(Page.COLLECT, Page.SOURCES),
+        "Работа в фоне" to listOf(Page.FIRMWARE),
+        "Диагностика и данные" to listOf(Page.STATE, Page.DIAG, Page.BACKUP, Page.UPDATE),
+    )
+    fun icon(p: Page) = when (p) {
+        Page.MODE -> Icons.Filled.Lock
+        Page.CONNECTION -> Icons.Filled.Settings
+        Page.COLLECT -> Icons.Filled.Refresh
+        Page.SOURCES -> Icons.Filled.Share
+        Page.FIRMWARE -> Icons.Filled.Notifications
+        Page.STATE -> Icons.Filled.Info
+        Page.DIAG -> Icons.Filled.Search
+        Page.BACKUP -> Icons.Filled.Send
+        Page.UPDATE -> Icons.Filled.CheckCircle
+        else -> Icons.Filled.Menu
+    }
+    fun value(p: Page): String = when (p) {
+        Page.MODE -> modeTitle
+        Page.UPDATE -> version
+        else -> ""
+    }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        groups.forEach { (group, pages) ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(tr(group), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+                    pages.forEachIndexed { i, p ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { onOpen(p) }.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(icon(p), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(16.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(tr(p.title), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(tr(p.hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            val v = value(p)
+                            if (v.isNotEmpty()) Text(v, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
             }
         }
@@ -1175,46 +1389,98 @@ fun VpnCard(vm: MainViewModel, mode: Mode, onConnect: () -> Unit) {
             }
         }
     }
-    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
-        Column(Modifier.padding(16.dp)) {
+    val isDark = isSystemInDarkTheme()
+    val scheme = MaterialTheme.colorScheme
+    val phase = status.phase
+    val (okBg, okFg) = PhoenixTheme.safe(isDark)
+    // «уголёк»: цвет круга и кольца показывает состояние; зелёный — только «защищено», красный — только ошибка
+    val circleBg = when (phase) {
+        VpnPhase.CONNECTED -> okBg
+        VpnPhase.ERROR -> scheme.errorContainer
+        else -> scheme.surfaceContainer
+    }
+    val ringColor = when (phase) {
+        VpnPhase.CONNECTED -> okFg
+        VpnPhase.ERROR -> scheme.error
+        VpnPhase.CONNECTING -> scheme.primary
+        VpnPhase.IDLE -> scheme.outline
+    }
+    val title = when (phase) {
+        VpnPhase.CONNECTING -> tr("Подключаюсь…")
+        VpnPhase.CONNECTED -> tr("Защищено")
+        VpnPhase.ERROR -> tr("Ошибка VPN")
+        VpnPhase.IDLE -> tr("Не защищено")
+    }
+    val detail = when {
+        phase == VpnPhase.ERROR -> status.error
+        phase == VpnPhase.IDLE -> best?.takeIf { it.isNotBlank() }?.let { tr("Лучший сейчас: {}", it) }.orEmpty()
+        else -> status.title + (if (status.note.isNotBlank()) "\n${status.note}" else "")
+    }
+    val work by vm.busy.collectAsStateWithLifecycle()
+
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Surface(shape = RoundedCornerShape(50), color = scheme.surfaceContainer) {
             Text(
-                when (status.phase) {
-                    VpnPhase.CONNECTING -> tr("Подключаюсь…")
-                    VpnPhase.CONNECTED -> tr("VPN включён")
-                    VpnPhase.ERROR -> tr("Ошибка VPN")
-                    VpnPhase.IDLE -> tr("VPN выключен")
-                },
-                style = MaterialTheme.typography.titleLarge,
+                tr(mode.title) + (if (auto) " · " + tr("авто") else ""),
+                style = MaterialTheme.typography.labelLarge,
+                color = scheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
             )
-            val detail = when {
-                status.phase == VpnPhase.ERROR -> status.error
-                status.phase == VpnPhase.IDLE -> best?.takeIf { it.isNotBlank() }?.let { tr("Лучший сейчас: {}", it) }.orEmpty()
-                else -> status.title + (if (status.note.isNotBlank()) "\n${status.note}" else "") + tr("\nЗапасных проверено: {}", reserve)
+        }
+        Spacer(Modifier.height(20.dp))
+        Box(
+            Modifier.size(168.dp).clip(CircleShape).background(circleBg)
+                .semantics { contentDescription = title }
+                .clickable(enabled = phase != VpnPhase.CONNECTING) { if (on) PhoenixVpnService.stop(context) else onConnect() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Canvas(Modifier.fillMaxSize()) { drawCircle(color = ringColor, radius = size.minDimension / 2 - 1.5.dp.toPx(), style = Stroke(width = 3.dp.toPx())) }
+            when (phase) {
+                VpnPhase.CONNECTED -> Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(72.dp), tint = okFg)
+                VpnPhase.ERROR -> Icon(Icons.Filled.Warning, contentDescription = null, modifier = Modifier.size(64.dp), tint = scheme.error)
+                else -> PowerGlyph(if (phase == VpnPhase.CONNECTING) scheme.primary else scheme.onSurfaceVariant)
             }
-            if (detail.isNotBlank()) {
-                Text(detail, style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
-            }
-            Text(
-                tr("Режим: {}", tr(mode.title)) + if (auto) tr(" (определяется сам)") else "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            val work by vm.busy.collectAsStateWithLifecycle()
-            if (work.isNotEmpty()) Text(work, style = MaterialTheme.typography.bodySmall)
-            Spacer(Modifier.height(8.dp))
-            if (on) {
-                OutlinedButton(onClick = { SwitchRequest.show.value = true }, enabled = status.phase == VpnPhase.CONNECTED, modifier = Modifier.fillMaxWidth()) { Text(tr("Сменить сервер")) }
-                val pinned by VpnState.pinned.collectAsStateWithLifecycle()
-                OutlinedButton(onClick = { PhoenixVpnService.smartSwitch(context) }, enabled = status.phase == VpnPhase.CONNECTED, modifier = Modifier.fillMaxWidth()) { Text(tr("Умная смена (под открытое приложение)")) }
-                OutlinedButton(onClick = { PhoenixVpnService.veto(context) }, enabled = status.phase == VpnPhase.CONNECTED, modifier = Modifier.fillMaxWidth()) { Text(tr("Открытый сервис не работает на этом сервере")) }
-                if (pinned && status.phase == VpnPhase.CONNECTED) {
-                    OutlinedButton(onClick = { PhoenixVpnService.unpin(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("📌 Открепить сервер")) }
+            if (phase == VpnPhase.CONNECTING) CircularProgressIndicator(Modifier.fillMaxSize(), color = scheme.primary, strokeWidth = 4.dp)
+        }
+        Spacer(Modifier.height(16.dp))
+        Text(title, style = MaterialTheme.typography.headlineMedium, color = if (phase == VpnPhase.CONNECTED) okFg else scheme.onSurface)
+        if (detail.isNotBlank()) {
+            Text(detail, style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+        }
+        if (work.isNotEmpty()) Text(work, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+        if (on) {
+            Spacer(Modifier.height(16.dp))
+            var menu by remember { mutableStateOf(false) }
+            val pinned by VpnState.pinned.collectAsStateWithLifecycle()
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = { SwitchRequest.show.value = true }, enabled = phase == VpnPhase.CONNECTED) { Text(tr("Сменить сервер")) }
+                Box {
+                    IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, contentDescription = tr("Ещё")) }
+                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        DropdownMenuItem(text = { Text(tr("Умная смена (под открытое приложение)")) }, enabled = phase == VpnPhase.CONNECTED, onClick = { menu = false; PhoenixVpnService.smartSwitch(context) })
+                        DropdownMenuItem(text = { Text(tr("Открытый сервис не работает на этом сервере")) }, enabled = phase == VpnPhase.CONNECTED, onClick = { menu = false; PhoenixVpnService.veto(context) })
+                        if (pinned && phase == VpnPhase.CONNECTED) DropdownMenuItem(text = { Text(tr("📌 Открепить сервер")) }, onClick = { menu = false; PhoenixVpnService.unpin(context) })
+                    }
                 }
-                OutlinedButton(onClick = { PhoenixVpnService.stop(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Отключить")) }
-            } else {
-                Button(onClick = onConnect, modifier = Modifier.fillMaxWidth()) { Text(tr("Подключить")) }
             }
         }
+    }
+}
+
+/** Значок питания (кружок с чёрточкой), нарисованный на холсте: без картинок и зависимостей. */
+@Composable
+private fun PowerGlyph(color: androidx.compose.ui.graphics.Color) {
+    Canvas(Modifier.size(64.dp)) {
+        val w = 6.dp.toPx()
+        val s = size.minDimension
+        val side = s - 2 * w - s * 0.1f
+        drawArc(
+            color = color, startAngle = -60f, sweepAngle = 300f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset((s - side) / 2, s - side - w),
+            size = androidx.compose.ui.geometry.Size(side, side),
+            style = Stroke(width = w, cap = androidx.compose.ui.graphics.StrokeCap.Round),
+        )
+        drawLine(color, androidx.compose.ui.geometry.Offset(s / 2, w), androidx.compose.ui.geometry.Offset(s / 2, s * 0.5f), strokeWidth = w, cap = androidx.compose.ui.graphics.StrokeCap.Round)
     }
 }
 
@@ -1234,31 +1500,33 @@ fun HomePanel(vm: MainViewModel, onServers: () -> Unit) {
         rows.count { r -> checks[CheckStore.keyOf(r.raw)]?.let { !it.dead && !it.staleFor(r.raw) } == true }
     }
 
-    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-        Text(
-            text = when {
-                running -> "⏳ " + message.ifBlank { tr("Работаю…") }
-                rechecking -> "⏳ " + recheckProgress.ifBlank { tr("Перепроверяю серверы…") }
-                message.isNotBlank() -> message
-                rows.isEmpty() -> tr("Данных ещё нет. Нажмите «Собрать сейчас» (или дождитесь ночного запуска).")
-                else -> tr("Последняя сборка загружена.")
-            },
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Text(
-            tr("Серверов: {} · проверено живых: {}", rows.size, alive),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        Spacer(Modifier.height(8.dp))
-        Button(onClick = { vm.runNow() }, enabled = !running, modifier = Modifier.fillMaxWidth()) { Text(tr("Собрать сейчас")) }
-        OutlinedButton(onClick = onServers, modifier = Modifier.fillMaxWidth()) { Text(tr("Серверы: список, сортировка, фильтры")) }
-        OutlinedButton(
-            onClick = { Exporter.copy(context, rows.joinToString("\n") { it.raw }, rows.size) },
-            enabled = rows.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(tr("Копировать все ({})", rows.size)) }
+    val scheme = MaterialTheme.colorScheme
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // строка серверов: итог числами, нажатие открывает список; при сборе или перепроверке здесь же ход работы
+        val busyText = when {
+            running -> message.ifBlank { tr("Работаю…") }
+            rechecking -> recheckProgress.ifBlank { tr("Перепроверяю серверы…") }
+            else -> ""
+        }
+        Card(Modifier.fillMaxWidth().clickable { onServers() }, shape = RoundedCornerShape(20.dp)) {
+            Column(Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(tr("Серверов: {} · живых: {}", rows.size, alive), style = MaterialTheme.typography.titleMedium)
+                        if (busyText.isNotEmpty()) Text(busyText, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        else if (rows.isEmpty()) Text(tr("Данных ещё нет. Нажмите «Собрать сейчас» (или дождитесь ночного запуска)."), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                        else if (message.isNotBlank()) Text(message, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = scheme.onSurfaceVariant)
+                }
+                if (busyText.isNotEmpty()) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 10.dp), color = scheme.primary, trackColor = scheme.surfaceContainerHigh)
+            }
+        }
+        FilledTonalButton(onClick = { vm.runNow() }, enabled = !running, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(tr("Собрать сейчас"))
+        }
     }
 }
 
@@ -1306,7 +1574,9 @@ fun UrlRow(url: String, note: String, action: String?, onAction: () -> Unit = {}
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(url, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                var full by rememberSaveable(url) { mutableStateOf(false) }
+                Text(if (full) url else ShortUrl.of(url), style = MaterialTheme.typography.bodySmall, maxLines = if (full) 4 else 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable { full = !full })
                 if (note.isNotBlank()) {
                     Text(
                         note,
@@ -1327,11 +1597,13 @@ fun UrlRow(url: String, note: String, action: String?, onAction: () -> Unit = {}
 fun SourceRow(url: String, note: String, level: Int, onLevel: (Int) -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)) {
-            Text(url, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            var full by rememberSaveable(url) { mutableStateOf(false) }
+            Text(if (full) url else ShortUrl.of(url), style = MaterialTheme.typography.bodySmall, maxLines = if (full) 4 else 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable { full = !full })
             Text(note, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
                 listOf(SourcePriority.LOW, SourcePriority.NORMAL, SourcePriority.HIGH).forEach { l ->
-                    FilterChip(selected = level == l, onClick = { onLevel(l) }, label = { Text(SourcePriority.title(l)) })
+                    FilterChip(selected = level == l, onClick = { onLevel(l) }, label = { Text(tr(SourcePriority.title(l))) })
                 }
             }
         }
@@ -1355,6 +1627,12 @@ fun SourcesTab(vm: MainViewModel) {
     var newSource by remember { mutableStateOf("") }
     var newBlack by remember { mutableStateOf("") }
 
+    val statByUrl = remember(stats) { stats.associateBy { it.url } }
+    val linkRows = remember(statByUrl, mine, prios) {
+        (statByUrl.keys + mine).distinct()
+            .sortedWith(compareByDescending<String> { prios[it] ?: 0 }.thenByDescending { u -> statByUrl[u]?.percent ?: -2 })
+    }
+
     fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
 
     LazyColumn(
@@ -1369,7 +1647,7 @@ fun SourcesTab(vm: MainViewModel) {
                     FilterChip(
                         selected = mode == m,
                         onClick = { vm.setSourcesMode(m) },
-                        label = { Text(m.title + if (m == activeMode) " ✓" else "") },
+                        label = { Text(tr(m.title) + if (m == activeMode) " ✓" else "") },
                     )
                 }
             }
@@ -1390,24 +1668,6 @@ fun SourcesTab(vm: MainViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        item {
-            Column {
-                Button(onClick = { vm.recheckAll() }, enabled = !rechecking) {
-                    Text(if (rechecking) tr("Идёт перепроверка…") else tr("Перепроверить все конфиги"))
-                }
-                OutlinedButton(onClick = { vm.recheckApps() }, enabled = !rechecking) { Text(tr("Перепроверить только приложения")) }
-                if (recheckText.isNotBlank()) {
-                    Text(recheckText, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-                }
-                Text(
-                    tr("Проверяет все конфиги режима заново (сначала TCP, потом настоящая задержка через ядро). Идёт в фоне до 25 минут, можно закрыть экран."),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        val linkRows = (stats.map { it.url } + mine).distinct()
-            .sortedWith(compareByDescending<String> { prios[it] ?: 0 }.thenByDescending { u -> stats.firstOrNull { it.url == u }?.percent ?: -2 })
         if (linkRows.isEmpty()) {
             item {
                 Text(
@@ -1416,8 +1676,8 @@ fun SourcesTab(vm: MainViewModel) {
                 )
             }
         }
-        items(linkRows) { url ->
-            val st = stats.firstOrNull { it.url == url }
+        items(linkRows, key = { it }) { url ->
+            val st = statByUrl[url]
             SourceRow(
                 url = url,
                 note = st?.text() ?: tr("ещё не скачивалась"),
@@ -1495,7 +1755,7 @@ fun SourcesTab(vm: MainViewModel) {
                 toast(if (found.isEmpty()) tr("В буфере нет ссылок https://…") else tr("Добавлено {} из {}. Появятся в следующей сборке", added, found.size))
             }) { Text(tr("Добавить ссылки из буфера обмена")) }
         }
-        items(mine) { url -> UrlRow(url, "", tr("Удалить")) { vm.removeUserSource(url) } }
+        items(mine.distinct(), key = { it }) { url -> UrlRow(url, "", tr("Удалить")) { vm.removeUserSource(url) } }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { Text(tr("Предложения аудита ({})", proposals.size), style = MaterialTheme.typography.titleMedium) }
@@ -1559,7 +1819,7 @@ fun SourcesTab(vm: MainViewModel) {
                 }) { Text(tr("В ЧС")) }
             }
         }
-        items(blacklist) { e -> UrlRow(e.url, e.reason, tr("Вернуть")) { vm.unblacklist(e.url) } }
+        items(blacklist.distinctBy { it.url }, key = { it.url }) { e -> UrlRow(e.url, e.reason, tr("Вернуть")) { vm.unblacklist(e.url) } }
         item { Spacer(Modifier.height(16.dp)) }
     }
 }
@@ -1600,7 +1860,7 @@ fun SettingsTab(vm: MainViewModel) {
             if (carryDays == 0) tr("Рабочие конфиги прошлого сбора не переносятся") else tr("Рабочие конфиги прошлого сбора остаются в списке ещё {} дн., если источник их не отдал", carryDays),
             style = MaterialTheme.typography.bodyLarge,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
             listOf(0, 1, 3, 7, 14).forEach { d ->
                 FilterChip(selected = carryDays == d, onClick = { vm.setCarryDays(d) }, label = { Text(if (d == 0) tr("Выкл") else tr("{} дн.", d)) })
             }
@@ -1613,7 +1873,7 @@ fun SettingsTab(vm: MainViewModel) {
         Spacer(Modifier.height(8.dp))
         if (kind == ScheduleKind.INTERVAL) {
             Text(tr("Каждые {} ч после последнего удачного сбора", hours), style = MaterialTheme.typography.bodyLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
                 listOf(3, 6, 12, 24, 48).forEach { h ->
                     FilterChip(selected = hours == h, onClick = { vm.setIntervalHours(h) }, label = { Text(tr("{} ч", h)) })
                 }
@@ -1649,7 +1909,7 @@ fun SettingsTab(vm: MainViewModel) {
             Switch(checked = onlyCharging, onCheckedChange = { vm.setOnlyCharging(it) })
         }
         Spacer(Modifier.height(16.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(12.dp))
         ReliabilitySection()
     }
@@ -1682,20 +1942,36 @@ fun ReliabilitySection() {
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
 
-    HorizontalDivider()
+    Spacer(Modifier.height(4.dp))
     Spacer(Modifier.height(12.dp))
     Text(tr("Надёжность автосбора"), style = MaterialTheme.typography.titleMedium)
-    Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(8.dp))
+    val dark = androidx.compose.foundation.isSystemInDarkTheme()
+    val level = BackgroundHealth.level(status.ignoringBatteryOptimization, status.exactAlarmAllowed, status.alarmSet)
+    val levelColor = when (level) {
+        HealthLevel.OK -> PhoenixTheme.ok(dark)
+        HealthLevel.WARN -> PhoenixTheme.amber(dark)
+        HealthLevel.BAD -> MaterialTheme.colorScheme.error
+    }
+    Card(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(14.dp).background(levelColor, androidx.compose.foundation.shape.CircleShape))
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(
+                    when (level) {
+                        HealthLevel.OK -> tr("Автосбор сработает вовремя")
+                        HealthLevel.WARN -> tr("Автосбор может не сработать")
+                        HealthLevel.BAD -> tr("Автосбор не запланирован")
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(tr("Следующий сбор: {}", status.alarmText), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+    Spacer(Modifier.height(8.dp))
     Text(tr("Последний запуск: {}", status.lastRunText), style = MaterialTheme.typography.bodyMedium)
-    Text(tr("Будильник: {}", status.alarmText), style = MaterialTheme.typography.bodyMedium)
-    Text(
-        tr("Точные будильники: ") + if (status.exactAlarmAllowed) tr("разрешены") else tr("НЕ разрешены"),
-        style = MaterialTheme.typography.bodyMedium,
-    )
-    Text(
-        tr("Ограничение батареи: ") + if (status.ignoringBatteryOptimization) tr("снято") else tr("действует"),
-        style = MaterialTheme.typography.bodyMedium,
-    )
     Spacer(Modifier.height(4.dp))
     Text(
         tr("Без этих разрешений Android (особенно MIUI/HyperOS) может не запустить сбор ночью, пока приложение закрыто. Тогда сбор пройдёт при первом открытии телефона или приложения."),
@@ -1708,11 +1984,87 @@ fun ReliabilitySection() {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Spacer(Modifier.height(8.dp))
-    Text(
-        "MIUI: Настройки → Приложения → Phoenix → Контроль активности → «Нет ограничений»; " +
-            "закрепите Phoenix в списке недавних (замок).",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+}
+
+
+/** Плашка «Доступна новая версия» на главном экране; показывается, только если на GitHub версия новее установленной. */
+@Composable
+private fun UpdateBanner(vm: MainViewModel, onMore: () -> Unit) {
+    val context = LocalContext.current
+    val u by vm.update.collectAsStateWithLifecycle()
+    val current = remember { UpdateChecker.currentVersion(context) }
+    if (!u.newer(current)) return
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(tr("Доступна новая версия {}", u.tag), style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { openUrl(context, u.url.ifEmpty { UpdateCheck.PAGE_URL }) }) { Text(tr("Открыть страницу загрузки")) }
+                TextButton(onClick = onMore) { Text(tr("Обновления")) }
+            }
+        }
+    }
+}
+
+private fun openUrl(context: android.content.Context, url: String) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: Exception) {
+    }
+}
+
+/** Страница «Обновления»: версия, когда проверяли, кнопка принудительной проверки. */
+@Composable
+private fun UpdatePage(vm: MainViewModel) {
+    val context = LocalContext.current
+    val u by vm.update.collectAsStateWithLifecycle()
+    val current = remember { UpdateChecker.currentVersion(context) }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(tr("Текущая версия: {}", current), style = MaterialTheme.typography.titleMedium)
+        Text(
+            if (u.checkedAt == 0L) tr("Последняя проверка: {}", tr("ещё не проверялось"))
+            else tr("Последняя проверка: {}", RelTime.format(u.checkedAt, System.currentTimeMillis())),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        when {
+            u.busy -> Text(tr("Проверяю…"), style = MaterialTheme.typography.bodyLarge)
+            u.failed -> Text(tr("Не удалось проверить: нет связи с GitHub"), color = MaterialTheme.colorScheme.error)
+            u.newer(current) -> Text(tr("Новая версия: {}", u.tag), style = MaterialTheme.typography.titleMedium)
+            u.checkedAt != 0L -> Text(tr("Установлена последняя версия"), style = MaterialTheme.typography.bodyLarge)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(enabled = !u.busy, onClick = { vm.checkUpdate(force = true) }) { Text(tr("Проверить сейчас")) }
+            if (u.newer(current)) OutlinedButton(onClick = { openUrl(context, u.url.ifEmpty { UpdateCheck.PAGE_URL }) }) { Text(tr("Открыть страницу загрузки")) }
+        }
+        if (u.newer(current)) InstallControls(vm)
+        Text(
+            tr("Приложение раз в сутки смотрит страницу релизов на GitHub; при выходе новой версии придёт отдельное уведомление. Установить её можно кнопкой «Скачать и установить» или вручную: скачайте APK на странице релиза."),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+
+/** Кнопка «Скачать и установить» с ходом загрузки; появляется, только если в релизе есть файл APK. */
+@Composable
+private fun InstallControls(vm: MainViewModel) {
+    val context = LocalContext.current
+    val p by vm.install.collectAsStateWithLifecycle()
+    val hasApk = remember { AppSettings(context).updateApkUrl.isNotEmpty() }
+    if (!hasApk) return
+    val busy = p.stage == InstallProgress.Stage.DOWNLOADING || p.stage == InstallProgress.Stage.VERIFYING || p.stage == InstallProgress.Stage.INSTALLING
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Button(enabled = !busy, onClick = { vm.installUpdate() }) { Text(tr("Скачать и установить")) }
+        when (p.stage) {
+            InstallProgress.Stage.DOWNLOADING -> Text(tr("Скачиваю… {}%", p.percent), style = MaterialTheme.typography.bodyMedium)
+            InstallProgress.Stage.VERIFYING -> Text(tr("Проверяю файл…"), style = MaterialTheme.typography.bodyMedium)
+            InstallProgress.Stage.INSTALLING -> Text(tr("Передаю на установку: подтвердите в системном окне"), style = MaterialTheme.typography.bodyMedium)
+            InstallProgress.Stage.NEED_PERMISSION -> {
+                Text(tr("Разрешите Phoenix устанавливать приложения, затем нажмите «Скачать и установить» ещё раз"), style = MaterialTheme.typography.bodyMedium)
+                OutlinedButton(onClick = { UpdateInstaller.openPermissionSettings(context) }) { Text(tr("Открыть разрешение")) }
+            }
+            InstallProgress.Stage.FAILED -> Text(tr("Не удалось: {}", p.error), color = MaterialTheme.colorScheme.error)
+            InstallProgress.Stage.IDLE -> {}
+        }
+    }
 }

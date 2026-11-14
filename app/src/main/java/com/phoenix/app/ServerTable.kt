@@ -47,7 +47,7 @@ data class ServerFilter(
     val country: String = "",
     /** Нужно минимум столько полностью открытых сервисов. */
     val minOk: Int = 0,
-)
+) : java.io.Serializable
 
 object ServerTable {
     fun matches(e: ServerEntry, f: ServerFilter): Boolean {
@@ -123,7 +123,7 @@ object ServerTable {
     fun summary(list: List<ServerEntry>): String {
         val checked = list.count { it.checkedOnce }
         val alive = list.count { it.checkedOnce && !it.dead }
-        return "Всего ${list.size} · проверено $checked · живых $alive"
+        return tr("Всего {} · проверено {} · живых {}", list.size, checked, alive)
     }
 
     /** Строка показателей для карточки. */
@@ -131,14 +131,14 @@ object ServerTable {
         val parts = ArrayList<String>()
         parts += e.protocol.uppercase() + if (e.reality) " Reality" else ""
         parts += e.cc ?: "??"
-        parts += "${e.days} дн."
-        if (e.dead) parts += "не отвечает"
+        parts += tr("{} дн.", e.days)
+        if (e.dead) parts += tr("не отвечает")
         else {
-            e.pingMs?.let { parts += "$it мс" }
-            e.mbps?.let { parts += String.format(java.util.Locale.US, "%.1f Мбит/с", it) }
-            if (e.checkedOnce) parts += "сервисов: ${e.ok}✓" + (if (e.partial > 0) " ${e.partial}≈" else "") + (if (e.blocked > 0) " ${e.blocked}✗" else "")
+            e.pingMs?.let { parts += tr("{} мс", it) }
+            e.mbps?.let { parts += tr("{} Мбит/с", String.format(java.util.Locale.US, "%.1f", it)) }
+            if (e.checkedOnce) parts += tr("сервисов: {}", "${e.ok}✓" + (if (e.partial > 0) " ${e.partial}≈" else "") + (if (e.blocked > 0) " ${e.blocked}✗" else ""))
         }
-        if (e.checkedOnce) parts += "проверен " + e.checked.takeLast(5)
+        if (e.checkedOnce) parts += tr("проверен {}", e.checked.takeLast(5))
         return parts.joinToString(" · ")
     }
 }

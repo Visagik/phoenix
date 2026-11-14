@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -12,19 +14,42 @@ android {
         applicationId = "com.phoenix.app"
         minSdk = 29
         targetSdk = 35
-        versionCode = 77
-        versionName = "3.9.64"
+        versionCode = 78
+        versionName = "3.9.65"
 
         ndk {
-            // libv2ray.aar содержит нативные библиотеки; оставляем только ARM (все современные телефоны)
+            // libv2ray.aar содержит нативные библиотеки; оставляем только arm64 (все современные телефоны)
             abiFilters += listOf("arm64-v8a")
+        }
+    }
+
+    // Постоянная подпись выпусков: ключ и пароли — в keystore.properties (вне git) или в переменных окружения (CI).
+    // Нет ключа — release собирается без подписи, debug-сборка не затрагивается.
+    val keyProps = Properties().apply {
+        val f = rootProject.file("keystore.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+    fun signValue(prop: String, env: String): String? = keyProps.getProperty(prop) ?: System.getenv(env)
+    val releaseKeyPath = signValue("storeFile", "PHOENIX_KEYSTORE")
+
+    signingConfigs {
+        if (releaseKeyPath != null) {
+            create("release") {
+                storeFile = rootProject.file(releaseKeyPath)
+                storePassword = signValue("storePassword", "PHOENIX_STORE_PASSWORD")
+                keyAlias = signValue("keyAlias", "PHOENIX_KEY_ALIAS") ?: "androiddebugkey"
+                keyPassword = signValue("keyPassword", "PHOENIX_KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // сжатие кода и ресурсов без переименования (см. proguard-rules.pro): журнал и отчёты остаются читаемыми
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (releaseKeyPath != null) signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -47,6 +72,7 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-core") // базовые значки: дом, список, настройки, назад и др.
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")

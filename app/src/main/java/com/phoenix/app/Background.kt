@@ -18,6 +18,7 @@ data class BackgroundStatus(
     val exactAlarmAllowed: Boolean,
     val alarmText: String,
     val lastRunText: String,
+    val alarmSet: Boolean = true,
 )
 
 object Background {
@@ -25,14 +26,14 @@ object Background {
         val s = AppSettings(context)
         val pm = context.getSystemService(PowerManager::class.java)
         val alarm = if (s.alarmAt == 0L) "не поставлен" else {
-            val t = LocalDateTime.ofInstant(Instant.ofEpochMilli(s.alarmAt), ZoneId.systemDefault())
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(t) + if (s.alarmExact) " (точный)" else " (неточный)"
+            RelTime.format(s.alarmAt, System.currentTimeMillis()) + if (s.alarmExact) " (точный)" else " (неточный)"
         }
         return BackgroundStatus(
             ignoringBatteryOptimization = pm.isIgnoringBatteryOptimizations(context.packageName),
             exactAlarmAllowed = AlarmScheduler.canScheduleExact(context),
             alarmText = alarm,
             lastRunText = s.lastRunText(),
+            alarmSet = s.alarmAt != 0L,
         )
     }
 

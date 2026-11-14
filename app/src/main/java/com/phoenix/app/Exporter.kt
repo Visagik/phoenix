@@ -9,6 +9,7 @@ import android.provider.MediaStore
 import android.widget.Toast
 
 object Exporter {
+    private const val MAX_CLIP_CHARS = 400_000
     private val V2RAYNG_PACKAGES = listOf("com.v2ray.ang", "com.v2ray.ang.fdroid")
 
     fun copy(context: Context, text: String, count: Int) {
@@ -18,8 +19,17 @@ object Exporter {
             // ссылки содержат ключи доступа: не показывать их в плашке буфера обмена
             clip.description.extras = android.os.PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
         }
-        cm.setPrimaryClip(clip)
-        Toast.makeText(context, tr("Скопировано: {}. В V2RayNG: «+» → «Импорт из буфера обмена»", count), Toast.LENGTH_LONG).show()
+        // системный буфер ограничен примерно мегабайтом: на 1400 ссылках запись падала с исключением и роняла приложение (находка Фейбла по оболочке №2)
+        if (text.length > MAX_CLIP_CHARS) {
+            Toast.makeText(context, tr("Слишком много для буфера обмена ({}). Используйте «В файл»", count), Toast.LENGTH_LONG).show()
+            return
+        }
+        try {
+            cm.setPrimaryClip(clip)
+            Toast.makeText(context, tr("Скопировано: {}. В V2RayNG: «+» → «Импорт из буфера обмена»", count), Toast.LENGTH_LONG).show()
+        } catch (_: Throwable) {
+            Toast.makeText(context, tr("Не удалось скопировать: слишком много данных. Используйте «В файл»"), Toast.LENGTH_LONG).show()
+        }
     }
 
     fun openV2RayNG(context: Context) {

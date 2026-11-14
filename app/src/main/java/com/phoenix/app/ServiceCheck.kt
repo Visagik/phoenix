@@ -13,6 +13,12 @@ import java.security.MessageDigest
 /** Сервис, доступность которого проверяется через конфиг. */
 data class CheckService(val id: String, val title: String, val url: String)
 
+/** Итог проверки сервиса через сервер: открыт, частично, закрыт, ещё не проверялся. */
+enum class ServiceStatus { OPEN, PARTIAL, CLOSED, UNKNOWN }
+
+/** Строка таблицы «цели × сервисы»: название цели, сервер и состояния сервисов в порядке столбцов. */
+data class MatrixRow(val label: String, val server: String, val statuses: List<ServiceStatus>)
+
 object CheckServices {
     /**
      * Ядро (measureOutboundDelay) считает успехом только ответ 200 или 204 без ошибок, поэтому для сервисов
@@ -55,6 +61,16 @@ data class CheckResult(
     val host: String = "",
 ) {
     val dead: Boolean get() = baselineMs < 0
+
+    /** Состояние одного сервиса для таблицы «цель × сервис». */
+    fun status(serviceId: String): ServiceStatus {
+        val ms = services[serviceId] ?: return ServiceStatus.UNKNOWN
+        return when {
+            ms >= 0 -> ServiceStatus.OPEN
+            ms == CheckServices.PARTIAL -> ServiceStatus.PARTIAL
+            else -> ServiceStatus.CLOSED
+        }
+    }
 
     /** Адрес сервера сменился после проверки (конфиг найден по имени). */
     fun staleFor(link: String): Boolean {
@@ -314,8 +330,11 @@ object ServiceMatch {
 
     /** Сервис, адрес которого совпадает с адресом проверки цели (по домену), либо null. */
     fun serviceFor(checkUrl: String, services: List<CheckService>): CheckService? {
-        val h = hostOf(checkUrl)
+        var h = hostOf(checkUrl)
         if (h.isEmpty()) return null
+        // NotebookLM — сервис Google с той же проверкой региона, что у Gemini: отдельной проверки у него нет, и без этой
+        // подстановки сервер, где Gemini открывается, при поиске под NotebookLM ничем не выделялся (журнал 15.11)
+        if (h == "notebooklm.google.com" || h == "notebooklm.google" || h == "notebook.google.com" || h == "notebook.google") h = "gemini.google.com"
         return services.firstOrNull { val sh = hostOf(it.url); sh == h || h.endsWith(".$sh") || sh.endsWith(".$h") }
     }
 

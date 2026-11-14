@@ -12,7 +12,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -67,15 +74,30 @@ private fun Hint(text: String) = Text(
 )
 
 @Composable
-private fun SwitchRow(title: String, hint: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+fun SwitchRow(title: String, hint: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 6.dp)) {
-        Column(Modifier.weight(1f)) {
+        // длинное пояснение сворачивается до двух строк; нажатие на текст раскрывает его целиком
+        var expanded by rememberSaveable(title) { mutableStateOf(false) }
+        val long = hint.length > 90
+        Column(Modifier.weight(1f).clickable(enabled = long) { expanded = !expanded }) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
-            Hint(hint)
+            Text(
+                hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = if (expanded) Int.MAX_VALUE else 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         Spacer(Modifier.width(8.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked, enabled = enabled, onCheckedChange = onChange)
     }
+}
+
+/** Заголовок группы настроек: небольшой, цветом основного действия. */
+@Composable
+fun GroupLabel(text: String) {
+    Text(text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 14.dp, bottom = 2.dp))
 }
 
 // ---------------------------------------------------------------- Режим блокировок
@@ -144,7 +166,7 @@ fun ConnectionPage(vm: MainViewModel) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
         Text(tr("Ядро"), style = MaterialTheme.typography.titleMedium)
         Text(
-            if (XrayCore.available) tr("Xray: версия {}", XrayCore.version()) else XrayCore.problem + if (XrayCore.present) tr(" Сейчас: {}.", XrayCore.version()) else "",
+            if (XrayCore.available) tr("Xray: версия {}", remember { XrayCore.version() }) else XrayCore.problem + if (XrayCore.present) tr(" Сейчас: {}.", XrayCore.version()) else "",
             style = MaterialTheme.typography.bodySmall,
             color = if (XrayCore.available) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
         )
@@ -157,7 +179,7 @@ fun ConnectionPage(vm: MainViewModel) {
             else tr("Замеры скорости сами не идут (мобильная сеть); кнопка «Скорость» на карточке работает всегда.")
         )
         Spacer(Modifier.height(8.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(8.dp))
         Text(tr("Чьи настройки править"), style = MaterialTheme.typography.titleMedium)
         FlowRow(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
@@ -188,12 +210,13 @@ fun ConnectionPage(vm: MainViewModel) {
                 OutlinedButton(onClick = { vm.resetOverrides(editMode) }) { Text(tr("Сбросить к общим настройкам")) }
             }
         }
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         if (!editable) {
             Spacer(Modifier.height(8.dp))
             Text(tr("Сейчас для этого режима действуют общие настройки. Включите «Свои настройки», чтобы менять их отдельно."), style = MaterialTheme.typography.bodyMedium)
         }
         if (editable) {
+        GroupLabel(tr("Смена сервера"))
         SwitchRow(
             tr("Переподключаться само"),
             tr("Если туннель перестал работать (три неудачные проверки), приложение перебирает запасные конфиги лучшего рейтинга."),
@@ -246,10 +269,14 @@ fun ConnectionPage(vm: MainViewModel) {
             tr("Когда сервер перестаёт работать и приложение само ищет другой, оно смотрит, какое приложение открыто сейчас (нужен доступ к данным об использовании), и пробует первыми серверы, на которых это приложение уже открывалось. Если у приложения есть своя цель — сначала её серверы."),
             appAware,
         ) { appAware = it; quietSettings.appAwareFailover = it }
-        val siteWatching = CurrentSite.isListed(
-            android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
-            context.packageName, "SiteWatcherService",
-        )
+        // вернулись из системных настроек доступности — статус обновляется сам, а не только после перезахода на страницу
+        val resumed = rememberResumeTick()
+        val siteWatching = remember(resumed) {
+            CurrentSite.isListed(
+                android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
+                context.packageName, "SiteWatcherService",
+            )
+        }
         Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
             Column(Modifier.padding(12.dp)) {
                 Text(if (siteWatching) tr("Сайт в браузере: определяется") else tr("Сайт в браузере: не определяется"), style = MaterialTheme.typography.bodyMedium)
@@ -271,6 +298,7 @@ fun ConnectionPage(vm: MainViewModel) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         )
+        GroupLabel(tr("Тихие часы"))
         var quietAuto by remember { mutableStateOf(quietSettings.quietAuto) }
         var quietManual by remember { mutableStateOf(quietSettings.quietManual) }
         var quietFrom by remember { mutableStateOf(quietSettings.quietFrom) }
@@ -286,7 +314,7 @@ fun ConnectionPage(vm: MainViewModel) {
             quietManual,
         ) { quietManual = it; quietSettings.quietManual = it }
         if (quietManual) {
-            Row(Modifier.padding(vertical = 4.dp)) {
+            FlowRow(Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 OutlinedButton(onClick = { quietFrom = (quietFrom + 23) % 24; quietSettings.quietFrom = quietFrom }) { Text("−") }
                 Text(tr("  с %02d:00  ").format(quietFrom))
                 OutlinedButton(onClick = { quietFrom = (quietFrom + 1) % 24; quietSettings.quietFrom = quietFrom }) { Text("+") }
@@ -296,12 +324,13 @@ fun ConnectionPage(vm: MainViewModel) {
                 OutlinedButton(onClick = { quietTo = (quietTo + 1) % 24; quietSettings.quietTo = quietTo }) { Text("+") }
             }
         }
+        GroupLabel(tr("Запуск и защита"))
         SwitchRow(
             tr("Подключать VPN само"),
             tr("При включении телефона и при открытии приложения (последний или лучший конфиг). Нужно один раз дать системное разрешение на VPN."),
             autoConnect,
         ) { vm.setAutoConnect(it) }
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(12.dp))
         Text("IPv6", style = MaterialTheme.typography.titleMedium)
         Hint(
@@ -313,7 +342,7 @@ fun ConnectionPage(vm: MainViewModel) {
             }
         }
         Spacer(Modifier.height(12.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         SwitchRow(
             tr("Не пускать интернет без VPN"),
             tr("Если VPN не удалось поднять или он оборвался, туннель остаётся включённым и трафик блокируется, пока приложение ищет рабочий сервер. По умолчанию выключено: тогда при сбое интернет идёт напрямую."),
@@ -331,7 +360,7 @@ fun ConnectionPage(vm: MainViewModel) {
         }) { Text(tr("Настройки VPN в Android")) }
         }
         Spacer(Modifier.height(12.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(12.dp))
         Text(tr("Плитка в шторке"), style = MaterialTheme.typography.titleMedium)
         Hint(tr("Кнопка «Phoenix VPN» рядом с Wi-Fi и Bluetooth: включает и выключает VPN, долгое нажатие открывает приложение. Первый раз нужно открыть приложение, чтобы дать разрешение на VPN."))
@@ -410,7 +439,7 @@ fun TargetsPage(vm: MainViewModel) {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
                         Text(
-                            if (usage) tr("Доступ к данным об использовании: есть") else tr("Для варианта Б нужен доступ к данным об использовании"),
+                            if (usage) tr("Доступ к данным об использовании: есть") else tr("Для режима «Весь VPN» нужен доступ к данным об использовании"),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Hint(tr("Чтобы узнать, какое приложение открыто сейчас. Данные остаются на телефоне."))
@@ -447,7 +476,9 @@ fun TargetsPage(vm: MainViewModel) {
                             )
                         }
                         TextButton(onClick = { editUrl = t }) { Text(tr("Адрес")) }
-                        TextButton(onClick = { vm.removeTarget(t.id) }) { Text(tr("Убрать")) }
+                        var askRemove by remember(t.id) { mutableStateOf(false) }
+                        TextButton(onClick = { askRemove = true }) { Text(tr("Убрать")) }
+                        if (askRemove) ConfirmDialog(tr("Убрать цель?"), tr("Цель «{}» и её серверы будут удалены.", t.label), onYes = { vm.removeTarget(t.id) }, onDismiss = { askRemove = false })
                     }
                     Hint(tr("проверка: ") + t.checkUrl.removePrefix("https://").removePrefix("http://") +
                         if (t.kind == TargetKind.APP && t.checkUrl == KnownApps.DEFAULT_URL) tr(" (общая: только работа сервера)") else "")
@@ -455,11 +486,11 @@ fun TargetsPage(vm: MainViewModel) {
                         FlowRow(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             FilterChip(selected = t.policy == Policy.DEFAULT, onClick = { vm.setTargetPolicy(t, Policy.DEFAULT) }, label = { Text(tr("как везде")) })
                             FilterChip(selected = t.policy == Policy.AUTO, onClick = { vm.setTargetPolicy(t, Policy.AUTO) }, label = { Text(tr("авто")) })
-                            FilterChip(selected = t.policy == Policy.PROXY, onClick = { vm.setTargetPolicy(t, Policy.PROXY) }, label = { Text(tr("А")) })
-                            FilterChip(selected = t.policy == Policy.SWITCH, onClick = { vm.setTargetPolicy(t, Policy.SWITCH) }, label = { Text(tr("Б")) })
+                            FilterChip(selected = t.policy == Policy.PROXY, onClick = { vm.setTargetPolicy(t, Policy.PROXY) }, label = { Text(tr("Только это")) })
+                            FilterChip(selected = t.policy == Policy.SWITCH, onClick = { vm.setTargetPolicy(t, Policy.SWITCH) }, label = { Text(tr("Весь VPN")) })
                         }
                     } else {
-                        Hint(tr("Для сайта работает только вариант А."))
+                        Hint(tr("Для сайта работает только режим «Только это»."))
                     }
                 }
             }
@@ -646,10 +677,14 @@ private fun SummaryPage(vm: MainViewModel) {
     val context = LocalContext.current
     var tick by remember { mutableStateOf(0) }
     var summary by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var big by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var matrix by remember { mutableStateOf<Pair<List<CheckService>, List<MatrixRow>>>(emptyList<CheckService>() to emptyList()) }
     var day by remember { mutableStateOf<List<String>>(emptyList()) }
     LaunchedEffect(tick) {
         withContext(Dispatchers.IO) {
             summary = vm.diagSummary()
+            matrix = vm.diagMatrix()
+            big = vm.diagBig()
             day = vm.logDay()
         }
     }
@@ -670,9 +705,31 @@ private fun SummaryPage(vm: MainViewModel) {
                 Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить"), Toast.LENGTH_SHORT).show()
             }) { Text(tr("В файл")) }
         }
+        if (big.isNotEmpty()) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                big.forEach { (num, cap) ->
+                    Card(Modifier.weight(1f), shape = RoundedCornerShape(20.dp)) {
+                        Column(Modifier.padding(12.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(num, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1)
+                            Text(cap, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        }
+                    }
+                }
+            }
+        }
+        if (matrix.second.isNotEmpty()) {
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(tr("Цели и сервисы"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+                    TargetMatrix(matrix.first, matrix.second)
+                }
+            }
+        }
+        // цели показаны таблицей выше; их длинные строки в сводке не повторяем
+        val targetPrefix = tr("Цель «{}»").substringBefore("{}")
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                summary.forEach { (k, v) ->
+                summary.filter { !it.first.startsWith(targetPrefix) && it.first != tr("Свежие проверки (сутки)") && it.first != tr("Перепроверка конфигов") }.forEach { (k, v) ->
                     Column {
                         Text(k, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(v, style = MaterialTheme.typography.bodyMedium)
@@ -703,7 +760,7 @@ private fun SummaryPage(vm: MainViewModel) {
 @Composable
 fun LogPage(vm: MainViewModel) {
     val context = LocalContext.current
-    var group by remember { mutableStateOf(tr("Всё")) }
+    var group by remember { mutableStateOf("Всё") } // ключ группы — русское название (по нему фильтрует Diagnostics), на экране оно переводится
     var query by remember { mutableStateOf("") }
     var problemsOnly by remember { mutableStateOf(false) }
     var all by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -717,9 +774,9 @@ fun LogPage(vm: MainViewModel) {
     val text = remember(shown) { shown.joinToString("\n") { Diagnostics.pretty(it) } }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Diagnostics.GROUPS.forEach { (title, _) ->
-                FilterChip(selected = group == title, onClick = { group = title }, label = { Text(title) })
+                FilterChip(selected = group == title, onClick = { group = title }, label = { Text(tr(title)) })
             }
         }
         OutlinedTextField(
@@ -731,19 +788,19 @@ fun LogPage(vm: MainViewModel) {
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = problemsOnly, onCheckedChange = { problemsOnly = it })
-            Text(tr("  Только проблемы"), style = MaterialTheme.typography.bodyMedium)
+            Text(tr("  Только проблемы").trim(), modifier = Modifier.padding(start = 8.dp), style = MaterialTheme.typography.bodyMedium)
         }
-        FlowRow(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
-            OutlinedButton(onClick = { tick++ }) { Text(tr("Обновить")) }
-            OutlinedButton(onClick = {
-                // redact() на 800 строках — регулярные выражения: в главном потоке это давало ANR (журнал 05.11, стек Diagnostics.redact)
-                ioScope.launch {
-                    val clean = withContext(Dispatchers.IO) { Diagnostics.redact(text) }
-                    val clip = context.getSystemService(android.content.ClipboardManager::class.java)
-                    clip.setPrimaryClip(android.content.ClipData.newPlainText("phoenix-log", clean))
-                    Toast.makeText(context, tr("Журнал скопирован"), Toast.LENGTH_SHORT).show()
-                }
-            }, enabled = shown.isNotEmpty()) { Text(tr("Копировать")) }
+        var askClear by remember { mutableStateOf(false) }
+        var menu by remember { mutableStateOf(false) }
+        val copyLog = {
+            // redact() на 800 строках — регулярные выражения: в главном потоке это давало ANR (журнал 05.11, стек Diagnostics.redact)
+            ioScope.launch {
+                val clean = withContext(Dispatchers.IO) { Diagnostics.redact(text) }
+                val clip = context.getSystemService(android.content.ClipboardManager::class.java)
+                clip.setPrimaryClip(android.content.ClipData.newPlainText("phoenix-log", clean))
+                Toast.makeText(context, tr("Журнал скопирован"), Toast.LENGTH_SHORT).show()
+            }
+        }
             // два вида файла: только последние сутки (короче и проще отправить) или весь журнал (всё, что накопилось)
             val saveLog = { dayOnly: Boolean ->
                 // до 40 000 строк: сборка, вычистка ключей и запись в «Загрузки» занимают секунды — в главном потоке это был «не отвечает»
@@ -763,19 +820,40 @@ fun LogPage(vm: MainViewModel) {
                     Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить журнал (за выбранный период записей нет?)"), Toast.LENGTH_SHORT).show()
                 }
             }
-            OutlinedButton(onClick = { saveLog(true) }, enabled = lines.isNotEmpty() && !saving) { Text(if (saving) tr("Сохраняю…") else tr("В файл: 24 часа")) }
-            OutlinedButton(onClick = { saveLog(false) }, enabled = lines.isNotEmpty() && !saving) { Text(tr("В файл: весь")) }
-            TextButton(onClick = { vm.clearLogs(); tick++ }) { Text(tr("Очистить")) }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
+            OutlinedButton(onClick = { tick++ }) { Text(tr("Обновить")) }
+            Spacer(Modifier.weight(1f))
+            Box {
+                TextButton(onClick = { menu = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text(tr("Копировать")) }, enabled = shown.isNotEmpty(), onClick = { menu = false; copyLog() })
+                    DropdownMenuItem(text = { Text(if (saving) tr("Сохраняю…") else tr("В файл: 24 часа")) }, enabled = lines.isNotEmpty() && !saving, onClick = { menu = false; saveLog(true) })
+                    DropdownMenuItem(text = { Text(tr("В файл: весь")) }, enabled = lines.isNotEmpty() && !saving, onClick = { menu = false; saveLog(false) })
+                    DropdownMenuItem(text = { Text(tr("Очистить")) }, onClick = { menu = false; askClear = true })
+                }
+            }
         }
+        if (askClear) ConfirmDialog(tr("Очистить журнал?"), tr("Записи будут удалены без возможности вернуть."), onYes = { vm.clearLogs(); tick++ }, onDismiss = { askClear = false })
         Text(tr("Записей: {} из {} (на экране последние {}; «В файл» сохраняет по фильтру: за 24 часа или весь журнал). Журнал копится до 5 МБ на режим.", lines.size, all.size, shown.size), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (lines.isEmpty()) {
             Hint(tr("Записей по этому фильтру нет."))
         } else {
             // самые свежие записи внизу; список прокручивается
-            val scroll = rememberScrollState()
-            LaunchedEffect(lines) { scroll.scrollTo(scroll.maxValue) }
-            Column(Modifier.fillMaxSize().verticalScroll(scroll)) {
-                Text(text, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 11.sp)
+            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+            val pretty = remember(shown) { shown.map { Diagnostics.pretty(it) to Diagnostics.isProblem(it) } }
+            LaunchedEffect(pretty) { if (pretty.isNotEmpty()) listState.scrollToItem(pretty.lastIndex) }
+            LazyColumn(Modifier.fillMaxSize(), state = listState) {
+                items(pretty.size, key = { it }) { i ->
+                    val (line, bad) = pretty[i]
+                    Text(
+                        line,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        color = if (bad) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 1.dp),
+                    )
+                }
             }
         }
     }
@@ -796,7 +874,7 @@ fun BackupPage(vm: MainViewModel) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
         Text(tr("Резервная копия"), style = MaterialTheme.typography.titleMedium)
         Hint(
-            tr("В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы и накопленный опыт конфигов (где они работали). Скачанные конфиги и журнал не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.")
+            tr("В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы, накопленный опыт конфигов (где они работали) и журнал (при импорте он сливается с текущим). Скачанные конфиги не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.")
         )
         Spacer(Modifier.height(8.dp))
         FlowRow(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -822,16 +900,18 @@ fun FirmwarePage() {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     var fw by remember { mutableStateOf<FirmwareInfo?>(null) }
-    var status by remember { mutableStateOf(Background.status(context)) }
+    var perms by remember { mutableStateOf<List<PermCheck>>(emptyList()) }
     var dataSaver by remember { mutableStateOf(Background.dataSaverText(context)) }
+    var tick by remember { mutableStateOf(0) }
+    var showGuide by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { fw = withContext(Dispatchers.IO) { Background.firmware() } }
+    // права проверяются при открытии и при возврате из системных настроек, а не при каждой отрисовке
+    LaunchedEffect(tick) {
+        dataSaver = Background.dataSaverText(context)
+        perms = withContext(Dispatchers.IO) { StateInfo.permissions(context, withClock = false) }
+    }
     DisposableEffect(owner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                status = Background.status(context)
-                dataSaver = Background.dataSaverText(context)
-            }
-        }
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) tick++ }
         owner.lifecycle.addObserver(observer)
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
@@ -841,35 +921,53 @@ fun FirmwarePage() {
         Text(fw?.text() ?: tr("определяю…"), style = MaterialTheme.typography.bodyLarge)
         Hint(tr("Оболочки телефонов (EMUI, MIUI, ColorOS и другие) сами выгружают фоновые приложения. Здесь собрано, что нужно разрешить именно на вашем телефоне."))
         Spacer(Modifier.height(8.dp))
-        HorizontalDivider()
+        Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(8.dp))
         Text(tr("Что уже разрешено"), style = MaterialTheme.typography.titleMedium)
-        fun mark(ok: Boolean) = if (ok) "✓" else "✗"
-        Text(tr("{} Ограничение батареи ", mark(status.ignoringBatteryOptimization)) + if (status.ignoringBatteryOptimization) tr("снято") else tr("действует"), style = MaterialTheme.typography.bodyMedium)
-        Text(tr("{} Точные будильники ", mark(status.exactAlarmAllowed)) + if (status.exactAlarmAllowed) tr("разрешены") else tr("не разрешены"), style = MaterialTheme.typography.bodyMedium)
-        Text(tr("Экономия трафика: {}", dataSaver), style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = { Background.requestIgnoreBatteryOptimization(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Снять ограничение батареи")) }
-        OutlinedButton(onClick = { Background.requestExactAlarm(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Разрешить точные будильники")) }
-        OutlinedButton(onClick = { Background.requestUnrestrictedData(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Данные в фоне без ограничений")) }
-        OutlinedButton(onClick = { Background.openNotificationSettings(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Уведомления Phoenix")) }
-        OutlinedButton(onClick = { Background.openAutostart(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Автозапуск (MIUI / HyperOS)")) }
-        OutlinedButton(onClick = { Background.openAppSettings(context) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Настройки приложения")) }
+        // одно место для всех прав: кнопка «Исправить» только у невыданных
+        val okColor = PhoenixTheme.ok(isSystemInDarkTheme())
+        perms.forEach { p ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (p.ok) "✓" else if (p.optional) "–" else "✗",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (p.ok) okColor else if (p.optional) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Column(Modifier.weight(1f)) {
+                    Text(p.title, style = MaterialTheme.typography.bodyMedium)
+                    Text(p.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                if (!p.ok && p.fix != null) TextButton(onClick = { p.fix.invoke() }) { Text(tr("Исправить")) }
+            }
+        }
+        Text(tr("Экономия трафика: {}", dataSaver), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = { Background.requestUnrestrictedData(context) }) { Text(tr("Данные в фоне без ограничений")) }
+        }
+        TextButton(onClick = { Background.openAppSettings(context) }) { Text(tr("Настройки приложения")) }
 
         val guide = fw?.let { FirmwareGuides.forKind(it.kind) }
         if (guide != null) {
-            Spacer(Modifier.height(12.dp))
-            HorizontalDivider()
             Spacer(Modifier.height(8.dp))
-            Text(guide.title, style = MaterialTheme.typography.titleMedium)
-            guide.steps.forEachIndexed { i, step ->
-                Text("${i + 1}. $step", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 6.dp))
+            Spacer(Modifier.height(4.dp))
+            Row(
+                Modifier.fillMaxWidth().clickable { showGuide = !showGuide }.padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(guide.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text(if (showGuide) "▴" else "▾", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             }
-            Spacer(Modifier.height(8.dp))
-            guide.actions.forEach { a ->
-                OutlinedButton(onClick = { Background.openFirst(context, a.screens) }, modifier = Modifier.fillMaxWidth()) { Text(a.label) }
+            if (showGuide) {
+                guide.steps.forEachIndexed { i, step ->
+                    Text("${i + 1}. $step", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 6.dp))
+                }
+                Spacer(Modifier.height(8.dp))
+                guide.actions.forEach { a ->
+                    OutlinedButton(onClick = { Background.openFirst(context, a.screens) }, modifier = Modifier.fillMaxWidth()) { Text(a.label) }
+                }
+                    Hint(tr("Названия пунктов зависят от версии прошивки. Если кнопка не нашла нужный экран, откроются настройки приложения — дальше по шагам выше."))
             }
-            Hint(tr("Названия пунктов зависят от версии прошивки. Если кнопка не нашла нужный экран, откроются настройки приложения — дальше по шагам выше."))
         }
     }
 }

@@ -36,6 +36,10 @@ import kotlinx.coroutines.withContext
 object SwitchRequest {
     const val EXTRA_SHOW = "show_switch"
     val show = MutableStateFlow(false)
+
+    /** Уведомление об обновлении открывает приложение сразу на странице «Обновления». */
+    const val EXTRA_UPDATE = "open_update"
+    val openUpdate = MutableStateFlow(false)
 }
 
 /** Данные списка: рабочие серверы текущего режима в порядке рейтинга. */
@@ -67,13 +71,13 @@ fun ServerSwitchHost() {
     val close = { SwitchRequest.show.value = false }
     AlertDialog(
         onDismissRequest = { close() },
-        title = { Text("Сменить сервер") },
+        title = { Text(tr("Сменить сервер")) },
         text = {
             val list = options
             when {
-                status.phase != VpnPhase.CONNECTED -> Text("VPN не подключён — менять нечего.")
-                list == null -> Text("Загружаю список…")
-                list.isEmpty() -> Text("Серверов в списке нет. Сначала соберите и проверьте конфиги.")
+                status.phase != VpnPhase.CONNECTED -> Text(tr("VPN не подключён — менять нечего."))
+                list == null -> Text(tr("Загружаю список…"))
+                list.isEmpty() -> Text(tr("Серверов в списке нет. Сначала соберите и проверьте конфиги."))
                 else -> LazyColumn(Modifier.heightIn(max = 420.dp)) {
                     item {
                         Column(
@@ -82,8 +86,8 @@ fun ServerSwitchHost() {
                                 close()
                             }.padding(vertical = 10.dp)
                         ) {
-                            Text("Автоматически — лучший другой", fontWeight = FontWeight.Bold)
-                            Text("приложение само найдёт и проверит рабочий сервер", style = MaterialTheme.typography.bodySmall)
+                            Text(tr("Автоматически — лучший другой"), fontWeight = FontWeight.Bold)
+                            Text(tr("приложение само найдёт и проверит рабочий сервер"), style = MaterialTheme.typography.bodySmall)
                         }
                         HorizontalDivider()
                     }
@@ -95,12 +99,12 @@ fun ServerSwitchHost() {
                                 close()
                             }.padding(vertical = 10.dp)
                         ) {
-                            Text(o.title + if (o.current) "  — сейчас" else "", fontWeight = if (o.current) FontWeight.Bold else FontWeight.Normal, maxLines = 2)
+                            Text(o.title + if (o.current) tr("  — сейчас") else "", fontWeight = if (o.current) FontWeight.Bold else FontWeight.Normal, maxLines = 2)
                             val line = listOf(o.place + if (o.exitChecked) " ✓" else "", o.speed).filter { it.isNotBlank() }.joinToString(" · ")
-                            Text(line + if (!o.checked) " · не проверен" else "", style = MaterialTheme.typography.bodySmall)
+                            Text(line + if (!o.checked) tr(" · не проверен") else "", style = MaterialTheme.typography.bodySmall)
                             if (o.why.isNotBlank()) {
                                 Text(
-                                    if (showWhy) "скрыть причины" else "почему этот сервер?",
+                                    if (showWhy) tr("скрыть причины") else tr("почему этот сервер?"),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.clickable { showWhy = !showWhy }.padding(vertical = 2.dp),
@@ -124,6 +128,6 @@ fun ServerSwitchHost() {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { close() }) { Text("Закрыть") } },
+        confirmButton = { TextButton(onClick = { close() }) { Text(tr("Закрыть")) } },
     )
 }

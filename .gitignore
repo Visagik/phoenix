@@ -22,3 +22,7 @@ tools/kt-harness/out/
 phoenix-log*.txt
 __pycache__/
 *.pyc
+
+# Сборки и временная распаковка обновлений: в репозиторий не попадают (APK — в GitHub Releases)
+*.apk
+phx-update/

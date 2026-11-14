@@ -16,6 +16,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.VpnService
 import android.os.PowerManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -201,6 +202,8 @@ class PhoenixVpnService : VpnService() {
     private var failoverBackoffMs = FAILOVER_BACKOFF_START_MS
     private var lastDetectAt = 0L
     private val lastSwitchAt = HashMap<String, Long>()
+    /** Кэш [hasSwitchTargets]: иначе опрос переднего плана читает targets.tsv дважды за круг, в том числе при выключенном экране. Сбрасывается через [PlanBus]. */
+    @Volatile private var switchTargetsCache: Boolean? = null
     private lateinit var settings: AppSettings
 
     /** Каждый раз свежий: режим (белые/чёрные списки) мог смениться, пока служба работает. */
@@ -310,6 +313,12 @@ class PhoenixVpnService : VpnService() {
                     return START_NOT_STICKY
                 }
                 lastStartAt = now
+                // выставляем сразу, а не только внутри connect() при успехе: раньше между этой командой и её завершением
+                // (десятки — сотни мс до начала корутины, иногда секунды на сам connect) settings.vpnWanted оставался
+                // старым значением, и итоговый START_STICKY/START_NOT_STICKY в конце функции зависел от гонки — случись
+                // гибель процесса именно в этом окне, служба не поднималась бы заново (находка Фейбла №3). Если подключение
+                // в итоге не выйдет и kill switch не держит туннель, fail() сам вернёт значение в false.
+                settings.vpnWanted = true
                 val explicit = link.isNotBlank() // конфиг выбран пользователем (кнопка «Подключить» у конфига)
                 // Сначала сразу поднимаем уведомление: Android требует вызвать startForeground за считаные секунды после
                 // startForegroundService, иначе приложение «падает». Выбор конфига (рейтинг тысяч конфигов) — уже в фоне.
@@ -336,11 +345,20 @@ class PhoenixVpnService : VpnService() {
                 }
             }
             else -> if (!wantRunning) {
-                // Служба перезапущена системой без команды — ничего не делаем и уходим.
+                // Служба перезапущена системой без команды: это либо гибель процесса, пока VPN должен был работать
+                // (прошивка выгрузила, обновление поставили поверх), либо системный запуск «Постоянного VPN»
+                // (android.net.VpnService). В обоих случаях поднимаем туннель заново сами, а не сворачиваемся
+                // до ручного открытия приложения — с защитой от цикла, если процесс гибнет снова и снова.
+                val wanted = settings.vpnWanted || intent?.action == VpnService.SERVICE_INTERFACE
+                if (wanted && XrayCore.available && VpnService.prepare(this) == null && settings.noteVpnRestart()) {
+                    storage.log("VPN: автоподключение [процесс перезапущен]")
+                    return onStartCommand(Intent(this, PhoenixVpnService::class.java).setAction(ACTION_START), flags, startId)
+                }
+                settings.vpnWanted = false
                 stopSelf()
             }
         }
-        return START_NOT_STICKY
+        return if (settings.vpnWanted) START_STICKY else START_NOT_STICKY
     }
 
     // ---- подключение ----
@@ -394,6 +412,7 @@ class PhoenixVpnService : VpnService() {
             stat(UsageStats.SESSIONS)
             recordHist(link, true)
             storage.log("VPN: подключено [$title] (режим ${connectedMode.title})")
+            settings.vpnWanted = true
             logEnvironment()
             startMonitors()
         } catch (e: Throwable) {
@@ -401,6 +420,10 @@ class PhoenixVpnService : VpnService() {
             storage.log("VPN: ошибка [$title]: $message")
             if (settings.killSwitch && tun != null) {
                 // Защита от утечек: туннель остаётся поднятым, трафик никуда не уходит; наблюдатель будет искать рабочий сервер.
+                // vpnWanted ставим явно и здесь: если это самое первое подключение (после установки или ручного «Отключить»),
+                // оно было false, и раньше здесь не менялось — после гибели процесса или перезагрузки служба не поднялась бы
+                // заново, и телефон вышел бы в сеть напрямую, хотя пользователь последним видел «интернет заблокирован» (находка №4)
+                settings.vpnWanted = true
                 controller?.stop()
                 controller = null
                 activeRoutes = emptyList()
@@ -431,6 +454,7 @@ class PhoenixVpnService : VpnService() {
 
     private fun fail(message: String, title: String) {
         startPending = false
+        settings.vpnWanted = false
         VpnState.set(VpnStatus(VpnPhase.ERROR, title, message))
         stopForegroundCompat()
         stopSelf()
@@ -481,7 +505,15 @@ class PhoenixVpnService : VpnService() {
         LocalProxy.port = healthPort
         // адреса серверов-доменов находим сами (приложение вне VPN, системный DNS работает)
         val hosts = HashMap<String, String>()
-        for (l in listOf(link) + routes.map { it.link }) hosts += ServerHosts.hostsForLink(l)
+        for (l in listOf(link) + routes.map { it.link }) {
+            val h = ServerHosts.hostsForLink(l)
+            hosts += h
+            // домен сервера не разрешился/не ответил — раньше молча; теперь видно в журнале, почему ядро может не подключиться (находка №10)
+            val host = LinkParser.parse(l)?.host
+            if (h.isEmpty() && host != null && !host.any { it == ':' } && !host.all { it.isDigit() || it == '.' }) {
+                storage.log("DNS: домен сервера не удалось разрешить заранее (${LogMask.host(host)}) — ядро попробует само")
+            }
+        }
         val opts = XrayOptions(
             routes = routes,
             bypassDomains = BypassStore(storage.base, storage.mode, NetInfo.label(this)).let { b ->
@@ -630,26 +662,36 @@ class PhoenixVpnService : VpnService() {
         jobs += scope.launch {
             var calm = 0
             while (true) {
-                val pm = getSystemService(PowerManager::class.java)
-                val screenOn = pm == null || pm.isInteractive
-                delay(HealthPace.nextDelay(screenOn, failures, calm, hot = PowerInfo.hot(this@PhoenixVpnService), lowBattery = PowerInfo.lowBattery(this@PhoenixVpnService)))
-                if (storage.mode != connectedMode) PlanBus.notifyChanged() // режим сменили: перенесём подключение
-                if (screenOn) try { ActivityStore.get(this@PhoenixVpnService).recordActive() } catch (_: Throwable) {}
-                if (screenOn) withContext(Dispatchers.IO) { recordAppUse() }
-                prepareApps()
-                if (!screenOn && failures == 0) {
-                    // экран выключен — не будим сеть зря; но перед обычным пиком активности проверим туннель заранее (раз в слот)
-                    val act = ActivityStore.get(this@PhoenixVpnService)
-                    val slot = act.slotNow()
-                    if (settings.quietAuto && slot != lastPrewarmSlot && act.peakSoon()) {
-                        lastPrewarmSlot = slot
-                        storage.log("ACT: скоро обычная активность — проверяю туннель заранее")
-                        checkHealthOnce(force = true)
+                // необработанное исключение внутри тела цикла убивает именно эту корутину насовсем (SupervisorJob
+                // только логирует и не перезапускает её) — тогда проверка связи не работает до переподключения,
+                // хотя журнал пишет «и продолжаем». Ловим здесь, чтобы один сбой не останавливал цикл навсегда.
+                try {
+                    val pm = getSystemService(PowerManager::class.java)
+                    val screenOn = pm == null || pm.isInteractive
+                    delay(HealthPace.nextDelay(screenOn, failures, calm, hot = PowerInfo.hot(this@PhoenixVpnService), lowBattery = PowerInfo.lowBattery(this@PhoenixVpnService)))
+                    if (storage.mode != connectedMode) PlanBus.notifyChanged() // режим сменили: перенесём подключение
+                    if (screenOn) try { ActivityStore.get(this@PhoenixVpnService).recordActive() } catch (_: Throwable) {}
+                    if (screenOn) withContext(Dispatchers.IO) { recordAppUse() }
+                    prepareApps()
+                    if (!screenOn && failures == 0) {
+                        // экран выключен — не будим сеть зря; но перед обычным пиком активности проверим туннель заранее (раз в слот)
+                        val act = ActivityStore.get(this@PhoenixVpnService)
+                        val slot = act.slotNow()
+                        if (settings.quietAuto && slot != lastPrewarmSlot && act.peakSoon()) {
+                            lastPrewarmSlot = slot
+                            storage.log("ACT: скоро обычная активность — проверяю туннель заранее")
+                            checkHealthOnce(force = true)
+                        }
+                        continue
                     }
-                    continue
+                    checkHealthOnce()
+                    calm = if (failures == 0 && disturbedAt < System.currentTimeMillis() - 60_000L) calm + 1 else 0
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    storage.log("ERROR: монитор связи: ${e.javaClass.simpleName}: ${e.message}")
+                    delay(30_000L)
                 }
-                checkHealthOnce()
-                calm = if (failures == 0 && disturbedAt < System.currentTimeMillis() - 60_000L) calm + 1 else 0
             }
         }
 
@@ -665,6 +707,7 @@ class PhoenixVpnService : VpnService() {
         // 2) Изменился список целей или их серверы — пересобрать маршруты.
         jobs += scope.launch {
             PlanBus.changes.collect {
+                switchTargetsCache = null // список целей мог измениться — старое «есть ли цели с вариантом Б» не годится
                 delay(2_000)
                 applyModeIfChanged()
                 applyPlanIfChanged()
@@ -674,19 +717,33 @@ class PhoenixVpnService : VpnService() {
         // 3) Вариант Б: приложение вышло на передний план.
         jobs += scope.launch {
             while (true) {
-                // опрос «какое приложение открыто» нужен только если есть цели с вариантом Б — иначе не тратим батарею
-                delay(if (hasSwitchTargets()) FOREGROUND_PERIOD_MS else IDLE_PERIOD_MS)
-                watchForeground()
+                try {
+                    // опрос «какое приложение открыто» нужен только если есть цели с вариантом Б — иначе не тратим батарею;
+                    // кэш вместо чтения targets.tsv на каждом круге (сбрасывается через PlanBus при изменении целей)
+                    val hasTargets = switchTargetsCache ?: hasSwitchTargets().also { switchTargetsCache = it }
+                    delay(if (hasTargets) FOREGROUND_PERIOD_MS else IDLE_PERIOD_MS)
+                    watchForeground()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    storage.log("ERROR: опрос переднего плана: ${e.javaClass.simpleName}: ${e.message}")
+                }
             }
         }
 
         // 5) Тип блокировок меняется (дом ↔ дорога, оператор включил белые списки): проверяем раз в 5 минут, пока экраном пользуются.
         jobs += scope.launch {
             while (true) {
-                delay(60_000L)
-                val pm = getSystemService(PowerManager::class.java)
-                if (pm != null && !pm.isInteractive) continue
-                if (System.currentTimeMillis() - lastDetectAt >= DETECT_PERIOD_MS) detectMode()
+                try {
+                    delay(60_000L)
+                    val pm = getSystemService(PowerManager::class.java)
+                    if (pm != null && !pm.isInteractive) continue
+                    if (System.currentTimeMillis() - lastDetectAt >= DETECT_PERIOD_MS) detectMode()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    storage.log("ERROR: определение режима: ${e.javaClass.simpleName}: ${e.message}")
+                }
             }
         }
 
@@ -721,16 +778,29 @@ class PhoenixVpnService : VpnService() {
         jobs += scope.launch {
             delay(ROUTE_WATCH_FIRST_MS)
             while (true) {
-                watchRoutes()
-                delay(ROUTE_WATCH_PERIOD_MS)
+                try {
+                    watchRoutes()
+                    delay(ROUTE_WATCH_PERIOD_MS)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    storage.log("ERROR: проверка маршрутов целей: ${e.javaClass.simpleName}: ${e.message}")
+                    delay(ROUTE_WATCH_PERIOD_MS)
+                }
             }
         }
 
         // 4) Скорость: если интернет «есть», но через сервер почти ничего не качается — сменить сервер.
         jobs += scope.launch {
             while (true) {
-                delay(SPEED_PERIOD_MS)
-                watchSpeed()
+                try {
+                    delay(SPEED_PERIOD_MS)
+                    watchSpeed()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    storage.log("ERROR: проверка скорости: ${e.javaClass.simpleName}: ${e.message}")
+                }
             }
         }
 
@@ -826,6 +896,9 @@ class PhoenixVpnService : VpnService() {
     /** Когда в последний раз менялись сеть, режим или ядро: сразу после этого проверки целей дают ложные «не отвечает». */
     @Volatile private var disturbedAt = 0L
 
+    /** Последний запуск определения режима по смене сети: при двух сменах подряд (wifi → none → mobile) второй отменяет первый, а не бежит параллельно с ним. */
+    @Volatile private var detectJob: Job? = null
+
     private suspend fun onNetworkChanged() {
         val label = NetInfo.label(this)
         val changed = label != lastNetLabel
@@ -845,13 +918,17 @@ class PhoenixVpnService : VpnService() {
         }
         // тип блокировок определяется сразу и параллельно с проверкой связи (раньше ждал её окончания — до 20 секунд),
         // а прежние голоса относились к другой сети: при смене сети хватает одного уверенного определения
-        if (changed) {
+        if (changed && NetInfo.kind(this) != NetInfo.Kind.NONE) {
+            // уход в «нет сети» — это не блуждание между сетями, определять по нему нечего, и в счётчик «меняется часто» не включаем
             val nowF = System.currentTimeMillis()
             flap.note(nowF)
             val flapping = flap.flapping(nowF)
             if (flapping) NetFlap.mark(nowF)
             if (flapping) storage.log("NET: сеть меняется часто (${flap.count(nowF)} раз за ${FlapGuard.WINDOW_MS / 60_000} мин) — тип блокировок подтверждаю дольше, одного определения мало")
-            scope.launch { detectMode(force = true, decisive = !flapping) }
+            // смена сети следом за сменой (wifi → none → mobile — это уже две смены) не должна запускать два
+            // параллельных определения: отменяем прежнее и запускаем заново
+            detectJob?.cancel()
+            detectJob = scope.launch { detectMode(force = true, decisive = !flapping) }
         }
         // новая сеть — что в ней открывается без VPN, неизвестно: проверяем сразу (после устаканивания сети), а не при следующей перепроверке
         if (changed) scope.launch {
@@ -1023,7 +1100,13 @@ class PhoenixVpnService : VpnService() {
             }
             if (ok) { failures = 0; delay(1_500); return }
         }
-        if (failures == 1) scope.launch { detectMode() } // связь пропала: возможно, сменился тип блокировок
+        if (failures == 1) {
+            // отменяем прежний запуск (например, из onNetworkChanged) и запускаем новый определённо forced: иначе при
+            // совпадении по времени прежний уже успевает выставить lastDetectAt, и этот сразу выходит по DETECT_GAP_MS,
+            // ничего не определив — а первая проверка связи после смены сети и есть самый частый такой случай (находка Фейбла №3.1)
+            detectJob?.cancel()
+            detectJob = scope.launch { detectMode(force = true) }
+        } // связь пропала: возможно, сменился тип блокировок
         if (failures < (if (force) 2 else 3)) {
             // Подтвердим быстрее: следующая проверка через несколько секунд.
             delay(4_000)
@@ -1090,6 +1173,9 @@ class PhoenixVpnService : VpnService() {
     /** Серверы, подходящие открытому приложению/сайту (для проверки запасного): null — контекста нет, ограничений нет. */
     @Volatile private var appFit: Set<String>? = null
 
+    /** Контекст, под который сейчас идёт смена сервера по DIAG (не меняется, если пользователь успел открыть другое приложение). */
+    @Volatile private var diagCtx: AppContext.Now? = null
+
     /**
      * Учитывает, что открыто сейчас (приложение или сайт в браузере; если открыт сам Phoenix или рабочий стол — то, чем пользовались последние 20 минут):
      * серверы этой цели первыми, затем серверы других недавних приложений, затем остальные; где сервис не открывался — после них,
@@ -1099,8 +1185,11 @@ class PhoenixVpnService : VpnService() {
         appFit = null
         if (!force && !settings.appAwareFailover) return list
         val targets = TargetStore(storage.targetsFile).load()
-        val ctx = try { AppContext.now(this, targets) } catch (_: Throwable) { null } ?: return list
-        val checkUrl = ctx.checkUrl
+        val ctx = diagCtx ?: try { AppContext.now(this, targets) } catch (_: Throwable) { null } ?: return list
+        // без своей цели (находка Фейбла №2, тот же случай, что и в diagGoogle) приложение Gemini/NotebookLM иначе
+        // вообще не участвует в этой упорядочке — DIAG мог бы отметить сервер запретным, но veto.active() здесь
+        // никогда не сработает без адреса, по которому его искать
+        val checkUrl = ctx.checkUrl ?: GoogleDiag.fallbackCheckUrl(ctx.pkg, ctx.site)
         if (checkUrl == null && ctx.others.isEmpty()) return list
         val primary = ctx.target?.servers.orEmpty().filter { it != Target.DIRECT }.map { ConfigIdentity.key(it) }.toSet()
         val others = ctx.others.flatMap { it.servers }.filter { it != Target.DIRECT }.map { ConfigIdentity.key(it) }.toSet()
@@ -1109,27 +1198,33 @@ class PhoenixVpnService : VpnService() {
         val exits = ExitStore(storage.exitFile).load()
         val url = checkUrl.orEmpty()
         val blocked = { cc: String? -> checkUrl != null && AppFit.exitBlocked(url, svc, cc) }
+        // сервер уже отмечен (вручную или DIAG) как закрытый именно для этого сайта — не предлагать его снова первым,
+        // иначе пометка в ServiceVeto ничего не меняет в живом выборе (находили, но не чинили)
+        val veto = ServiceVeto(storage.vetoFile)
+        val vetoed = { c: Candidate -> checkUrl != null && veto.active(c.link, url) }
         val byService = ServiceMatch.order(list, checks, svc)
-        val arranged = AppFit.arrange(byService, primary, others, { exits[CheckStore.keyOf(it.link)]?.cc }, blocked)
+        val arranged = AppFit.arrange(byService, primary, others, { exits[CheckStore.keyOf(it.link)]?.cc }, blocked, vetoed)
         // «Auto» подписки: страна выхода плавает, для сервисов с проверкой региона (Gemini, ChatGPT…) такой сервер в самый конец (в журнале 07.11 смена закончилась на «Auto → Оптимальная»)
         val out = if (checkUrl != null && GeoGate.applies(checkUrl)) {
             val (auto, fixed) = arranged.partition { ServerKind.isAuto(LinkParser.parse(it.link)?.title?.let { t -> urlDecode(t) }.orEmpty()) }
             // серверы белых списков (в чёрных они обычно в самом конце очереди) подмешиваем: после каждых двух своих один белый
             val (white, own) = fixed.partition { it.foreign || it.mismatch }
             if (storage.mode == Mode.BLACKLIST && white.isNotEmpty()) {
-                storage.log("FAILOVER: для ${ctx.label} закрыты многие обычные серверы — подмешиваю серверы белых списков (${white.size}) через каждые два своих")
+                storage.log("FAILOVER: для ${ctx.logLabel} закрыты многие обычные серверы — подмешиваю серверы белых списков (${white.size}) через каждые два своих")
                 QueueMix.mix(own, white, 2) + auto
             } else fixed + auto
         } else arranged
         appFit = out.filter { c ->
-            val t = AppFit.tier(c, primary, others, exits[CheckStore.keyOf(c.link)]?.cc, blocked)
+            val t = AppFit.tier(c, primary, others, exits[CheckStore.keyOf(c.link)]?.cc, blocked, vetoed)
             t <= 1 || (t == 2 && (svc == null || ServiceMatch.groupOf(c, checks, svc) <= 1))
         }.map { it.identity }.toSet()
-        val demoted = out.count { AppFit.tier(it, primary, others, exits[CheckStore.keyOf(it.link)]?.cc, blocked) >= 3 }
+        val demoted = out.count { AppFit.tier(it, primary, others, exits[CheckStore.keyOf(it.link)]?.cc, blocked, vetoed) in 3..4 }
+        val vetoedCount = out.count { AppFit.tier(it, primary, others, exits[CheckStore.keyOf(it.link)]?.cc, blocked, vetoed) == 5 }
         storage.log(
-            "FAILOVER: открыто ${ctx.label} — серверов цели ${primary.size}, других недавних приложений ${others.size}" +
+            "FAILOVER: открыто ${ctx.logLabel} — серверов цели ${primary.size}, других недавних приложений ${others.size}" +
                 (if (svc != null) ", затем где открывается ${svc.id}" else "") +
-                (if (demoted > 0) ", $demoted с закрытой для сервиса страной выхода — в самый конец" else "")
+                (if (demoted > 0) ", $demoted с закрытой для сервиса страной выхода — в самый конец" else "") +
+                (if (vetoedCount > 0) ", $vetoedCount уже отмечены закрытыми именно для этого сайта — в самый конец" else "")
         )
         return out
     }
@@ -1157,15 +1252,23 @@ class PhoenixVpnService : VpnService() {
         diagAt = now
         diagRunning = true
         val title = mainTitle
+        // снимок на момент запуска: проверка идёт десятки секунд, а сервер за это время мог смениться (вручную,
+        // по другому сбою) — дальше действуем по тому серверу, который проверяли, а не по тому, что сейчас в mainLink
+        val diagLink = mainLink
+        val diagGen = coreGen
         scope.launch(Dispatchers.IO) {
             try {
                 val port = LocalProxy.port
                 val auth = LocalProxy.auth
                 if (port <= 0 || auth == null) return@launch
-                storage.log("DIAG: открыто ${ctx.label}, сервер [$title], сеть ${NetInfo.label(this@PhoenixVpnService)}, режим ${storage.mode.title} ($reason)")
+                storage.log("DIAG: открыто ${ctx.logLabel}, сервер [$title], сеть ${NetInfo.label(this@PhoenixVpnService)}, режим ${storage.mode.title} ($reason)")
                 try {
                     LocalSocks.get(port, auth, "https://www.cloudflare.com/cdn-cgi/trace", connectTimeoutMs = 6_000, readTimeoutMs = 6_000).use { r ->
-                        storage.log("DIAG: страна выхода по Cloudflare: ${GeoGate.parseLoc(r.head(2048)) ?: "не определена"}")
+                        val cc = GeoGate.parseLoc(r.head(2048))
+                        storage.log("DIAG: страна выхода по Cloudflare: ${cc ?: "не определена"}")
+                        // DIAG и так замеряет страну выхода этого сервера — раньше это оставалось только строкой в журнале,
+                        // appAwareOrder же при выборе следующего сервера смотрит именно в ExitStore, а не в журнал
+                        if (cc != null) ExitStore(storage.exitFile).put(CheckStore.keyOf(diagLink), cc, java.time.LocalDate.now().toString())
                     }
                 } catch (e: Throwable) {
                     storage.log("DIAG: страна выхода не определена (${e.message})")
@@ -1184,19 +1287,42 @@ class PhoenixVpnService : VpnService() {
                     }
                     storage.log("DIAG: $text")
                 }
+                // расход на DIAG раньше нигде не считался (слепая зона EnergyMeter — находка Фейбла): пока открыт
+                // Gemini/NotebookLM, это регулярный сетевой трафик каждые 2 минуты, и в «Автономность → расход» его не было видно
+                energy("diag")
                 // открытый сервис закрыт на этом сервере — исключаем сервер для него и ищем другой (не больше 3 раз за 30 минут)
                 val want = GoogleDiag.labelFor(ctx.pkg, ctx.site)
-                val checkUrl = ctx.checkUrl
-                if (closedBy[want] == true && checkUrl != null) {
-                    if (autoVeto.allow(System.currentTimeMillis())) {
-                        ServiceVeto(storage.vetoFile).add(mainLink, checkUrl)
-                        storage.log("DIAG: ${ctx.label} закрыт на [$title] — исключаю сервер на 3 дня для этого сервиса и ищу другой (автоматически)")
+                // страница Gemini отвечает 200 и из закрытых стран (та же причина, по которой фоновая проверка в ServiceCheck
+                // судит о Gemini по NotebookLM, см. GoogleAi.needsOracle) — поэтому реальный признак закрытости даёт только
+                // notebook, даже когда открыт именно Gemini; раньше здесь проверялось closedBy["gemini"], который почти
+                // никогда не становится true, и ветка смены сервера просто не срабатывала (находка Фейбла №1)
+                val closedKey = if (want == "gemini") "notebook" else want
+                // у открытого приложения может не быть своей цели (например, сам NotebookLM без сайта/цели) — тогда
+                // ctx.checkUrl == null, и раньше DIAG только писал «закрыт» в журнал и ничего не делал (находка №2);
+                // подставляем адрес того же узла Google, который уже проверили выше
+                val checkUrl = ctx.checkUrl ?: GoogleDiag.fallbackCheckUrl(ctx.pkg, ctx.site)
+                // для самой проверки «а правда ли ещё закрыт новый кандидат» (verifyUrl в failover → stillBlocked) нужен тот же
+                // надёжный узел — страница Gemini и тут отвечает 200 даже из закрытой страны, так что проверять надо notebook
+                val verifyUrl = GoogleDiag.urls.firstOrNull { it.first == closedKey }?.second ?: checkUrl
+                if (closedBy[closedKey] == true && checkUrl != null) {
+                    if (coreGen != diagGen) {
+                        storage.log("DIAG: пока шла проверка, сервер уже сменился по другой причине — не исключаю и не переключаю")
+                    } else if (manualPinLink == diagLink) {
+                        storage.log("DIAG: ${ctx.logLabel} закрыт на [$title], но сервер закреплён вручную — не снимаю закрепление сам")
+                    } else if (autoVeto.allow(System.currentTimeMillis())) {
+                        markServiceClosed(diagLink, checkUrl, TargetStore(storage.targetsFile).load())
+                        storage.log("DIAG: ${ctx.logLabel} закрыт на [$title] — исключаю сервер на 3 дня для этого сервиса и ищу другой (автоматически)")
                         smartVerdictText = "проверка Google показала, что ${ctx.label} здесь закрыт"
-                        failover(forced = true, smart = true)
+                        // проверяем сервис и на новом сервере, прежде чем считать смену удачной — иначе «3 смены за 30 мин» тратятся
+                        // вслепую на серверы, для которых DIAG узнает о закрытости лишь через 2 минуты новым прогоном
+                        // подбор идёт под то, что диагностировали, даже если пользователь за эти секунды переключился на другое приложение
+                        // (в журнале: закрыт Notebook, а сервер искали уже под «Google») — иначе смена бесполезна для Notebook
+                        diagCtx = ctx
+                        try { failover(forced = true, smart = true, verifyUrl = verifyUrl) } finally { diagCtx = null }
                     } else {
-                        storage.log("DIAG: ${ctx.label} закрыт и на этом сервере, автоматические смены остановлены (3 за 30 мин) — похоже, подходящих выходов для этого сервиса сейчас нет")
+                        storage.log("DIAG: ${ctx.logLabel} закрыт и на этом сервере, автоматические смены остановлены (3 за 30 мин) — похоже, подходящих выходов для этого сервиса сейчас нет")
                     }
-                } else if (closedBy[want] == false) {
+                } else if (closedBy[closedKey] == false) {
                     autoVeto.reset()
                 }
             } catch (_: Throwable) {
@@ -1313,6 +1439,28 @@ class PhoenixVpnService : VpnService() {
     }
 
     /**
+     * Общая часть ручной кнопки «не открывается» и автоматического DIAG: сервер исключается для сайта на 3 дня (`ServiceVeto`),
+     * выбранному сервису у этого сервера в `CheckStore` ставится «не открылся» (чтобы и фоновые проверки это видели),
+     * и сервер убирается из списка серверов цели (если был там). Раньше это делала только ручная кнопка — у автоматического
+     * DIAG была только пометка в ServiceVeto, которую живой выбор следующего сервера (appAwareOrder) тогда ещё не читал.
+     */
+    private fun markServiceClosed(link: String, url: String, targets: List<Target>) {
+        ServiceVeto(storage.vetoFile).add(link, url)
+        val key = CheckStore.keyOf(link)
+        val services = storage.checkSelection().selected()
+        val svc = ServiceMatch.serviceFor(url, services)
+        val store = CheckStore(storage.checksFile)
+        if (svc != null) store.modify(recordOdds = false) { cur ->
+            cur[key]?.let { old -> mapOf(key to old.copy(services = old.services + (svc.id to CheckServices.FAILED))) } ?: emptyMap()
+        }
+        // цель не должна держать этот сервер среди своих
+        val id = ConfigIdentity.key(link)
+        for (t in targets) if (t.servers.any { it != Target.DIRECT && ConfigIdentity.key(it) == id }) {
+            TargetStore(storage.targetsFile).updateServers(t.id, t.servers.filter { it == Target.DIRECT || ConfigIdentity.key(it) != id }, t.verifiedAt)
+        }
+    }
+
+    /**
      * Кнопка «Сервис не открывается на этом сервере»: запоминает, что на текущем сервере открытый сейчас сайт или приложение не работает
      * (приложение само этого не поняло — страница «не поддерживается в вашей стране» приходит с кодом 200), и подбирает другой сервер.
      */
@@ -1326,7 +1474,6 @@ class PhoenixVpnService : VpnService() {
             return
         }
         val link = mainLink
-        val key = CheckStore.keyOf(link)
         // что на самом деле показывает сайт через этот сервер — в журнал: по нему можно подобрать признаки страницы-заглушки
         withContext(Dispatchers.IO) {
             val port = LocalProxy.port
@@ -1342,17 +1489,8 @@ class PhoenixVpnService : VpnService() {
                 }
             }
         }
-        ServiceVeto(storage.vetoFile).add(link, url)
-        val services = storage.checkSelection().selected()
-        val svc = ServiceMatch.serviceFor(url, services)
-        val store = CheckStore(storage.checksFile)
-        if (svc != null) store.load()[key]?.let { old -> store.putAll(mapOf(key to old.copy(services = old.services + (svc.id to CheckServices.FAILED))), recordOdds = false) }
-        // цель не должна держать этот сервер среди своих
-        val id = ConfigIdentity.key(link)
-        for (t in targets) if (t.servers.any { it != Target.DIRECT && ConfigIdentity.key(it) == id }) {
-            TargetStore(storage.targetsFile).updateServers(t.id, t.servers.filter { it == Target.DIRECT || ConfigIdentity.key(it) != id }, t.verifiedAt)
-        }
-        storage.log("VETO: вы отметили, что ${ctx.label} не открывается на [$mainTitle] — сервер на 3 дня исключён для этого сайта")
+        markServiceClosed(link, url, targets)
+        storage.log("VETO: вы отметили, что ${ctx.logLabel} не открывается на [$mainTitle] — сервер на 3 дня исключён для этого сайта")
         stat(UsageStats.VETOES)
         smartVerdictText = "вы отметили, что ${ctx.label} здесь не открывается"
         failover(forced = true, smart = true)
@@ -1360,7 +1498,10 @@ class PhoenixVpnService : VpnService() {
 
     @Volatile private var smartVerdictText = ""
 
-    private suspend fun failover(forced: Boolean = false, smart: Boolean = false) = opLock.withLock {
+    /** [verifyUrl] — сайт/сервис с проверкой региона, который только что был закрыт на прежнем сервере (DIAG): кандидат проверяется
+     * и на него, прежде чем смена засчитывается, иначе «подключился» и «сервис открылся» — разные вещи, а следующий DIAG
+     * узнает о повторном провале только через 2 минуты новым прогоном. */
+    private suspend fun failover(forced: Boolean = false, smart: Boolean = false, verifyUrl: String? = null) = opLock.withLock {
         if (!wantRunning) return@withLock
         if (!forced && FailoverGate.modeOutOfSync(storage.mode, connectedMode)) {
             // режим сменился, пока ждали очередь: серверы этого режима подберёт смена режима (иначе два перебора подряд перезапускают ядро по кругу)
@@ -1420,21 +1561,49 @@ class PhoenixVpnService : VpnService() {
         val spareCand = spareLink?.let { l -> ordered.firstOrNull { it.link == l } }
         // запасной, найденный заранее, подбирался без учёта приложения: берём его, только если он подходит открытому сейчас приложению
         if (spareCand != null && fit != null && spareCand.identity !in fit) storage.log("FAILOVER: запасной найденный заранее не подходит открытому приложению — ищу под него")
-        val spareFound = spareCand?.takeIf { fit == null || it.identity in fit }?.let { listOf(Found(it, 0L)) }.orEmpty()
+        // «Auto» — выбор самой подписки, страна выхода у него плавает: для сервисов с проверкой региона (Gemini, NotebookLM) запасным не берём
+        // (в журнале: после «Notebook закрыт» запасным шёл Auto и сразу же оказывался таким же закрытым)
+        val spareIsAutoForGeo = spareCand != null && verifyUrl != null && GeoGate.applies(verifyUrl) &&
+            ServerKind.isAuto(LinkParser.parse(spareCand.link)?.title?.let { t -> urlDecode(t) }.orEmpty())
+        if (spareIsAutoForGeo) storage.log("FAILOVER: запасной найденный заранее — «Auto», для сервиса с проверкой региона не годится — ищу заново")
+        val spareFound = spareCand?.takeIf { !spareIsAutoForGeo && (fit == null || it.identity in fit) }?.let { listOf(Found(it, 0L)) }.orEmpty()
+        // Кандидат отвечает (tunnelWorks), но сайт/сервис с проверкой региона на нём всё равно закрыт — пробуем следующего,
+        // не засчитывая смену: иначе каждая автосмена «попадает» в сервер, который тут же оказывается таким же нерабочим.
+        suspend fun stillBlocked(url: String): Boolean = try {
+            val port = LocalProxy.port
+            val auth = LocalProxy.auth
+            if (port <= 0 || auth == null) false else LocalSocks.get(port, auth, url, connectTimeoutMs = 8_000, readTimeoutMs = 8_000, follow = true, maxRedirects = 8, userAgent = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36").use { r ->
+                RegionBlock.closed(r, r.head(65_536))
+            }
+        } catch (_: Throwable) {
+            false // проверить не удалось — не блокируем смену на этом одном основании
+        }
         suspend fun tryFound(list: List<Found>): Boolean {
         for (f in list) {
             if (!wantRunning) return true
-            val ok = try {
+            var ok = try {
                 withContext(Dispatchers.IO) { reloadCore(f.cand.link) }
                 tunnelWorks() // дважды подряд: один удачный ответ бывает случайным (в логе серверы гасли через 3–6 секунд после выбора)
             } catch (e: Throwable) {
                 storage.log("VPN: запасной не запустился: ${e.message}")
                 false
             }
-            if (!forced) recordHist(f.cand.link, ok)
-            if (!ok) Quarantine.add(f.cand.identity) // ответил поиску, но через туннель связи нет: не возвращаемся к нему сразу
-            if (!ok) storage.log((if (forced) "SWITCH" else "FAILOVER") + ": [${rows.firstOrNull { it.raw == f.cand.link }?.displayName ?: f.cand.identity}] ответил поиску (${msText(f.ms)}), но через туннель связи нет" +
-                (if (healthDetail.isNotEmpty()) " (причина: $healthDetail)" else ""))
+            // туннель поднялся, но нужный сервис здесь всё равно закрыт — это не «сервер плохой», а именно отдельная причина,
+            // так что не трогаем общую историю/карантин сервера (он подходит другим приложениям) и просто идём к следующему
+            var blockedForService = false
+            val vUrl = verifyUrl
+            if (ok && vUrl != null && withContext(Dispatchers.IO) { stillBlocked(vUrl) }) {
+                blockedForService = true
+                storage.log((if (forced) "SWITCH" else "FAILOVER") + ": [${rows.firstOrNull { it.raw == f.cand.link }?.displayName ?: f.cand.identity}] отвечает, но сервис, из-за которого искали, здесь тоже закрыт — пробую следующего")
+                markServiceClosed(f.cand.link, vUrl, TargetStore(storage.targetsFile).load())
+                ok = false
+            }
+            if (!blockedForService) {
+                if (!forced) recordHist(f.cand.link, ok)
+                if (!ok) Quarantine.add(f.cand.identity) // ответил поиску, но через туннель связи нет: не возвращаемся к нему сразу
+                if (!ok) storage.log((if (forced) "SWITCH" else "FAILOVER") + ": [${rows.firstOrNull { it.raw == f.cand.link }?.displayName ?: f.cand.identity}] ответил поиску (${msText(f.ms)}), но через туннель связи нет" +
+                    (if (healthDetail.isNotEmpty()) " (причина: $healthDetail)" else ""))
+            }
             if (ok) {
                 statTick()
                 stat(UsageStats.SWITCHES)
@@ -1475,7 +1644,9 @@ class PhoenixVpnService : VpnService() {
         found.drop(1).firstOrNull { fit == null || it.cand.identity in fit }?.let { SpareServer.remember(it.cand.link, it.cand.identity, gnet, System.currentTimeMillis()) }
         if (tryFound(found)) return@withLock
         // Ничего не нашлось: вероятно, нет интернета вообще. Возвращаем прежний сервер и повторим позже (с растущей паузой).
-        if (wantRunning && mainLink != origLink) {
+        // mainLink сам по себе не докажет, что возврат не нужен: если кандидат бросил исключение, reloadCore успел
+        // остановить ядро и не дошёл до строки, меняющей mainLink, — ядра тогда нет, хотя mainLink не изменился.
+        if (wantRunning && (mainLink != origLink || controller?.isRunning != true)) {
             try {
                 withContext(Dispatchers.IO) { reloadCore(origLink) }
                 mainTitle = origTitle
@@ -1546,6 +1717,7 @@ class PhoenixVpnService : VpnService() {
         val gov = GovernedLimits.get(storage)
         val net = NetInfo.label(this)
         if (gov.level(net) > 0) storage.log("SEARCH: сеть $net не любит много параллельных проверок — иду осторожнее (уровень ${gov.level(net)}, TCP ${gov.tcp(net)})")
+        gov.begin(net)
         val search = ServerSearch(
             reach = { h, p -> ServerHosts.reach(h, p, SEARCH_TCP_TIMEOUT_MS) },
             probe = { cfg, url -> ProbeShare.measure(cfg, url) { XrayCore.measureDelay(this, cfg, url) } },
@@ -1553,8 +1725,9 @@ class PhoenixVpnService : VpnService() {
             probeParallel = gov.probe(net, CheckLimits.searchParallel(this)),
             maxCandidates = 3_000,
             loadSample = GatewayProbe.sampler(this),
+            // «Отключить» или отзыв VPN не должны ждать конца поиска (до 2 минут) — он обрывается на первой же проверке.
+            shouldStop = { !wantRunning },
         )
-        gov.begin(net)
         return search.find(ordered, want, budgetMs) { c, ms -> sink.add(c, ms) }.also {
             if (search.throttled > 0) storage.log("SEARCH: роутер отвечал медленно — притормаживал проверки ${search.throttled} раз(а), чтобы не перегружать сеть")
             if (!search.suspectedOffline && gov.finish(net, System.currentTimeMillis())) storage.log("SEARCH: сеть $net выдержала несколько проверок — снимаю ограничение на один уровень")
@@ -1848,7 +2021,7 @@ class PhoenixVpnService : VpnService() {
             storage.log("SLOW: [$name] быстрый по замеру, но через туннель связи нет — отклонён")
         }
         if (!switched) {
-            if (mainLink != origLink) {
+            if (mainLink != origLink || controller?.isRunning != true) {
                 try {
                     withContext(Dispatchers.IO) { reloadCore(origLink) }
                     mainTitle = origTitle
@@ -1864,7 +2037,7 @@ class PhoenixVpnService : VpnService() {
         lastRx = -1L
     }
 
-    private val routeFails = HashMap<String, Int>()
+    private val routeFails = java.util.concurrent.ConcurrentHashMap<String, Int>()
     private val ROUTE_QUIET_MS = 120_000L
 
     /** Проверка серверов, через которые идут цели по варианту А; при двух неудачах подряд цель получает следующий запасной сервер. */
@@ -1908,9 +2081,18 @@ class PhoenixVpnService : VpnService() {
             if (n < 2) continue
             routeFails.remove(t.id)
             if (t.servers.size > 1) {
-                store.updateServers(t.id, t.servers.drop(1) + link, t.verifiedAt)
-                storage.log("A: для «${t.label}» поставил следующий сервер, прежний ушёл в конец списка")
-                changed = true
+                // пробы занимают несколько секунд (повтор — ещё 5), а список серверов этой цели мог за это время
+                // обновиться фоном (TargetsWorker) — ротация по снимку t, снятому в начале прохода, затёрла бы более
+                // свежий список тем же порядком с [link] в конце (находка Фейбла №3.2); ротируем только если список,
+                // по которому только что пробовали, всё ещё актуален
+                val freshServers = store.load().firstOrNull { it.id == t.id }?.servers.orEmpty()
+                if (freshServers.isNotEmpty() && freshServers.first() == link) {
+                    store.updateServers(t.id, freshServers.drop(1) + link, t.verifiedAt)
+                    storage.log("A: для «${t.label}» поставил следующий сервер, прежний ушёл в конец списка")
+                    changed = true
+                } else {
+                    storage.log("A: для «${t.label}» список серверов уже обновился за время проверки — ротацию не делаю")
+                }
             } else {
                 storage.log("A: у «${t.label}» нет запасных серверов — запускаю перепроверку целей")
                 TargetsWorker.enqueue(this)
@@ -1947,9 +2129,10 @@ class PhoenixVpnService : VpnService() {
 
     /** Вариант Б: открыто приложение, которому нужен свой сервер на весь VPN; когда из него ушли — возврат на прежний. */
     private suspend fun watchForeground() {
-        if (!wantRunning || !ForegroundWatcher.hasAccess(this) || !hasSwitchTargets()) return
+        // экран — самая дешёвая проверка, идёт первой; targets.tsv (hasSwitchTargets) читаем только если он правда нужен
         val pm = getSystemService(PowerManager::class.java)
-        if (pm != null && !pm.isInteractive) return
+        if (!wantRunning || (pm != null && !pm.isInteractive)) return
+        if (!ForegroundWatcher.hasAccess(this) || !(switchTargetsCache ?: hasSwitchTargets().also { switchTargetsCache = it })) return
         val pkg = withContext(Dispatchers.IO) { ForegroundWatcher.current(this@PhoenixVpnService) }
         val now = System.currentTimeMillis()
 
@@ -1990,7 +2173,7 @@ class PhoenixVpnService : VpnService() {
                     done = true
                     break
                 }
-                if (!done && mainLink != before) {
+                if (!done && (mainLink != before || controller?.isRunning != true)) {
                     try {
                         withContext(Dispatchers.IO) { reloadCore(before) }
                         mainTitle = beforeTitle
@@ -2036,6 +2219,7 @@ class PhoenixVpnService : VpnService() {
     private suspend fun disconnect() {
         // сразу останавливаем наблюдение: перебор запасных серверов держит блокировку, и «Отключить» не должно ждать его конца
         wantRunning = false
+        settings.vpnWanted = false
         stopMonitors()
         opLock.withLock { doDisconnect() }
     }
@@ -2212,14 +2396,19 @@ class PhoenixVpnService : VpnService() {
         }
 
         /**
-         * Автоподключение (если включено в настройках): при включении телефона и при открытии приложения.
-         * Без системного разрешения на VPN молча ничего не делает (окно разрешения показывается только в приложении).
+         * Автоподключение: при включении настройки «Подключать само», а также всегда, если VPN был явно включён
+         * (vpnWanted) — чтобы после загрузки или обновления телефон не остался без защиты только из-за того, что
+         * человек не открыл приложение. Без системного разрешения на VPN молча ничего не делает (окно разрешения
+         * показывается только в приложении).
          */
-        fun autoStart(context: Context, reason: String) {
+        fun autoStart(context: Context, reason: String, onDone: () -> Unit = {}) {
             val settings = AppSettings(context)
-            if (!settings.autoConnect) return
-            if (VpnState.status.value.phase != VpnPhase.IDLE) return
-            if (!XrayCore.available || VpnService.prepare(context) != null) return
+            if (!settings.autoConnect && !settings.vpnWanted) { onDone(); return }
+            // не IDLE/ERROR — уже подключаемся или подключены; а вот одну неудачную попытку (ERROR) не считаем
+            // причиной молчать до перезапуска процесса — иначе один отказ ядра выключает автоподключение насовсем.
+            val phase = VpnState.status.value.phase
+            if (phase == VpnPhase.CONNECTING || phase == VpnPhase.CONNECTED) { onDone(); return }
+            if (!XrayCore.available || VpnService.prepare(context) != null) { onDone(); return }
             val app = context.applicationContext
             // выбор сервера читает все конфиги и строит рейтинг — на главном потоке (открытие приложения, приёмник загрузки) это риск ANR
             val job = Runnable {
@@ -2233,6 +2422,8 @@ class PhoenixVpnService : VpnService() {
                     Storage(app).log("VPN: автоподключение [$reason]")
                     start(app)
                 } catch (_: Throwable) {
+                } finally {
+                    onDone()
                 }
             }
             Thread(job, "phoenix-autostart").start()
@@ -2319,18 +2510,19 @@ class SearchSink(private val storage: Storage, private val context: android.cont
         val date = java.time.LocalDate.now().toString()
         try {
             val store = CheckStore(storage.checksFile)
-            val old = store.load()
-            val updates = HashMap<String, CheckResult>()
-            for ((c, ms) in items) {
-                val key = CheckStore.keyOf(c.link)
-                val prev = old[key]
-                when {
-                    ms >= 0 -> if (prev == null || prev.dead || prev.date != date) updates[key] = CheckResult(date, ms, emptyMap(), host = ConfigIdentity.address(c.link))
-                    ms == ServerSearch.TCP_FAIL || ms == CheckServices.UNSUPPORTED -> {}
-                    else -> updates[key] = CheckResult(date, CheckServices.FAILED, emptyMap(), host = ConfigIdentity.address(c.link))
+            store.modify { old ->
+                val updates = HashMap<String, CheckResult>()
+                for ((c, ms) in items) {
+                    val key = CheckStore.keyOf(c.link)
+                    val prev = old[key]
+                    when {
+                        ms >= 0 -> if (prev == null || prev.dead || prev.date != date) updates[key] = CheckResult(date, ms, emptyMap(), host = ConfigIdentity.address(c.link))
+                        ms == ServerSearch.TCP_FAIL || ms == CheckServices.UNSUPPORTED -> {}
+                        else -> updates[key] = CheckResult(date, CheckServices.FAILED, emptyMap(), host = ConfigIdentity.address(c.link))
+                    }
                 }
+                updates
             }
-            if (updates.isNotEmpty()) store.putAll(updates)
             val ctx = NetInfo.label(context)
             // пачка отказов TCP без единого ответа (или интернета недавно не было) — это скорее сеть, чем серверы: такой «опыт» не записываем
             val netDown = FailoverGate.offlineRecently(ModeDetector.offlineAt, System.currentTimeMillis()) ||

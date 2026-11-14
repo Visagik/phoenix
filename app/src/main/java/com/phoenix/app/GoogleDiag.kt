@@ -24,6 +24,17 @@ object GoogleDiag {
     fun labelFor(pkg: String?, site: String?): String =
         if (pkg == "com.google.android.apps.labs.language.tailwind" || (site != null && (site.contains("notebook")))) "notebook" else "gemini"
 
+    /**
+     * Узел проверки для приложений и сайтов без собственной цели (находка Фейбла): для таких `ctx.checkUrl == null`,
+     * и раньше DIAG писал «закрыт» в журнал каждые 2 минуты, но не исключал сервер и не переключал — не было адреса,
+     * по которому отмечать запрет и упорядочивать кандидатов. Возвращает узел того же сервиса из [urls] только
+     * для действительно относящихся к Gemini/NotebookLM приложений и сайтов — иначе null, как и раньше.
+     */
+    fun fallbackCheckUrl(pkg: String?, site: String?): String? {
+        if (!relevant(pkg, site)) return null
+        return urls.firstOrNull { it.first == labelFor(pkg, site) }?.second
+    }
+
     private val hintKeys = setOf("location", "region", "country", "reason", "error", "gl", "hl")
 
     /** Куда привело перенаправление, без секретов: узел, первый отрезок пути и безопасные параметры (location=unsupported и подобные). */

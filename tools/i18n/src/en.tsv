@@ -435,3 +435,8 @@ V2RayNG не найден	V2RayNG not found
 проверяю сеть и туннель…	checking the network and tunnel…
 скорость мала — ищу сервер быстрее…	speed is low — looking for a faster server…
 умная смена: {}	smart switch: {}
+Рабочие конфиги прошлого сбора не переносятся	Working configs from the previous collection are not carried over
+Рабочие конфиги прошлого сбора остаются в списке ещё {} дн., если источник их не отдал	Working configs from the previous collection stay in the list for {} more days if the source stops providing them
+Выкл	Off
+{} дн.	{} d
+Если сбор скачал не все источники, конфиги, которые раньше работали, не пропадают, а смешиваются с новыми (повторы убираются). Срок считается с последнего раза, когда источник их отдавал.	If a collection did not download every source, configs that used to work are not lost but merged with the new ones (duplicates are removed). The period counts from the last time a source provided them.

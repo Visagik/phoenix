@@ -16,6 +16,28 @@ object FetchPolicy {
     private val redirects = setOf(301, 302, 303, 307, 308)
     fun isRedirect(code: Int) = code in redirects
 
+    /**
+     * Куда источнику разрешено перенаправить загрузку (находка Фейбла №11): только http/https и не на локальный адрес.
+     * Иначе владелец источника мог заставить телефон отправить GET на устройство в домашней сети (роутер, принтер);
+     * ответ ему не возвращается, но сам запрос уходит.
+     */
+    fun safeRedirect(url: String): Boolean {
+        val u = try { java.net.URI(url) } catch (_: Exception) { return false }
+        val scheme = u.scheme?.lowercase() ?: return false
+        if (scheme != "http" && scheme != "https") return false
+        val host = (u.host ?: return false).lowercase().trim('[', ']')
+        if (host == "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return false
+        val v4 = Regex("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$").matchEntire(host)
+        if (v4 != null) {
+            val a = v4.groupValues[1].toInt(); val b = v4.groupValues[2].toInt()
+            return !(a == 10 || a == 127 || a == 0 || (a == 169 && b == 254) || (a == 172 && b in 16..31) || (a == 192 && b == 168) || (a == 100 && b in 64..127))
+        }
+        if (host.contains(':')) {
+            return !(host == "::1" || host == "::" || host.startsWith("fe80") || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("::ffff:"))
+        }
+        return true
+    }
+
     /** Ответ похож на подписку: есть ссылки на конфиги (в открытом виде или в base64). */
     fun looksLikeSubscription(body: String): Boolean {
         val text = if (body.contains("://")) body else (LinkParser.decodeBase64(body) ?: body)
@@ -50,4 +72,6 @@ object NetHooks {
     @Volatile var mobile: () -> Boolean = { false }
     @Volatile var label: () -> String = { "" }
     @Volatile var level: (Storage, String) -> Int = { _, _ -> 0 }
+    /** Сколько дней рабочие конфиги прошлого сбора остаются в пуле (настройка; 0 — не переносить, как и в тестах). */
+    @Volatile var carryDays: () -> Int = { 0 }
 }

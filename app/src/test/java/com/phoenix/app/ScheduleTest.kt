@@ -46,4 +46,27 @@ class ScheduleTest {
         // 23:55 + 10 мин = 00:05 следующего дня: такой слот считаем не наступившим (его закрывает будильник)
         assertFalse(Schedule.catchUpNeeded(at(23, 58), 23, 55, false, 0, 1_000_000))
     }
+
+    @Test
+    fun intervalDueIgnoresClockGoingBackward() {
+        val now = 10_000_000_000L
+        val hourMs = 3_600_000L
+        val hours = 6
+        // обычный случай: срок ещё не вышел
+        assertFalse(Schedule.intervalDue(now - 1 * hourMs, now, hours))
+        assertTrue(Schedule.intervalDue(now - 7 * hourMs, now, hours))
+        // часы перевели вперёд, записали «удачный сбор», потом поправили часы назад — отметка в будущем
+        assertTrue(Schedule.intervalDue(now + 50 * hourMs, now, hours))
+    }
+
+    @Test
+    fun intervalCatchUpIgnoresFutureAttemptMark() {
+        val now = 10_000_000_000L
+        val hourMs = 3_600_000L
+        val hours = 6
+        // срок вышел, но попытка «только что» (в будущем из-за той же перестановки часов) не должна блокировать догон
+        assertTrue(Schedule.intervalCatchUp(lastSuccessMs = 0L, lastAttemptMs = now + hourMs, nowMs = now, hours = hours))
+        // обычная недавняя попытка по-прежнему блокирует
+        assertFalse(Schedule.intervalCatchUp(lastSuccessMs = 0L, lastAttemptMs = now - 60_000L, nowMs = now, hours = hours))
+    }
 }

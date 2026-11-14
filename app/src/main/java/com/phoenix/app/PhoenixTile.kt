@@ -32,6 +32,11 @@ class PhoenixTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
+        // на заблокированном экране плитка не должна выключать/включать VPN чужими руками: сначала просим разблокировать (находка №13)
+        if (isLocked) unlockAndRun { act() } else act()
+    }
+
+    private fun act() {
         val phase = VpnState.status.value.phase
         if (phase == VpnPhase.CONNECTED || phase == VpnPhase.CONNECTING) {
             PhoenixVpnService.stop(this)

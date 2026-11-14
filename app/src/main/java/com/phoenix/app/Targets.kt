@@ -192,6 +192,13 @@ class TargetStore private constructor(private val file: File) {
     fun setPolicy(id: String, policy: Policy) =
         save(load().map { if (it.id == id) it.copy(policy = policy) else it })
 
+    /** Меняет только адрес проверки — так же, как setPolicy. `update(t.copy(checkUrl = …))` c экрана несёт старые
+     * `servers`/`verifiedAt` того объекта Target, который UI открыл когда-то раньше: если список серверов обновился
+     * фоном между открытием экрана цели и правкой адреса, такая правка стирала свежие серверы устаревшими (пустыми). */
+    @Synchronized
+    fun setUrl(id: String, url: String) =
+        save(load().map { if (it.id == id) it.copy(checkUrl = url) else it })
+
     @Synchronized
     fun update(t: Target) = save(load().map { if (it.id == t.id) t else it })
 

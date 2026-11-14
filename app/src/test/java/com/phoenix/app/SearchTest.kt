@@ -11,10 +11,12 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 class SearchTest {
-    private fun link(i: Int) = "trojan://pw@10.0.${i / 250}.${i % 250 + 1}:443#Server number $i"
+    // публичный диапазон: адреса из частных сетей (10.x и т. п.) теперь отвергаются самим XrayConfig (находка
+    // Фейбла №1.3), а этот тест реально строит конфиг через probeConfig, а не только Candidate с этой ссылкой
+    private fun link(i: Int) = "trojan://pw@203.0.${i / 250}.${i % 250 + 1}:443#Server number $i"
     private fun cand(i: Int) = Candidate(link(i), ConfigIdentity.key(link(i)), 0, -1.0, 0)
     private fun indexOf(config: String): Int {
-        val m = Regex("""\"address\":\"10\.0\.(\d+)\.(\d+)\"""").find(config)!!
+        val m = Regex("""\"address\":\"203\.0\.(\d+)\.(\d+)\"""").find(config)!!
         return m.groupValues[1].toInt() * 250 + m.groupValues[2].toInt() - 1
     }
 

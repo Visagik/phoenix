@@ -248,6 +248,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _scheduleKind = MutableStateFlow(settings.scheduleKind)
     val scheduleKind: StateFlow<ScheduleKind> = _scheduleKind.asStateFlow()
+    private val _carryDays = MutableStateFlow(settings.carryDays)
+    val carryDays: StateFlow<Int> = _carryDays.asStateFlow()
+
+    fun setCarryDays(d: Int) {
+        settings.carryDays = d
+        _carryDays.value = settings.carryDays
+    }
+
     private val _intervalHours = MutableStateFlow(settings.intervalHours)
     val intervalHours: StateFlow<Int> = _intervalHours.asStateFlow()
 
@@ -500,7 +508,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setTargetUrl(t: Target, url: String): String? {
         val u = url.trim().ifBlank { if (t.kind == TargetKind.APP) KnownApps.urlOrDefault(t.value) else "https://${t.value}/" }
         if (!u.startsWith("http", ignoreCase = true)) return tr("Адрес проверки должен начинаться с https://")
-        TargetStore(storage.targetsFile).update(t.copy(checkUrl = u))
+        // setUrl, а не update(t.copy(...)) — иначе правка несёт servers/verifiedAt того Target, который UI открыл
+        // раньше, и стирает серверы, найденные фоном с тех пор (находка Фейбла, Targets/reserves #6)
+        TargetStore(storage.targetsFile).setUrl(t.id, u)
         reloadTargets()
         return null
     }
@@ -1575,6 +1585,7 @@ fun SettingsTab(vm: MainViewModel) {
     val onlyCharging by vm.onlyCharging.collectAsStateWithLifecycle()
     val kind by vm.scheduleKind.collectAsStateWithLifecycle()
     val hours by vm.intervalHours.collectAsStateWithLifecycle()
+    val carryDays by vm.carryDays.collectAsStateWithLifecycle()
     var showDialog by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
@@ -1584,6 +1595,21 @@ fun SettingsTab(vm: MainViewModel) {
             FilterChip(selected = kind == ScheduleKind.DAILY, onClick = { vm.setScheduleKind(ScheduleKind.DAILY) }, label = { Text(tr("В точное время")) })
             FilterChip(selected = kind == ScheduleKind.INTERVAL, onClick = { vm.setScheduleKind(ScheduleKind.INTERVAL) }, label = { Text(tr("Раз в N часов")) })
         }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            if (carryDays == 0) tr("Рабочие конфиги прошлого сбора не переносятся") else tr("Рабочие конфиги прошлого сбора остаются в списке ещё {} дн., если источник их не отдал", carryDays),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
+            listOf(0, 1, 3, 7, 14).forEach { d ->
+                FilterChip(selected = carryDays == d, onClick = { vm.setCarryDays(d) }, label = { Text(if (d == 0) tr("Выкл") else tr("{} дн.", d)) })
+            }
+        }
+        Text(
+            tr("Если сбор скачал не все источники, конфиги, которые раньше работали, не пропадают, а смешиваются с новыми (повторы убираются). Срок считается с последнего раза, когда источник их отдавал."),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Spacer(Modifier.height(8.dp))
         if (kind == ScheduleKind.INTERVAL) {
             Text(tr("Каждые {} ч после последнего удачного сбора", hours), style = MaterialTheme.typography.bodyLarge)

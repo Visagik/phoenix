@@ -57,9 +57,13 @@ object Schedule {
     fun needsRetry(interval: Boolean, lastSuccessMs: Long, nowMs: Long, hours: Int, doneToday: Boolean): Boolean =
         if (interval) intervalDue(lastSuccessMs, nowMs, hours) else !doneToday
 
-    /** Пора ли собирать: ни разу не собирали или с последнего удачного сбора прошло [hours] часов. */
+    /**
+     * Пора ли собирать: ни разу не собирали, с последнего удачного сбора прошло [hours] часов, или отметка
+     * последнего сбора почему-то в будущем (часы телефона переводили вперёд, потом поправили) — такая отметка
+     * недостоверна, и без этого условия сбор мог бы не наступить очень долго.
+     */
     fun intervalDue(lastSuccessMs: Long, nowMs: Long, hours: Int): Boolean =
-        lastSuccessMs <= 0L || nowMs - lastSuccessMs >= hours.coerceAtLeast(1) * HOUR_MS
+        lastSuccessMs <= 0L || lastSuccessMs > nowMs || nowMs - lastSuccessMs >= hours.coerceAtLeast(1) * HOUR_MS
 
     /** Когда ставить будильник: срок после последнего удачного сбора, а если он уже прошёл — через [INTERVAL_RETRY_MS]. */
     fun nextIntervalAt(lastSuccessMs: Long, nowMs: Long, hours: Int): Long {
@@ -67,9 +71,9 @@ object Schedule {
         return if (due > nowMs) due else nowMs + INTERVAL_RETRY_MS
     }
 
-    /** Догон в режиме интервала: срок вышел и недавно попыток не было. */
+    /** Догон в режиме интервала: срок вышел и недавно попыток не было (отметка попытки в будущем тоже не в счёт). */
     fun intervalCatchUp(lastSuccessMs: Long, lastAttemptMs: Long, nowMs: Long, hours: Int): Boolean {
         if (!intervalDue(lastSuccessMs, nowMs, hours)) return false
-        return lastAttemptMs <= 0L || nowMs - lastAttemptMs >= CATCH_UP_MIN_GAP_MS
+        return lastAttemptMs <= 0L || lastAttemptMs > nowMs || nowMs - lastAttemptMs >= CATCH_UP_MIN_GAP_MS
     }
 }

@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit
  * Приложение всегда идёт мимо собственного VPN, поэтому проверка показывает настоящую сеть оператора.
  */
 object ModeDetector {
+    private val voteLock = Any()
+
     private val muteDetect = RepeatMute()
 
     /** Когда прямая проверка в последний раз показала «нет сети» (0 — после этого сеть была). Нужна, чтобы не перебирать серверы без интернета. */
@@ -92,8 +94,13 @@ object ModeDetector {
         val held = !ignoreHold && ModeHold.active(settings.manualModeAt, settings.manualModeNet, System.currentTimeMillis(), NetInfo.label(context))
         if (ignoreHold) settings.manualModeAt = 0L
         if (settings.autoMode) {
-            val (vote, target) = ModeDecider.step(ModeDecider.load(storage.voteFile), type, storage.mode, need)
-            ModeDecider.save(storage.voteFile, vote)
+            // чтение–изменение–запись голосов под замком: определение запускают несколько мест сразу (смена сети,
+            // проверка связи, кнопка), и два одновременных замера иначе засчитывались как два «подряд» (находка 3.3)
+            val (vote, target) = synchronized(voteLock) {
+                val r = ModeDecider.step(ModeDecider.load(storage.voteFile), type, storage.mode, need)
+                ModeDecider.save(storage.voteFile, r.first)
+                r
+            }
             // при ручном выборе голоса копятся, но режим меняется, только если определение упорно (4 подряд) спорит с выбором
             if (target != null && (!held || ModeHold.overridden(vote.count))) {
                 if (held) settings.manualModeAt = 0L

@@ -12,8 +12,8 @@ android {
         applicationId = "com.phoenix.app"
         minSdk = 29
         targetSdk = 35
-        versionCode = 76
-        versionName = "3.9.63"
+        versionCode = 77
+        versionName = "3.9.64"
 
         ndk {
             // libv2ray.aar содержит нативные библиотеки; оставляем только ARM (все современные телефоны)

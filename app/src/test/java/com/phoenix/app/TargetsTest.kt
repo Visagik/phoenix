@@ -53,6 +53,22 @@ class TargetsTest {
     }
 
     @Test
+    fun setUrlKeepsServersFoundSinceScreenWasOpened() {
+        // сценарий находки Фейбла: экран открыт со старым Target (без серверов), фон за это время нашёл серверы —
+        // смена адреса проверки не должна их стирать (в отличие от update(t.copy(checkUrl = …)) со старым t)
+        val f = File.createTempFile("targets", ".tsv").also { it.deleteOnExit() }
+        val store = TargetStore(f)
+        assertNull(store.add(Target.app("org.telegram.messenger", "Telegram", "https://web.telegram.org/")))
+        val staleFromScreen = store.load().single() // как будто экран открыли до фоновой проверки
+        store.updateServers(staleFromScreen.id, listOf(link("One Server", "1.1.1.1")), "2026-10-14")
+        store.setUrl(staleFromScreen.id, "https://web.telegram.org/k/")
+        val back = store.load().single()
+        assertEquals("https://web.telegram.org/k/", back.checkUrl)
+        assertEquals(1, back.servers.size)
+        assertEquals("2026-10-14", back.verifiedAt)
+    }
+
+    @Test
     fun effectivePolicyUsesGlobalForDefault() {
         val t = Target.site("example.com")!!
         assertEquals(Policy.SWITCH, t.effective(Policy.SWITCH))

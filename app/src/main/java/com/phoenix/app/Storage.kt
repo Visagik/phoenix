@@ -135,6 +135,12 @@ class Storage(context: Context, val mode: Mode = Mode.read(context.applicationCo
     /** Свежий файл конфигов (из самой новой папки, где он есть). */
     fun latestEnriched(): File? = latest(ENRICHED_NAME)
 
+    /** Последний итоговый (без меток) файл конфигов — с него Collector переносит рабочие конфиги в новый сбор. */
+    fun latestClean(): File? = latest(CLEAN_NAME)
+
+    /** Когда каждый конфиг последний раз приходил из источника (для срока переноса, см. [CarryOver]). */
+    val carrySeenFile = File(base, "carry_seen.tsv")
+
     /** Есть ли уже итоговый файл конфигов за сегодня (значит, сегодняшний сбор выполнен). */
     fun hasEnrichedToday(): Boolean = File(File(base, today), ENRICHED_NAME).exists()
 

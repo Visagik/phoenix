@@ -12,9 +12,16 @@ object ConfigIdentity {
     /** Метка, которую Phoenix сам дописывает к имени: «| [DE] TG:ok QW:ok …». Она не часть имени. */
     private val geoSuffix = Regex("\\s*\\|?\\s*\\[[A-Z]{2}]\\s+TG:\\S+.*$")
 
+    /** Имя из источника дольше этого — чужое и подозрительное: реальные имена серверов в десятки символов,
+     * а `\s*\|?\s*` в начале [geoSuffix] на длинной серии пробелов (например, из `%20` в имени) перебирает
+     * кубически — на 1600 пробелов замер шёл больше секунды на каждый вызов, а key() вызывается на каждый
+     * конфиг при каждом ранжировании, в том числе под opLock в failover (находка Фейбла №1.2). Обрезаем
+     * заранее, а не чиним сам регексп — так результат не меняется для любого настоящего имени. */
+    private const val MAX_NAME_INPUT = 300
+
     /** Имя без флагов, эмодзи, знаков и регистра: «🇩🇪 Germany #3 | [DE] TG:ok…» → «germany 3». */
     fun normalizeName(raw: String): String {
-        val s = geoSuffix.replace(urlDecode(raw), "")
+        val s = geoSuffix.replace(urlDecode(raw).take(MAX_NAME_INPUT), "")
         val sb = StringBuilder()
         var lastSpace = true
         for (c in s) {

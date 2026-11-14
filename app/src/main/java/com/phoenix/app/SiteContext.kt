@@ -102,10 +102,13 @@ object AppFit {
 
     /**
      * Ступени: 0 — серверы самой цели, 1 — серверы других недавних приложений, 2 — остальные,
-     * 3 — страна по названию закрыта для сервиса, замера нет (у «🇷🇺 LTE …» выход бывает за границей), 4 — замер показал закрытую страну выхода.
-     * Порядок внутри ступени сохраняется.
+     * 3 — страна по названию закрыта для сервиса, замера нет (у «🇷🇺 LTE …» выход бывает за границей), 4 — замер показал закрытую страну выхода,
+     * 5 — этот сервер уже отмечен как закрытый именно для этого сайта (DIAG/кнопка «не открывается»), независимо от страны выхода.
+     * Порядок внутри ступени сохраняется. Ступень 5 — самая низкая: такой сервер не должен быть выбран повторно сразу после того,
+     * как его для этого же сайта только что исключили (иначе отметка в ServiceVeto ни на что не влияет).
      */
-    fun tier(c: Candidate, primary: Set<String>, others: Set<String>, measured: String?, blocked: (String?) -> Boolean): Int = when {
+    fun tier(c: Candidate, primary: Set<String>, others: Set<String>, measured: String?, blocked: (String?) -> Boolean, vetoed: (Candidate) -> Boolean = { false }): Int = when {
+        vetoed(c) -> 5
         blocked(measured) -> 4
         c.identity in primary -> 0
         c.identity in others -> 1
@@ -113,8 +116,8 @@ object AppFit {
         else -> 2
     }
 
-    fun arrange(list: List<Candidate>, primary: Set<String>, others: Set<String>, measuredOf: (Candidate) -> String?, blocked: (String?) -> Boolean): List<Candidate> =
-        list.sortedBy { tier(it, primary, others, measuredOf(it), blocked) }
+    fun arrange(list: List<Candidate>, primary: Set<String>, others: Set<String>, measuredOf: (Candidate) -> String?, blocked: (String?) -> Boolean, vetoed: (Candidate) -> Boolean = { false }): List<Candidate> =
+        list.sortedBy { tier(it, primary, others, measuredOf(it), blocked, vetoed) }
 }
 
 /** Цели без серверов не перебираются глубоко при каждом прогоне: после полного провала пауза. */

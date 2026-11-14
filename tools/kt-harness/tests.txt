@@ -58,3 +58,6 @@ Release3955Test.kt
 ServerTableTest.kt
 I18nTest.kt
 I18nDictionariesTest.kt
+CarryOverTest.kt
+SourceTagTest.kt
+Release4Pack4Test.kt

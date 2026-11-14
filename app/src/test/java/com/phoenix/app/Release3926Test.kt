@@ -75,6 +75,23 @@ class Release3926Test {
         assertEquals(0, Quarantine.releaseAll())
     }
 
+    @Test fun probeSplitsBetweenConcurrentRuns() {
+        val (g, _) = gov()
+        g.begin("n") // перепроверка уже идёт
+        g.begin("n") // и поверх неё — поиск при сбое
+        assertEquals(2, g.activeCount("n"))
+        // 12 делится на 2 одновременных тяжёлых прогона, а не достаётся каждому целиком
+        assertEquals(6, g.probe("n", 12))
+        // но не ниже пола MIN_PROBE, даже если прогонов много
+        assertEquals(2, g.probe("n", 3))
+    }
+
+    @Test fun probeNotInflatedWhenAlone() {
+        val (g, _) = gov()
+        // ни один тяжёлый прогон не идёт (begin ещё не звали) — делить не на что, base=1 остаётся 1
+        assertEquals(1, g.probe("n", 1))
+    }
+
     @Test fun paceOnGrid() {
         assertEquals(0L, HealthPace.BASE_MS % HealthPace.GRID_MS)
         assertEquals(0L, HealthPace.CALM_MS % HealthPace.GRID_MS)

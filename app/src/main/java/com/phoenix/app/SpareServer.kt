@@ -13,13 +13,17 @@ object SpareServer {
 
     @Synchronized
     fun remember(link: String, identity: String, net: String, now: Long) {
+        // сервер, который через туннель не дал связи минуту назад (карантин), не годится и в запас — иначе следующий
+        // сбой снова пробует именно его первым
+        if (Quarantine.active(identity, now)) return
         this.link = link; this.identity = identity; this.net = net; this.at = now
     }
 
-    /** Ссылка запасного, если он из этой же сети, свежий и не совпадает с [excludeIdentity]; иначе null. */
+    /** Ссылка запасного, если он из этой же сети, свежий, не совпадает с [excludeIdentity] и не в карантине; иначе null. */
     @Synchronized
     fun take(net: String, now: Long, excludeIdentity: String): String? {
         if (link.isEmpty() || this.net != net || now - at > MAX_AGE_MS || now < at || identity == excludeIdentity) return null
+        if (Quarantine.active(identity, now)) { forget(); return null }
         val l = link
         forget()
         return l

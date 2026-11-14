@@ -129,6 +129,13 @@ class CheckStore private constructor(private val file: File) {
         return map
     }
 
+    /** Прочитать–изменить–записать одним действием под замком: два потока не затирают правки друг друга (находка 3.4). */
+    @Synchronized
+    fun modify(recordOdds: Boolean = true, build: (Map<String, CheckResult>) -> Map<String, CheckResult>) {
+        val updates = build(load())
+        if (updates.isNotEmpty()) putAll(updates, recordOdds)
+    }
+
     @Synchronized
     fun putAll(results: Map<String, CheckResult>, recordOdds: Boolean = true) {
         val merged = LinkedHashMap(load())

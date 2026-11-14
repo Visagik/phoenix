@@ -110,7 +110,10 @@ object Scheduler {
         // срочная задача не может быть отложенной: при первом запуске выбираем отсрочку, чтобы дать экрану прогрузиться
         val request = if (delaySec > 0) builder.setInitialDelay(delaySec, TimeUnit.SECONDS).build()
         else builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST).build()
-        WorkManager.getInstance(context).enqueueUniqueWork(RUN, ExistingWorkPolicy.KEEP, request)
+        // «Собрать сейчас» не должно молча теряться из-за того, что в очереди уже висит отложенная автоматическая задача
+        // (например, отсрочка первого запуска или «только на зарядке») — ручной запрос подменяет её собой.
+        val policy = if (manual) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+        WorkManager.getInstance(context).enqueueUniqueWork(RUN, policy, request)
     }
 
     /** «Собрать сейчас» из интерфейса. */
@@ -190,7 +193,12 @@ class BootReceiver : BroadcastReceiver() {
         Scheduler.scheduleNightly(context, replace = false)
         AlarmScheduler.arm(context)
         Scheduler.catchUpIfNeeded(context, trigger = "boot")
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) PhoenixVpnService.autoStart(context, "загрузка телефона")
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            // выбор сервера для автоподключения идёт в отдельном потоке и может не успеть до того, как система
+            // понизит приоритет процесса сразу после выхода из onReceive — просим систему подождать до его конца.
+            val pending = goAsync()
+            PhoenixVpnService.autoStart(context, "загрузка телефона") { pending.finish() }
+        }
     }
 }
 
@@ -235,12 +243,22 @@ class PhoenixWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         settings.recordAttempt(trigger)
         val summaries = ArrayList<String>()
         var allOk = true
+        var anySkipped = false
         for (m in modes) {
+            // повтор после неудачи другого режима не качает заново тот, что только что собрался (находка №8)
+            if (!manual && runAttemptCount > 0 && Storage(ctx, m).latestClean()?.let { System.currentTimeMillis() - it.lastModified() < 30 * 60_000L } == true) {
+                Storage(ctx).log("SCHED: режим «${m.title}» собран меньше 30 минут назад — при повторе пропускаю")
+                continue
+            }
             val outcome = Collector(ctx, mode = m).run(trigger)
             allOk = allOk && outcome.ok
+            anySkipped = anySkipped || outcome.skipped
             summaries += if (modes.size > 1) "${m.title}: ${outcome.summary}" else outcome.summary
         }
         settings.recordResult(summaries.joinToString("; "))
+        // Сбор не запускался, потому что уже шёл другой (другая уникальная задача заняла тот же замок): это не успех и
+        // не неудача этой задачи — тот, другой прогон сам обновит срок, будильник и перепроверку, когда закончит.
+        if (anySkipped) return Result.success()
         if (!allOk) {
             AlarmScheduler.armRetry(ctx, Schedule.retryDelayMs(noNetwork = false))
             Storage(ctx).log("SCHED: сбор не удался — повторю через ${Schedule.INTERVAL_RETRY_MS / 60_000} мин")

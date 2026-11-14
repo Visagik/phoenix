@@ -83,7 +83,23 @@ object TargetsRunner {
 
     private fun reasonsText(r: Map<String, Int>): String = if (r.isEmpty()) "" else " [не подошли: " + r.entries.sortedByDescending { it.value }.joinToString(", ") { "${it.key} ${it.value}" } + "]"
 
+    private val running = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * Три независимых уникальных задачи (разовая, повтор, плановая) могут дойти до запуска почти одновременно —
+     * ни одна из них сама по себе от этого не защищена. Вторая, застав первую уже внутри, не бежит параллельно
+     * (двойная нагрузка на сеть и ядро), а тихо выходит: первая и так обновит все те же файлы.
+     */
     suspend fun run(context: Context, withSpeed: Boolean = true): String {
+        if (!running.compareAndSet(false, true)) return "уже выполняется — пропускаю"
+        try {
+            return runInner(context, withSpeed)
+        } finally {
+            running.set(false)
+        }
+    }
+
+    private suspend fun runInner(context: Context, withSpeed: Boolean = true): String {
         if (!XrayCore.available) return "ядро недоступно"
         val storage = Storage(context)
         val settings = AppSettings(context)
@@ -107,6 +123,7 @@ object TargetsRunner {
             val sink = SearchSink(storage, context)
             val gov = GovernedLimits.get(storage)
             val govNet = NetInfo.label(context)
+            gov.begin(govNet)
             val search = ServerSearch(
                 reach = { h, p -> ServerHosts.reach(h, p, 2_500) },
                 probe = probe,
@@ -115,7 +132,6 @@ object TargetsRunner {
                 loadSample = GatewayProbe.sampler(context),
                 shouldStop = stale,
             )
-            gov.begin(govNet)
             // «мёртвые» отметки тоже перепроверяем: конфиг мог не отвечать в другой сети
             val order = SearchPool.build(context, storage, withForeign = false).filter { XrayConfig.supports(it.link) && !it.alive }
             val got = search.find(order, want = DISCOVER_WANT, budgetMs = DISCOVER_BUDGET_MS) { c, ms -> sink.add(c, ms) }
@@ -229,7 +245,9 @@ object TargetsRunner {
                     servers = listOf(Target.DIRECT)
                     storage.log("TARGET: «${t.label}» — через серверы сайт не открылся, а напрямую открывается: пущу мимо VPN")
                 }
-                if (servers.isEmpty() && !paused) missMap[t.id] = nowMs else if (servers.isNotEmpty()) missMap.remove(t.id)
+                // «мимо VPN» — не найденный сервер: пауза поиска от него не снимается (иначе каждый прогон заново перебирал все конфиги, находка №9)
+                val onlyDirect = servers.isNotEmpty() && servers.all { it == Target.DIRECT }
+                if ((servers.isEmpty() || onlyDirect) && !paused) missMap[t.id] = nowMs else if (servers.isNotEmpty() && !onlyDirect) missMap.remove(t.id)
                 try { storage.missFile.writeTextAtomic(MissBackoff.render(missMap)) } catch (_: Throwable) { }
                 // если ничего не нашлось (например, пропала сеть), прежние серверы не затираем
                 if (servers.isNotEmpty()) {

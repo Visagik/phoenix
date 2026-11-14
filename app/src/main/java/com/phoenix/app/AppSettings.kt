@@ -143,6 +143,28 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
         get() = bool("auto_connect", false)
         set(v) = putBool("auto_connect", v)
 
+    /**
+     * Техническая отметка (не настройка, не зависит от режима): пользователь хочет, чтобы VPN был включён.
+     * Ставится при удачном подключении, снимается при «Отключить», отзыве VPN системой и ошибке запуска.
+     * Нужна, чтобы служба, перезапущенная системой без явной команды (гибель процесса, «Постоянный VPN»),
+     * знала, поднимать ли туннель заново, а не просто сворачиваться до открытия приложения.
+     */
+    var vpnWanted: Boolean
+        get() = prefs.getBoolean("vpn_wanted", false)
+        set(v) = prefs.edit().putBoolean("vpn_wanted", v).apply()
+
+    /**
+     * Разрыв цикла: не больше трёх самостоятельных перезапусков VPN за 10 минут (если прошивка убивает процесс
+     * быстрее, чем он успевает подняться). Возвращает true, если перезапуск разрешён, и сразу его засчитывает.
+     */
+    fun noteVpnRestart(now: Long = System.currentTimeMillis()): Boolean {
+        val key = "vpn_restart_times"
+        val kept = (prefs.getString(key, "") ?: "").split(",").mapNotNull { it.toLongOrNull() }.filter { now - it < 10 * 60_000L }
+        if (kept.size >= 3) return false
+        prefs.edit().putString(key, (kept + now).joinToString(",")).apply()
+        return true
+    }
+
     /** Как быть с IPv6: по умолчанию перехватывается и блокируется (приложения переходят на IPv4), утечек мимо VPN нет. */
     var ipv6Mode: Ipv6Mode
         get() = Ipv6Mode.entries.firstOrNull { it.name == prefs.getString(k("ipv6_mode"), null) } ?: Ipv6Mode.BLOCK
@@ -191,6 +213,11 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
     var intervalHours: Int
         get() = prefs.getInt("interval_hours", 12).coerceIn(1, 168)
         set(v) = prefs.edit().putInt("interval_hours", v.coerceIn(1, 168)).apply()
+
+    /** Сколько дней рабочие конфиги прошлого сбора остаются в пуле, если источник их больше не отдаёт; 0 — не переносить (см. [CarryOver]). */
+    var carryDays: Int
+        get() = prefs.getInt("carry_days", 3).coerceIn(0, 14)
+        set(v) = prefs.edit().putInt("carry_days", v.coerceIn(0, 14)).apply()
 
     /** Когда последний раз сбор удался для всех режимов (мс); нужен режиму «раз в несколько часов». */
     var lastSuccessAt: Long

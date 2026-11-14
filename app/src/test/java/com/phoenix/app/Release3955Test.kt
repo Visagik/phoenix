@@ -195,6 +195,31 @@ class Release3955Test {
         assertEquals(listOf("W1"), QueueMix.mix(emptyList<String>(), listOf("W1"), 2))
     }
 
+    @Test fun googleDiagFallbackCheckUrlOnlyForRelevantApps() {
+        assertEquals("https://gemini.google.com/app", GoogleDiag.fallbackCheckUrl("com.google.android.apps.bard", null))
+        assertEquals("https://notebooklm.google.com/", GoogleDiag.fallbackCheckUrl("com.google.android.apps.labs.language.tailwind", null))
+        assertEquals("https://notebooklm.google.com/", GoogleDiag.fallbackCheckUrl(null, "notebooklm.google.com"))
+        assertNull(GoogleDiag.fallbackCheckUrl("org.telegram.messenger", null))
+        assertNull(GoogleDiag.fallbackCheckUrl(null, null))
+    }
+
+    @Test fun configIdentityHandlesLongWhitespaceQuickly() {
+        // находка Фейбла №1.2: \s*\|?\s* в начале geoSuffix на длинной серии пробелов перебирает кубически —
+        // на реальном имени из источника с сотнями-тысячами пробелов (например, из %20) это занимало секунды
+        // под opLock в failover; после обрезки входа это должно укладываться в десятки миллисекунд
+        val padded = "Germany #3" + " ".repeat(5_000) + "tail"
+        val t0 = System.currentTimeMillis()
+        val name = ConfigIdentity.normalizeName(padded)
+        val elapsed = System.currentTimeMillis() - t0
+        assertTrue("normalizeName on long whitespace took ${elapsed}ms", elapsed < 2_000)
+        assertTrue(name, name.startsWith("germany 3"))
+    }
+
+    @Test fun configIdentityNormalizesOrdinaryNamesUnchanged() {
+        assertEquals("germany 3", ConfigIdentity.normalizeName("🇩🇪 Germany #3 | [DE] TG:ok QW:ok"))
+        assertEquals("simple name test", ConfigIdentity.normalizeName("Simple_Name.test"))
+    }
+
     @Test fun coldStartSoftensFirstRun() {
         assertEquals(4, ColdStart.recheckParallel(12, 0L))
         assertEquals(2, ColdStart.recheckParallel(4, 0L))

@@ -13,10 +13,22 @@ class LogFixesTest {
         assertFalse(XrayConfig.supports(vless("8.8.4.4", "type=ws")))
     }
 
-    @Test fun vlessWithoutTlsOnDomainOrPrivateIpIsKept() {
+    @Test fun vlessWithoutTlsOnDomainIsKept() {
         assertTrue(XrayConfig.supports(vless("example.com", "type=tcp&security=none")))
-        assertTrue(XrayConfig.supports(vless("192.168.1.5", "type=tcp&security=none")))
         assertTrue(XrayConfig.supports(vless("8.8.4.4", "type=tcp&security=tls&sni=example.com")))
+    }
+
+    // раньше частные адреса не фильтровались вовсе ни для одного протокола (находка Фейбла №1.3) — публичный список
+    // мог указать на устройство в домашней сети того, кто его публикует, и фоновая перепроверка сама слала туда запрос
+    @Test fun privateOrLoopbackServerAddressIsRejectedForEveryProtocol() {
+        assertFalse(XrayConfig.supports(vless("192.168.1.5", "type=tcp&security=none")))
+        assertFalse(XrayConfig.supports("trojan://pw@10.0.0.1:443#t"))
+        assertFalse(XrayConfig.supports("trojan://pw@127.0.0.1:443#t"))
+        val ssUser = java.util.Base64.getEncoder().encodeToString("aes-256-gcm:pw".toByteArray())
+        assertFalse(XrayConfig.supports("ss://$ssUser@172.16.0.1:8388#t"))
+        assertFalse(XrayConfig.supports("hysteria2://pw@169.254.1.1:443?sni=example.com#t"))
+        assertFalse(XrayConfig.supports("trojan://pw@[fe80::1]:443#t"))
+        assertTrue(XrayConfig.supports("trojan://pw@1.2.3.4:443#t"))
     }
 
     @Test fun allowInsecureWithoutDomainIsUnsupportedButWithSniOk() {

@@ -42,8 +42,20 @@ class ParallelGovernor(private val file: File) {
     /** Сколько параллельных TCP-проверок разрешено в этой сети. */
     fun tcp(net: String): Int = TCP_LEVELS[level(net)]
 
-    /** Сколько параллельных проверок через ядро; [base] — обычное значение для телефона. */
-    fun probe(net: String, base: Int): Int = (base shr level(net)).coerceAtLeast(MIN_PROBE).coerceAtMost(base)
+    /**
+     * Сколько параллельных проверок через ядро; [base] — обычное значение для телефона. Если в этой сети уже идёт
+     * другой тяжёлый прогон (учтён через [begin], вызванный ДО этого метода — например, перепроверка и перебор при
+     * сбое одновременно), лимит делится между ними поровну: иначе ограничение действует на один прогон, а не на сеть.
+     */
+    @Synchronized
+    fun probe(net: String, base: Int): Int {
+        val lvl = (base shr level(net)).coerceAtLeast(MIN_PROBE).coerceAtMost(base)
+        val concurrent = (map[net]?.active ?: 0).coerceAtLeast(1)
+        // Делим лимит только если сейчас и правда идёт больше одного тяжёлого прогона; иначе не трогаем lvl —
+        // он уже учитывает и уровень сети, и переданный base (может быть меньше MIN_PROBE, если base совсем мал).
+        if (concurrent <= 1) return lvl
+        return (lvl / concurrent).coerceAtLeast(MIN_PROBE).coerceAtMost(lvl)
+    }
 
     @Synchronized
     fun begin(net: String, now: Long = System.currentTimeMillis()) {

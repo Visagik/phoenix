@@ -19,6 +19,17 @@ object AppContext {
                 else -> pkg.orEmpty()
             }
         val checkUrl: String? get() = target?.checkUrl ?: site?.let { "https://$it/" }
+
+        /**
+         * То же для журнала: описание службы обещает «домен хранится только в памяти», а журнал лежит на диске, входит в
+         * резервную копию и в отчёт, который отправляют другим людям (находка Фейбла №7). Домен показываем целиком только
+         * для Gemini/NotebookLM (ради них и работает DIAG), для остальных — первая буква и зона: «сайт m***.ru».
+         */
+        val logLabel: String
+            get() = when {
+                site != null -> "сайт " + (if (GoogleDiag.relevant(pkg, site)) site else LogMask.host(site)) + (target?.let { " («${it.label}»)" } ?: "")
+                else -> label
+            }
     }
 
     fun now(context: Context, targets: List<Target>): Now? {

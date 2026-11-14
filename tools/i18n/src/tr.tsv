@@ -435,3 +435,8 @@ V2RayNG не найден	V2RayNG bulunamadı
 проверяю сеть и туннель…	ağ ve tünel denetleniyor…
 скорость мала — ищу сервер быстрее…	hız düşük — daha hızlı sunucu aranıyor…
 умная смена: {}	akıllı değiştirme: {}
+Рабочие конфиги прошлого сбора не переносятся	Önceki toplamadaki çalışan yapılandırmalar taşınmaz
+Рабочие конфиги прошлого сбора остаются в списке ещё {} дн., если источник их не отдал	Önceki toplamadaki çalışan yapılandırmalar, kaynak sunmazsa listede {} gün daha kalır
+Выкл	Kapalı
+{} дн.	{} gün
+Если сбор скачал не все источники, конфиги, которые раньше работали, не пропадают, а смешиваются с новыми (повторы убираются). Срок считается с последнего раза, когда источник их отдавал.	Toplama tüm kaynakları indirmediyse, eskiden çalışan yapılandırmalar kaybolmaz, yenilerle birleştirilir (tekrarlar silinir). Süre, kaynağın bunları son sunduğu andan itibaren sayılır.

@@ -40,14 +40,17 @@ class Collector(
     private val appContext = context.applicationContext
     private val storage = if (mode != null) Storage(context.applicationContext, mode) else Storage(context.applicationContext)
 
-    data class Outcome(val ok: Boolean, val summary: String)
+    /** [skipped] — сбор вообще не запускался (например, уже шёл другой): вызывающая сторона не должна принимать это за настоящий успех. */
+    data class Outcome(val ok: Boolean, val summary: String, val skipped: Boolean = false)
 
-    private data class Fetched(val code: Int, val body: String?, val vpnTried: Boolean = false, val note: String = "", val etag: String = "", val lastMod: String = "")
+    private data class Fetched(val code: Int, val body: String?, val vpnTried: Boolean = false, val note: String = "", val etag: String = "", val lastMod: String = "",
+        /** не 0 — сеть источник не отдала (это был код ответа), а в конфиги взята его прежняя копия из кэша */
+        val staleCode: Int = 0)
     private class Pending(val url: String, val start: SourceState, val reactivated: Boolean)
 
     /** @param trigger кто запустил (alarm / worker / manual / catch-up) — попадает в журнал для диагностики */
     suspend fun run(trigger: String = "manual"): Outcome {
-        if (!lock.tryLock()) return Outcome(true, "Сборка уже выполняется")
+        if (!lock.tryLock()) return Outcome(true, "Сборка уже выполняется", skipped = true)
         RunState.running.value = true
         return try {
             withContext(Dispatchers.IO) { pipeline(trigger) }
@@ -169,11 +172,17 @@ class Collector(
                             Fetched(200, cached, note = "из кэша: по накопленной истории источник ещё не обновлялся")
                         } else fetchWithRetry(p.url, RETRIES, SourceValidators.requestHeaders(validators.get(p.url), cachedAny != null)).let { f ->
                             // 304: сервер подтвердил, что источник не менялся — берём сохранённый ответ без скачивания
-                            if (f.code == 304 && cachedAny != null) { notModifiedN.incrementAndGet(); Fetched(200, cachedAny, note = "из кэша: источник не изменился (304)") } else f
+                            if (f.code == 304 && cachedAny != null) { notModifiedN.incrementAndGet(); Fetched(200, cachedAny, note = "из кэша: источник не изменился (304)") }
+                            // источник не отдали (обрыв, блокировка, плохая сеть) — но прежняя копия есть: берём её, иначе один неудачный
+                            // сбор (2 источника из 22) затирал сегодняшний пул, и при смене сервера оставалось перебирать ~20 конфигов
+                            else if (f.body == null && cachedAny != null && FetchPolicy.looksLikeSubscription(cachedAny) &&
+                                System.currentTimeMillis() - cacheFile.lastModified() < STALE_CACHE_MS
+                            ) Fetched(200, cachedAny, f.vpnTried, "из кэша: источник не ответил, взята прежняя копия", staleCode = f.code)
+                            else f
                         }.also { f ->
                             if (f.code == 200 && f.body != null && !f.note.startsWith("из кэша")) validators.put(p.url, f.etag, f.lastMod)
                             if (f.body != null && f.note == "через VPN") viaVpnN.incrementAndGet()
-                            if (f.body != null && FetchPolicy.looksLikeSubscription(f.body)) try { cacheFile.writeTextAtomic(f.body) } catch (_: Exception) { }
+                            if (f.body != null && f.staleCode == 0 && FetchPolicy.looksLikeSubscription(f.body)) try { cacheFile.writeTextAtomic(f.body) } catch (_: Exception) { }
                         }
                     }
                 }
@@ -186,6 +195,7 @@ class Collector(
 
         val okSources = ArrayList<SourceSet>()
         val bodies = ArrayList<String>()
+        val bodyUrls = ArrayList<String>()
         // какие конфиги пришли из какого источника — для доли рабочих по каждой ссылке (старые записи остаются, пока источник не ответит заново)
         val members = LinkedHashMap<String, Set<String>>()
         if (storage.sourceMembersFile.exists()) {
@@ -202,6 +212,7 @@ class Collector(
             val body = res.body
             if (body != null) {
                 bodies += body
+                bodyUrls += p.url
                 val bodyLines = expandBody(body)
                 val keys = bodyLines.mapNotNull { LinkParser.parse(it)?.urlPart }.toSet()
                 val newMembers = bodyLines.filter { it.contains("://") }.map { CheckStore.keyOf(it.trim()) }.toSet()
@@ -212,7 +223,11 @@ class Collector(
                 }
                 members[p.url] = bodyLines.filter { it.contains("://") }.map { CheckStore.keyOf(it.trim()) }.toSet()
                 okSources += SourceSet(p.url, okSources.size, keys)
-                states[p.url] = SourcePolicy.onSuccess(today)
+                if (res.staleCode != 0) {
+                    // прежняя копия — не успех источника: счётчик неудач идёт как при обычной неудаче (мёртвый источник не должен жить вечно)
+                    val ns = SourcePolicy.onFailure(p.start, res.staleCode, today)
+                    states[p.url] = if (FetchPolicy.uncertain(res.staleCode) && !res.vpnTried) p.start else ns
+                } else states[p.url] = SourcePolicy.onSuccess(today)
                 storage.log("OK: ${p.url} (${body.length} симв., ${keys.size} конфигов)" + (if (res.note.isNotEmpty()) " [${res.note}]" else "") + (if (keys.isEmpty()) " — в ответе нет конфигов (страница-заглушка или пустой источник)" else ""))
                 draft.sources += SourceLine(p.url, SourceKind.OK, "${body.length} симв., ${keys.size} конфигов", p.reactivated)
             } else {
@@ -279,7 +294,24 @@ class Collector(
 
         // --- 5. Дедупликация ---
         progress("Дедупликация…")
-        val lines = bodies.flatMap { expandBody(it) }
+        // одно имя из разных источников — разные серверы (см. SourceTag), внутри одного источника — один и тот же
+        val fresh = SourceTag.apply(bodies.indices.map { bodyUrls[it] to expandBody(bodies[it]) }) { CheckStore.keyOf(it) }
+        // рабочие конфиги прошлого сбора, которые источники сегодня не отдали, остаются в пуле на срок из настроек
+        // (иначе неудачный сбор затирает пул целиком); новые строки идут первыми — при дубле остаётся свежая
+        val carryDays = try { NetHooks.carryDays() } catch (_: Throwable) { 0 }
+        val freshKeys = fresh.filter { it.contains("://") }.map { CheckStore.keyOf(it.trim()) }.toSet()
+        val seenBefore = try { if (storage.carrySeenFile.exists()) CarryOver.decode(storage.carrySeenFile.readText()) else emptyMap() } catch (_: Exception) { emptyMap() }
+        val carried = try {
+            val prev = storage.latestClean()?.readLines().orEmpty()
+            val checks = CheckStore(storage.checksFile).load()
+            CarryOver.select(prev, freshKeys, seenBefore, todayDate, carryDays, { CheckStore.keyOf(it) }, { k -> checks[k]?.dead != true })
+        } catch (_: Throwable) { emptyList() }
+        try {
+            val carriedKeys = carried.map { CheckStore.keyOf(it) }.toSet()
+            storage.carrySeenFile.writeTextAtomic(CarryOver.encode(CarryOver.touch(seenBefore, freshKeys, carriedKeys, todayDate)))
+        } catch (_: Throwable) { }
+        if (carried.isNotEmpty()) storage.log("CARRY: из прошлого сбора оставлено ${carried.size} рабочих конфигов (срок $carryDays дн.), новых из источников ${freshKeys.size}")
+        val lines = fresh + carried
         val cleaned = Dedup.clean(lines)
         val top = Dedup.topPerAddress(cleaned, MAX_PER_ADDRESS)
         draft.rawLines = lines.size
@@ -417,7 +449,9 @@ class Collector(
                 code = c.responseCode
                 val loc = c.getHeaderField("Location")
                 if (FetchPolicy.isRedirect(code) && loc != null && hops < 5) {
-                    current = URL(URL(current), loc).toString()
+                    val next = URL(URL(current), loc).toString()
+                    if (!FetchPolicy.safeRedirect(next)) { code = 0; break } // переход на локальный адрес или не http(s) — как обрыв
+                    current = next
                     hops++
                     continue
                 }
@@ -454,6 +488,8 @@ class Collector(
 
         // Весь прогон должен укладываться в ~10 минут, которые WorkManager даёт обычной задаче.
         const val MAX_FETCH_MS = 5 * 60 * 1000L
+        /** Насколько старую копию источника ещё можно взять вместо недоступного: дальше конфиги скорее мертвы, чем нужны */
+        const val STALE_CACHE_MS = 7L * 24 * 3600 * 1000
         const val TIMEOUT_MS = 30_000
         const val RETRIES = 2
         const val RETRY_DELAY_MS = 5_000L

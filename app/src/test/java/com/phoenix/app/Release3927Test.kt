@@ -29,4 +29,22 @@ class Release3927Test {
         assertTrue(HeavyGate.allow(true, false, 10, true, 0, hot = true))
         assertTrue(HeavyGate.allow(false, true, 90, false, 0, hot = false))
     }
+
+    @Test fun spareFromQuarantineIsNotRememberedOrTaken() {
+        Quarantine.clear()
+        SpareServer.forget()
+        // сервер только что не дал связи через туннель — его не запоминаем в запас
+        Quarantine.add("quarantined", now = 1_000L)
+        SpareServer.remember("L", "quarantined", "wifi:a", 1_000L)
+        assertNull(SpareServer.take("wifi:a", 1_500L, "id1"))
+        // обычный, не в карантине — запоминается и берётся как раньше
+        SpareServer.remember("L", "clean", "wifi:a", 1_000L)
+        assertEquals("L", SpareServer.take("wifi:a", 1_500L, "id1"))
+        // запомнили чистым, а в карантин он попал уже после — take тоже отказывает
+        SpareServer.remember("L", "clean", "wifi:a", 1_000L)
+        Quarantine.add("clean", now = 1_200L)
+        assertNull(SpareServer.take("wifi:a", 1_500L, "id1"))
+        Quarantine.clear()
+        SpareServer.forget()
+    }
 }

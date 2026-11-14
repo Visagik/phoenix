@@ -9,6 +9,12 @@ object LogMask {
     private val SECRET_KEYS = setOf("token", "key", "sub", "uuid", "id", "pass", "password", "secret", "auth", "access_token")
     private val TOKENISH = Regex("""[A-Za-z0-9_\-=.]{20,}""")
 
+    /** «mail.example.ru» → «m***.ru»: видно, что за сайт, но не его адрес (журнал уходит другим людям). */
+    fun host(host: String): String {
+        val tld = host.substringAfterLast('.', "")
+        return host.take(1) + "***" + if (tld.isNotEmpty() && tld != host) ".$tld" else ""
+    }
+
     fun url(u: String): String {
         val qIdx = u.indexOf('?')
         val head = if (qIdx >= 0) u.substring(0, qIdx) else u

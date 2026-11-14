@@ -30,6 +30,7 @@ class PhoenixApp : Application() {
         Thread { ExitLog.report(this); try { GeoRulesFetch.refresh(this, Storage(this)) } catch (_: Throwable) { } }.start()
         NetHooks.offline = { NetInfo.kind(this) == NetInfo.Kind.NONE }
         NetHooks.mobile = { NetInfo.kind(this) == NetInfo.Kind.MOBILE }
+        NetHooks.carryDays = { AppSettings(this).carryDays }
         NetHooks.label = { NetInfo.label(this) }
         NetHooks.level = { st, net -> GovernedLimits.get(st).level(net) }
         Scheduler.ensureScheduled(this)

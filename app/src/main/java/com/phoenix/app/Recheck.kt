@@ -102,6 +102,7 @@ object Recheck {
                 val sink = SearchSink(st, context)
                 val gov = GovernedLimits.get(st)
                 val govNet = NetInfo.label(context)
+                gov.begin(govNet)
                 val search = ServerSearch(
                     reach = { h, p ->
                         val key = "$h:$p"
@@ -117,7 +118,6 @@ object Recheck {
                     loadSample = GatewayProbe.sampler(context),
                     shouldStop = { guard.stale(Storage(context).mode, NetInfo.label(context)) || RunGuard.hopeless(done.get(), alive.get()) },
                 )
-                gov.begin(govNet)
                 search.find(list, want = Int.MAX_VALUE, budgetMs = left) { c, ms ->
                     sink.add(c, ms)
                     if (ms >= 0) alive.incrementAndGet()
@@ -282,6 +282,8 @@ class RecheckWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         const val KEY_FOREIGN = "foreign"
         const val KEY_REASON = "reason"
         private const val CHANNEL_ID = "phoenix_recheck"
-        private const val NOTIFICATION_ID = 4712
+        // другое число, чем у уведомления VPN (4712): иначе на Android 10-11 срочная задача перепроверки
+        // подменяет уведомление VPN своим, и кнопки «Отключить»/«Сменить сервер» пропадают до смены статуса
+        private const val NOTIFICATION_ID = 4713
     }
 }

@@ -94,6 +94,19 @@ class Release3935Test {
         assertEquals(listOf("rest", "own"), out)
     }
 
+    @Test fun arrangePutsVetoedServerLastEvenIfItsTheTarget() {
+        // «own» — сервер самой цели (ступень 0), но он же отмечен как закрытый именно для этого сайта (ServiceVeto):
+        // пометка должна перевешивать «это сервер цели», иначе автоматика тут же выберет его снова.
+        val own = cand("own")
+        val other = cand("other")
+        val rest = cand("rest")
+        val out = AppFit.arrange(listOf(own, other, rest), setOf("own"), setOf("other"), { null }, { false }, vetoed = { it.identity == "own" }).map { it.identity }
+        assertEquals(listOf("other", "rest", "own"), out)
+        assertEquals(5, AppFit.tier(own, setOf("own"), emptySet(), null, { false }, vetoed = { true }))
+        // без указания vetoed (как раньше) ничего не меняется — обратная совместимость
+        assertEquals(0, AppFit.tier(own, setOf("own"), emptySet(), null, { false }))
+    }
+
     @Test fun missBackoff() {
         val m = MissBackoff.parse(MissBackoff.render(mapOf("APP:x" to 1000L, "SITE:y" to 5L)))
         assertEquals(2, m.size)

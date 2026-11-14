@@ -435,3 +435,8 @@ example.com или ссылка	example.com or a link
 ★ 3+ дня	★ 3+ days
 ✓ открылся · ≈ отвечает, но не полностью (защита сайта; для Claude и Qwen это обычно норма) · ✗ не открылся · ? не проверялся	✓ opened · ≈ responds but not fully (site protection; for Claude and Qwen this is usually normal) · ✗ did not open · ? not checked
 📌 Открепить сервер	📌 Unpin server
+Рабочие конфиги прошлого сбора не переносятся	Working configs from the previous collection are not carried over
+Рабочие конфиги прошлого сбора остаются в списке ещё {} дн., если источник их не отдал	Working configs from the previous collection stay in the list for {} more days if the source stops providing them
+Выкл	Off
+{} дн.	{} d
+Если сбор скачал не все источники, конфиги, которые раньше работали, не пропадают, а смешиваются с новыми (повторы убираются). Срок считается с последнего раза, когда источник их отдавал.	If a collection did not download every source, configs that used to work are not lost but merged with the new ones (duplicates are removed). The period counts from the last time a source provided them.

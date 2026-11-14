@@ -242,6 +242,9 @@ object XrayConfig {
         true
     } catch (_: Exception) {
         false
+    } catch (_: StackOverflowError) {
+        // регулярные выражения разбора vmess на очень длинных значениях могут переполнить стек — это тоже «не поддерживается», а не падение (находка 1.5)
+        false
     }
 
     fun probeConfig(link: String, hosts: Map<String, String> = emptyMap()): String {
@@ -315,6 +318,7 @@ object XrayConfig {
 
     private fun vless(link: String): Map<String, Any?> {
         val u = parseUrl(link)
+        requireNotPrivate(u.host)
         val id = u.user?.takeIf { it.isNotBlank() } ?: throw UnsupportedLinkException("В ссылке нет UUID")
         val user = mapOf(
             "id" to id,
@@ -339,6 +343,7 @@ object XrayConfig {
      */
     private fun hysteria2(link: String): Map<String, Any?> {
         val u = parseUrl(link)
+        requireNotPrivate(u.host)
         val auth = u.user?.takeIf { it.isNotBlank() } ?: throw UnsupportedLinkException("В ссылке hysteria2 нет пароля")
         if (u.query["obfs"]?.isNotBlank() == true) throw UnsupportedLinkException("hysteria2 с obfs не поддерживается")
         val pin = (u.query["pinSHA256"] ?: u.query["pcs"])?.replace(":", "")?.lowercase()?.takeIf { it.isNotBlank() }
@@ -365,6 +370,7 @@ object XrayConfig {
 
     private fun trojan(link: String): Map<String, Any?> {
         val u = parseUrl(link)
+        requireNotPrivate(u.host)
         val password = u.user?.takeIf { it.isNotBlank() } ?: throw UnsupportedLinkException("В ссылке нет пароля")
         val server = mapOf(
             "address" to u.host,
@@ -417,6 +423,7 @@ object XrayConfig {
             query = if (body.contains('?')) parseQuery(body.substringAfter('?')) else emptyMap()
         }
 
+        requireNotPrivate(host)
         if (method.lowercase() !in SS_METHODS) throw UnsupportedLinkException("Метод шифрования ss не поддерживается ядром: $method")
         if (query["plugin"]?.isNotBlank() == true) throw UnsupportedLinkException("ss-плагины не поддерживаются")
 
@@ -437,6 +444,7 @@ object XrayConfig {
         val host = f["add"]?.takeIf { it.isNotBlank() } ?: throw UnsupportedLinkException("В vmess нет адреса")
         val port = f["port"]?.toIntOrNull()?.takeIf { it in 1..65535 } ?: throw UnsupportedLinkException("В vmess некорректный порт")
         val id = f["id"]?.takeIf { it.isNotBlank() } ?: throw UnsupportedLinkException("В vmess нет id")
+        requireNotPrivate(host)
 
         val net = f["net"]?.ifBlank { null } ?: "tcp"
         val q = LinkedHashMap<String, String>()
@@ -489,6 +497,22 @@ object XrayConfig {
     }
 
     private val ipRegex = Regex("^(\\d{1,3}\\.){3}\\d{1,3}$|^[0-9a-fA-F:]+$")
+
+    /** Адрес сервера — частная сеть или loopback (10.x, 192.168.x, 172.16–31.x, 169.254.x, 127.x, ::1, fe80/fc/fd), а не домен. */
+    private fun isPrivateOrLoopbackIp(host: String): Boolean {
+        val h = host.trim('[', ']')
+        return ipRegex.matches(h) && !isPublicIp(h)
+    }
+
+    /**
+     * Единственным правилом против частных сетей было «vless без TLS на публичный IP запрещён ядром» — а частные
+     * сети как раз не проверялись вовсе (находка Фейбла №1.3). Публичный список может указывать на устройство
+     * в домашней сети того, кто его публикует (роутер, принтер, NAS), а фоновая перепроверка серверов сама
+     * открывает TCP-соединение и шлёт запрос по такому адресу. Запрещаем для всех протоколов, не только vless.
+     */
+    private fun requireNotPrivate(host: String) {
+        if (isPrivateOrLoopbackIp(host)) throw UnsupportedLinkException("Адрес сервера указывает на частную сеть — ссылка не принимается")
+    }
 
     private fun stream(q: Map<String, String>, server: String, defaultSecurity: String?): Map<String, Any?> {
         val type = (q["type"]?.takeIf { it.isNotBlank() } ?: "tcp").lowercase()

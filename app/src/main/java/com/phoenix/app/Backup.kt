@@ -159,7 +159,9 @@ object Backup {
                     How.TARGETS -> {
                         val have = readLines(f)
                         val ids = have.map { it.substringBefore('\t') }.toSet()
-                        val add = incoming.filter { it.substringBefore('\t') !in ids && it.split('\t').size >= 7 }
+                        // серверы в чужой копии не принимаем (как и не отдаём при экспорте): чужая копия иначе могла бы привязать цель
+                        // к заданному серверу или пустить её мимо VPN (phoenix:direct) — найдёт свои серверы перепроверка (находка Фейбла 1.8)
+                        val add = targetsForExport(incoming.filter { it.substringBefore('\t') !in ids && it.split('\t').size >= 7 })
                         if (add.isNotEmpty()) {
                             f.writeTextAtomic((have + add).joinToString("\n") + "\n")
                             parts += "цели +${add.size}"

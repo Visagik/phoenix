@@ -435,3 +435,8 @@ example.com или ссылка	example.com o un enlace
 ★ 3+ дня	★ 3+ días
 ✓ открылся · ≈ отвечает, но не полностью (защита сайта; для Claude и Qwen это обычно норма) · ✗ не открылся · ? не проверялся	✓ se abrió · ≈ responde pero no del todo (protección del sitio; para Claude y Qwen suele ser normal) · ✗ no se abrió · ? sin comprobar
 📌 Открепить сервер	📌 Desanclar servidor
+Рабочие конфиги прошлого сбора не переносятся	Los configs que funcionaban en la recopilación anterior no se conservan
+Рабочие конфиги прошлого сбора остаются в списке ещё {} дн., если источник их не отдал	Los configs que funcionaban en la recopilación anterior permanecen {} d más en la lista si la fuente deja de ofrecerlos
+Выкл	Desact.
+{} дн.	{} d
+Если сбор скачал не все источники, конфиги, которые раньше работали, не пропадают, а смешиваются с новыми (повторы убираются). Срок считается с последнего раза, когда источник их отдавал.	Si una recopilación no descargó todas las fuentes, los configs que antes funcionaban no se pierden, sino que se mezclan con los nuevos (se eliminan duplicados). El plazo cuenta desde la última vez que la fuente los ofreció.

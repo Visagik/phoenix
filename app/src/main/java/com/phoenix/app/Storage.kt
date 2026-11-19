@@ -57,16 +57,18 @@ class Storage(context: Context, val mode: Mode = Mode.read(context.applicationCo
     fun selectedServiceIds(): Set<String> = checkSelection().selected().map { it.id }.toSet()
 
     fun priorityView(): (String) -> Int {
-        val prios = AutoPriority.effective(
-            SourcePriorities(sourcePriorityFile).load(),
-            SourcePriorities(sourceAutoPriorityFile).load(),
-        )
-        if (prios.isEmpty() || !sourceMembersFile.exists()) return { 0 }
+        if (!sourceMembersFile.exists()) return { 0 }
         val members = try {
             SourceStats.decode(sourceMembersFile.readText())
         } catch (_: Exception) {
             return { 0 }
         }
+        // общие сборники по умолчанию «низкие» (слабее и ручного, и авто-приоритета по свежим проверкам: покажет себя — поднимется)
+        val auto = LinkedHashMap(SourcePriorities(sourceAutoPriorityFile).load())
+        val manual = SourcePriorities(sourcePriorityFile).load()
+        for (u in members.keys) if (u !in auto && u !in manual && DefaultSources.isLowTrust(u)) auto[u] = SourcePriority.LOW
+        val prios = AutoPriority.effective(manual, auto)
+        if (prios.isEmpty()) return { 0 }
         val per = SourcePriority.perConfig(members, prios)
         return { key -> per[key] ?: 0 }
     }

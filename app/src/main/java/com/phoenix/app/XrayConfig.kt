@@ -123,6 +123,8 @@ data class XrayOptions(
      * а многие серверы UDP не пересылают: тогда имена не находятся, и работает только то, что ходит по IP (Telegram).
      */
     val secureDns: Boolean = true,
+    /** Серверы для запросов по HTTPS/TCP через сервер (по умолчанию как у Cloudflare + Google). */
+    val secureServers: List<String> = DnsProvider.DEFAULT.secure,
     /** >0: вместо TUN-входа ядра слушаем SOCKS на этом порту (с UDP) — туда трафик направляет hev-socks5-tunnel. */
     val tunSocksPort: Int = 0,
     val tunSocksAuth: SocksAuth? = null,
@@ -201,7 +203,7 @@ object XrayConfig {
         val config = linkedMapOf<String, Any?>(
             "log" to mapOf("loglevel" to opts.logLevel),
             "dns" to dnsSection(
-                if (opts.secureDns) SECURE_DNS + opts.dns else opts.dns, opts.hosts,
+                if (opts.secureDns) opts.secureServers + opts.dns else opts.dns, opts.hosts,
                 if (opts.ipv6 == Ipv6Mode.TUNNEL) "UseIP" else "UseIPv4",
             ),
             "inbounds" to inbounds,

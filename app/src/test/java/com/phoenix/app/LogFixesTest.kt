@@ -64,6 +64,16 @@ class LogFixesTest {
         assertEquals(60L, Baseline.measure({ if (it == Baseline.PRIMARY) -1L else 60L }, { "i/o timeout" }))
     }
 
+    @Test fun baselineFastSkipsCloudflareAfterTimeout() {
+        val urls = ArrayList<String>()
+        val ms = Baseline.measure({ urls += it; -1L }, { "i/o timeout" }, fast = true)
+        assertEquals(-1L, ms)
+        assertEquals(listOf(Baseline.PRIMARY), urls)
+        // ответ 403 по-прежнему пробует запасные адреса даже в быстром режиме
+        var err = ""
+        assertEquals(120L, Baseline.measure({ if (it.contains("cloudflare")) 120L else { err = "invalid status: 403"; -1L } }, { err }, fast = true))
+    }
+
     @Test fun baselineRetriesOnClosedPipe() {
         var n = 0
         val ms = Baseline.measure({ n++; if (n == 1) -1L else 90L }, { "io: read/write on closed pipe" }, pause = {})

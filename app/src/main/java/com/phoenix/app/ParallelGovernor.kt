@@ -39,8 +39,8 @@ class ParallelGovernor(private val file: File) {
     @Synchronized
     fun level(net: String): Int = map[net]?.level ?: 0
 
-    /** Сколько параллельных TCP-проверок разрешено в этой сети. */
-    fun tcp(net: String): Int = TCP_LEVELS[level(net)]
+    /** Сколько параллельных TCP-проверок разрешено в этой сети; [maxLevel] — насколько можно урезать (ручной запуск и «Быстрая» урезаются меньше). */
+    fun tcp(net: String, maxLevel: Int = MAX_LEVEL): Int = TCP_LEVELS[level(net).coerceAtMost(maxLevel)]
 
     /**
      * Сколько параллельных проверок через ядро; [base] — обычное значение для телефона. Если в этой сети уже идёт
@@ -48,8 +48,8 @@ class ParallelGovernor(private val file: File) {
      * сбое одновременно), лимит делится между ними поровну: иначе ограничение действует на один прогон, а не на сеть.
      */
     @Synchronized
-    fun probe(net: String, base: Int): Int {
-        val lvl = (base shr level(net)).coerceAtLeast(MIN_PROBE).coerceAtMost(base)
+    fun probe(net: String, base: Int, maxLevel: Int = MAX_LEVEL): Int {
+        val lvl = (base shr level(net).coerceAtMost(maxLevel)).coerceAtLeast(MIN_PROBE).coerceAtMost(base)
         val concurrent = (map[net]?.active ?: 0).coerceAtLeast(1)
         // Делим лимит только если сейчас и правда идёт больше одного тяжёлого прогона; иначе не трогаем lvl —
         // он уже учитывает и уровень сети, и переданный base (может быть меньше MIN_PROBE, если base совсем мал).
@@ -91,8 +91,10 @@ class ParallelGovernor(private val file: File) {
      * @return true, если уровень повышен.
      */
     @Synchronized
-    fun outage(net: String, now: Long): Boolean {
+    fun outage(net: String, now: Long, startedAt: Long = -1L): Boolean {
         val e = map[net] ?: return false
+        // интернет пропал раньше, чем началась тяжёлая проверка (или сразу при её старте): виновата не она, а сеть (в журнале: сбой в 21:28:26, перепроверка в 21:28:39)
+        if (startedAt >= 0 && e.lastBegin > 0 && startedAt - e.lastBegin < BLAME_AFTER_MS) return false
         val running = e.active > 0 && now - e.lastBegin <= STALE_MS
         val recent = running || (e.lastEnd > 0 && now - e.lastEnd in 0..WINDOW_MS)
         if (!recent) return false
@@ -110,6 +112,9 @@ class ParallelGovernor(private val file: File) {
         fun capFor(tcp: Int, mobile: Boolean): Int = if (mobile) minOf(tcp, MOBILE_TCP_CAP) else tcp
 
         const val MAX_LEVEL = 3
+
+        /** Сбой связи списывается на тяжёлую проверку, только если начался не раньше, чем через столько мс после её старта. */
+        const val BLAME_AFTER_MS = 15_000L
         const val MIN_PROBE = 2
         const val CLEAN_TO_LOWER = 5
         const val WINDOW_MS = 90_000L

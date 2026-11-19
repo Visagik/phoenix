@@ -13,9 +13,26 @@ object DefaultSources {
         IGARECK + "BLACK_VLESS_RUS.txt",
         IGARECK + "BLACK_VLESS_RUS_mobile.txt",
         "https://github.com/FLAT447/v2ray-lists/raw/refs/heads/main/BLACK_FULL.txt",
+        // общий список с сортировкой по задержке (не российский: хуже по доле рабочих, но расширяет выбор)
+        "https://raw.githubusercontent.com/ShatakVPN/ConfigForge-V2Ray/main/configs/vless.txt",
+        // иранские и общие сборники (страна с сильными блокировками, Reality/VLESS)
+        "https://raw.githubusercontent.com/Delta-Kronecker/V2ray-Config/refs/heads/main/config/protocols/vless.txt",
+        "https://raw.githubusercontent.com/Mohammadgb0078/IRV2ray/main/vless.txt",
+        "https://raw.githubusercontent.com/iboxz/free-v2ray-collector/main/main/vless",
+        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt",
+        // адреса из README авторов; из песочницы не открылись (404/блок прокси), проверяются на телефоне
+        "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub",
+        "https://raw.githubusercontent.com/roosterkid/openproxylist/refs/heads/main/V2RAY_RAW.txt",
     )
 
     val WHITE = listOf(
+        // Белые списки от igareck (мобильные сети): 150 лучших для телефона и проверенный набор по CIDR. WHITE-SNI-RU-all убран: на проверке файл был пустой
+        IGARECK + "Vless-Reality-White-Lists-Rus-Mobile.txt",
+        IGARECK + "WHITE-CIDR-RU-checked.txt",
+        IGARECK + "WHITE-CIDR-RU-all.txt",
+        "https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/main/whitelist.txt",
+        "https://raw.githubusercontent.com/u23jd9/russia-whitelist-vpn/main/whitelist_raw.txt",
+        "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
         "https://github.com/FLAT447/v2ray-lists/raw/refs/heads/main/WHITE_FULL.txt",
         "https://raw.githubusercontent.com/whoahaow/rjsxrd/refs/heads/main/githubmirror/bypass/bypass-all.txt",
         // Самые стабильные по накопленным данным (docs/BASELINE.md): не меньше 80 % удачных загрузок
@@ -49,4 +66,17 @@ object DefaultSources {
         val (user, repo, rest) = m.destructured
         return "https://raw.githubusercontent.com/$user/$repo/refs/heads/$rest"
     }
+
+    /**
+     * Общие и иранские сборники, добавленные для объёма: доля рабочих у них в российских сетях низкая, поэтому пока опыта нет
+     * (после импорта копии, новой установки) их конфиги пробуются после остальных. Это «низкий» приоритет по умолчанию;
+     * ручной и авто-приоритет по свежим проверкам (источник себя показал) его заменяют.
+     */
+    val LOW_TRUST: Set<String> = setOf(
+        "ShatakVPN/ConfigForge-V2Ray", "Delta-Kronecker/V2ray-Config", "Mohammadgb0078/IRV2ray", "iboxz/free-v2ray-collector",
+        "MatinGhanbari/v2ray-configs", 
+        "Pawdroid/Free-servers", "roosterkid/openproxylist",
+    )
+
+    fun isLowTrust(url: String): Boolean = LOW_TRUST.any { url.contains(it) }
 }

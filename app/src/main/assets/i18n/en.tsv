@@ -38,7 +38,7 @@ example.com или ссылка	example.com or a link
 {} ч	{} h
 {} ч назад	{} h ago
 {} — TLS и Reality могут не работать; включите автоматическое время	{} — TLS and Reality may fail; turn on automatic time
-«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	"Same as everywhere" for an app means: use the choice made above for all. The other buttons (auto, A, B) set its own choice for this app.\n\nSites always use option A. An app uses A if the core can identify the app by its connection (the rest of the traffic is not affected); if it cannot, B when usage access is granted.
+«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, «Только это», «Весь VPN») задают своё для этого приложения.\n\nСайты — всегда в режиме «Только это». Приложение — «Только это», если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — «Весь VPN», когда выдан доступ к данным об использовании.	“Same as everywhere” for an app means: use the choice made above for all. The other buttons (auto, “Only this”, “Whole VPN”) set its own choice for this app.\n\nSites always use “Only this”. An app uses “Only this” if the core can identify the app by its connection (the rest of the traffic is not affected); if it cannot, “Whole VPN” when usage access is granted.
 Только это	Only this
 А: только оно через свой сервер	A: only it goes through its own server
 Автозапуск (MIUI / HyperOS)	Autostart (MIUI / HyperOS)
@@ -408,7 +408,7 @@ example.com или ссылка	example.com or a link
 ещё не проверялось	not checked yet
 ещё не скачивалась	not downloaded yet
 живых {} из {}	{} of {} alive
-запасные серверы, вариант А или Б	backup servers, option A or B
+запасные серверы: «Только это» или «Весь VPN»	backup servers: “Only this” or “Whole VPN”
 ищу рабочий сервер среди {}…	looking for a working server among {}…
 кабель	cable
 как везде	same as everywhere
@@ -432,7 +432,7 @@ example.com или ссылка	example.com or a link
 нет сети	no network
 нет — сбор по расписанию может сдвигаться	no: scheduled collection may shift
 нет — система может выгружать приложение	no: the system may unload the app
-нужен только для варианта Б (переключение VPN при открытии приложения)	needed only for option B (switching the VPN when an app opens)
+нужен только для режима «Весь VPN» (переключение VPN при открытии приложения)	needed only for “Whole VPN” (switching the VPN when an app opens)
 определяю…	detecting…
 отключён	disconnected
 открытие приложения	app opened
@@ -540,3 +540,187 @@ MIUI: Настройки → Приложения → Phoenix → Контрол
 Автосбор может не сработать	Auto-collect may not run
 Автосбор не запланирован	Auto-collect is not scheduled
 Следующий сбор: {}	Next collection: {}
+Серверов пока нет	No servers yet
+Собрать	Collect
+Не работает	Not working
+Не работает на этом сервере	Not working on this server
+разбираюсь, что не работает…	figuring out what is not working…
+Нет серверов → соберите их: меню ⋮ → «Собрать сейчас»	No servers → collect them: ⋮ menu → “Collect now”
+Нет разрешения VPN → откройте приложение и нажмите на круг	No VPN permission → open the app and tap the circle
+Не запустилось → нажмите на круг ещё раз или выберите другой сервер	Did not start → tap the circle again or pick another server
+Нет разрешения VPN → нажмите на круг и разрешите подключение	No VPN permission → tap the circle and allow the connection
+Подключение не началось → нажмите на круг ещё раз	Connection did not start → tap the circle again
+Сбор завершён. Серверов: {}	Collection finished. Servers: {}
+Перепроверка завершена	Recheck finished
+Помощь и данные	Help and data
+целей: {}	targets: {}
+своих: {}	own: {}
+каждые {} ч	every {} h
+каждый день	every day
+Всё работает	Everything works
+Сервер сменился {} раз за сутки: сеть нестабильна	Server changed {} times in a day: the network is unstable
+Есть проблемы: {} за сутки. Подробности в журнале	Problems: {} in a day. Details in the log
+Скрыть подробности	Hide details
+Подробнее	More
+Что приложение делает само, статистика, данные	What the app does itself, statistics, data
+{} из {}	{} of {}
+Автозапуск	Autostart
+Без этого Android не даст включить защиту.	Without this Android will not let protection turn on.
+Видно, что VPN работает, и его можно выключить из шторки.	You can see that the VPN is on and turn it off from the shade.
+Если пропустить: VPN может пропадать после очистки памяти.	If skipped: the VPN may disappear after memory cleanup.
+Если пропустить: возможны обрывы в фоне.	If skipped: drops in the background are possible.
+Если пропустить: время сбора сдвигается.	If skipped: collection time drifts.
+Если пропустить: серверы можно собрать позже, меню ⋮ на главной.	If skipped: you can collect servers later from the ⋮ menu on the home screen.
+Если пропустить: системное окно появится при первом нажатии на круг.	If skipped: the system dialog will appear on the first tap on the circle.
+Если пропустить: состояния VPN в шторке не будет.	If skipped: the VPN status will not show in the notification shade.
+Иначе телефон выключит VPN и ночной сбор.	Otherwise the phone will stop the VPN and the night collection.
+Начать	Start
+Отдельный сервер для отдельного приложения	A separate server for a separate app
+Первые серверы	First servers
+Проверяет, открываются ли нужные сервисы	Checks whether the services you need open
+Пропустить	Skip
+Пропустить всё	Skip all
+Разрешение VPN	VPN permission
+Разрешите автозапуск для Phoenix в настройках телефона и вернитесь сюда.	Allow autostart for Phoenix in the phone settings and come back here.
+Разрешить	Allow
+Российские сайты — напрямую	Russian sites go direct
+Сам находит рабочий сервер	Finds a working server by itself
+Сбор в выбранное время, а не когда удобно системе.	Collection at the chosen time, not when the system finds it convenient.
+Соберём список серверов — это займёт несколько минут.	We will collect a list of servers; it takes a few minutes.
+Уже готово	Already done
+Первые шаги	First steps
+повторить настройку: разрешения и первые серверы	repeat setup: permissions and first servers
+Внешний вид	Appearance
+Анимации	Animations
+свечение круга; системное «Убрать анимацию» их тоже выключает	glow around the circle; the system “Remove animations” also turns them off
+Все	All
+Сбросить	Reset
+Сбросить фильтры	Reset filters
+Фильтры и сортировка	Filters and sorting
+Фильтры: {}	Filters: {}
+📌 закреплён · сменить	📌 pinned · change
+Свой сервер для приложений	Own server for apps
+Есть новая версия {}	New version available: {}
+Нет разрешения на работу в фоне	No permission to run in the background
+Нет разрешения на уведомления	No notification permission
+Нет точных будильников: сбор сдвигается	No exact alarms: collection time drifts
+Требует внимания	Needs attention
+● нужно {}	● needed: {}
+Проверяемые сервисы перенесены: Ещё → Серверы ›	Checked services moved: More → Servers ›
+Проверяемые сервисы	Checked services
+какие сервисы открывать через серверы (TG, YT…), свои сервисы, проверка по кнопке	which services to open through servers (TG, YT…), custom services, check on demand
+Нажмите, чтобы подключить	Tap to connect
+Тема	Theme
+Как в системе	Same as system
+Светлая	Light
+Тёмная	Dark
+Размер журнала	Log size
+Короткий · 1 МБ	Short · 1 MB
+Обычный · 5 МБ	Normal · 5 MB
+Подробный · 20 МБ	Detailed · 20 MB
+Подробный нужен для разбора редкого сбоя; на экране показываются последние 5 МБ	Detailed helps trace a rare failure; the screen shows the last 5 MB
+Сеть для сбора и перепроверки	Network for collecting and rechecking
+Любая	Any
+Только Wi-Fi	Wi-Fi only
+Если удачного сбора не было больше трёх суток, он пройдёт в любой сети. Ручной запуск и поиск сервера при обрыве от этого не зависят.	If there was no successful collection for over three days, it will run on any network. Manual runs and server search after a drop are not affected.
+Лимит проверок по мобильной сети в сутки	Daily limit for checks on mobile data
+Без лимита	No limit
+{} МБ	{} MB
+Касается автоматической перепроверки и замеров скорости. Поиск сервера при обрыве не ограничивается никогда.	Applies to automatic rechecks and speed tests. Server search after a drop is never limited.
+Страны и серверы	Countries and servers
+предпочитаемые и исключённые страны, скрытые серверы	preferred and excluded countries, hidden servers
+правил: {}	rules: {}
+Ограничение временно снято: подходящих живых серверов нет	Restriction lifted for now: no suitable live servers
+Стран пока нет: сначала соберите серверы	No countries yet: collect servers first
+Предпочитать серверы из	Prefer servers from
+Такие серверы идут раньше остальных живых; медленные и мёртвые это не спасает.	Such servers go before other live ones; slow and dead ones are not helped by this.
+Никогда не подключаться через	Never connect through
+В режиме белых списков российские выходы часто единственные рабочие: исключайте их с осторожностью.	In whitelist mode, Russian exits are often the only working ones: exclude them with care.
+Скрытых серверов нет	No hidden servers
+Скрытые серверы ({})	Hidden servers ({})
+Скрыть сервер можно в «Серверы»: откройте строку и нажмите «Не использовать».	You can hide a server in “Servers”: open its row and tap “Don’t use”.
+Не использовать	Don’t use
+Сервер скрыт. Вернуть: Ещё → Страны и серверы	Server hidden. Restore: More → Countries and servers
+Язык	Language
+VPN не подключён	VPN is not connected
+живых {}	alive {}
+показано {}	shown {}
+закреплён	pinned
+сейчас	now
+Нет сети	No network
+Ищу сервер	Looking for a server
+Подключусь, когда сеть появится	I’ll connect when the network is back
+Какие приложения идут через VPN	Which apps go through the VPN
+Все, кроме списка	All except the list
+Только выбранные	Only selected
+Через VPN идут только выбранные приложения (как белый список) и приложения из «Свой сервер для приложений»; всё остальное напрямую. Сайты идут через VPN, только если через него идёт браузер.	Only the selected apps (like a whitelist) and the apps from “Own server for apps” go through the VPN; everything else goes direct. Websites use the VPN only if the browser is selected.
+Через VPN идёт всё, кроме приложений из списка ниже (как чёрный список).	Everything goes through the VPN except the apps in the list below (like a blacklist).
+Приложения через VPN ({})	Apps through VPN ({})
+Список пуст: пока он пуст, работает режим «Все, кроме списка».	The list is empty: while it is empty, “All except the list” mode is used.
+Приложения через VPN	Apps through VPN
+Список сохранён	List saved
+Только если ничего нет	Only if nothing else works
+Закреплённый сервер	Pinned server
+Сервер, выбранный вручную, сам не меняется. Через это время закрепление снимается, и приложение снова выбирает сервер само.	A server you chose manually is not changed automatically. After this time the pin is removed and the app picks a server on its own again.
+Пока не отключу	Until I disconnect
+1 час	1 hour
+6 часов	6 hours
+Сутки	24 hours
+Автокопия раз в неделю	Weekly auto-backup
+Копия настроек и данных без журнала сохраняется во внутреннюю память приложения после планового сбора, хранятся последние три. При удалении приложения она пропадёт — для этого есть экспорт в файл.	A copy of settings and data without the log is saved to the app's internal storage after a scheduled collection; the last three are kept. It is lost if the app is uninstalled — use export to a file for that.
+Последняя автокопия: {}	Last auto-backup: {}
+Автокопий пока нет: первая появится после ближайшего сбора.	No auto-backups yet: the first one appears after the next collection.
+Восстановить из последней автокопии	Restore from the latest auto-backup
+автокопий пока нет	no auto-backups yet
+Проверить повторы сейчас	Check for duplicates now
+Списки источников ещё не сохранены: сначала нужен хотя бы один сбор	Source lists are not saved yet: at least one collection is needed first
+Проверено источников: {}. Пересечений: {}, предложений: {}	Sources checked: {}. Overlaps: {}, proposals: {}
+Вернуть рекомендуемые	Restore recommended
+Сбрасывает настройки этого экрана до значений по умолчанию. Язык, тема, расписание, списки и данные не трогаются.	Resets this screen's settings to their defaults. Language, theme, schedule, lists and data are not touched.
+Настройки подключения вернутся к значениям по умолчанию. Продолжить?	Connection settings will return to their defaults. Continue?
+Возвращено настроек: {}	Settings restored: {}
+Уже стоят рекомендуемые	Recommended values are already set
+Phoenix: VPN и статус	Phoenix: VPN and status
+Phoenix: сбор источников	Phoenix: collecting sources
+DNS в туннеле	DNS in the tunnel
+Какие серверы имён используют приложения внутри VPN. Если сайты не открываются, попробуйте другой. При смене у вас 30 секунд, чтобы проверить сайт и подтвердить; иначе вернётся прежний.	Which name servers apps use inside the VPN. If sites do not open, try another one. After a change you have 30 seconds to check a site and confirm; otherwise the previous one comes back.
+Cloudflare + Google (по умолчанию)	Cloudflare + Google (default)
+Google	Google
+Quad9	Quad9
+AdGuard (с блокировкой рекламы)	AdGuard (blocks ads)
+Проверка DNS	DNS check
+Включён: {}. Откройте любой сайт или приложение. Если всё работает, нажмите «Оставить». Через {} с вернётся прежний.	Enabled: {}. Open any site or app. If everything works, tap “Keep”. In {} s the previous one will come back.
+Оставить	Keep
+Вернуть прежний	Revert
+меняю сервер для «{}»…	changing the server for “{}”…
+для «{}» выбран другой сервер, откройте его заново	another server was chosen for “{}”, reopen it
+Собираю конфиги…	Collecting configs…
+Подбираю серверы для целей: «{}» ({}/{})	Finding servers for targets: “{}” ({}/{})
+Подбираю серверы для целей…	Finding servers for targets…
+Сейчас ничего не ищу и не проверяю	Not searching or checking anything right now
+Ищу рабочий сервер…	Looking for a working server…
+Перепроверка: {} из {} ({}%), живых {}	Recheck: {} of {} ({}%), alive {}
+осталось ~{} с	~{} s left
+осталось ~{} мин	~{} min left
+осталось ~{} ч {} мин	~{} h {} min left
+Скачиваю источники: {} из {} ({})	Downloading sources: {} of {} ({})
+Главный экран: чем занят	Home screen: what it's doing
+что показывать над списком серверов: поиск, сборка, перепроверка	what to show above the server list: search, collection, recheck
+Кратко	Short
+Подробно	Detailed
+С журналом	With log
+Скорость перепроверки	Recheck speed
+Быстрая запускает больше проверок сразу: быстрее, но сильнее грузит роутер и батарею	Fast runs more checks at once: quicker, but loads the router and battery more
+Щадящая	Gentle
+Обычная	Normal
+Быстрая	Fast
+нажмите, чтобы свернуть подробности	tap to hide details
+нажмите, чтобы показать подробности	tap to show details
+Остановить и сохранить	Stop and save
+Останавливаю, сохраняю результаты…	Stopping, saving results…
+Прошло {} · {} серверов в минуту	Elapsed {} · {} servers per minute
+Живых {} · порт закрыт {} · порт открыт, но интернета нет {} · пропущено по адресу {}	Alive {} · port closed {} · port open but no internet {} · skipped by address {}
+Скорость «{}»: портов одновременно {}, проб {}, уровень сети {}	Speed “{}”: ports at once {}, probes {}, network level {}
+конфиги другого режима	configs of another mode
+Не проверяю: {} (недавно мёртвые, в этой сети подряд не работали)	Not checking: {} (recently dead, kept failing in this network)
+Цели {}/{}: найдено {}, без сервера {}, мимо VPN {}, на паузе {} · проверено серверов {}	Targets {}/{}: found {}, no server {}, bypass VPN {}, paused {} · servers checked {}

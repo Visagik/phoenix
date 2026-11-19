@@ -255,6 +255,8 @@ object Ranking {
             .thenBy { it.mismatch }
             .thenBy { it.unfit }
             .thenByDescending { it.alive }
+            .thenBy { it.prio <= SourcePriority.RESERVE }
+            .thenByDescending { PoolPolicy.preferred(it) }
             .thenBy { it.deadMark }
             .thenByDescending { it.modeHint }
             .thenBy { it.protoBucket }
@@ -298,7 +300,10 @@ object Ranking {
         priority: ((String) -> Int)? = null,
         /** Сервисы, выбранные пользователем: «рабочесть» считается только по ним (null — по всем). */
         svcIds: Set<String>? = null,
-    ): List<Candidate> = withProtocolLearning(candidatesRaw(rows, checks, today, history, mode, includeDead, priority, svcIds), history)
+    ): List<Candidate> = withProtocolLearning(candidatesRaw(rows, checks, today, history, mode, includeDead, priority, svcIds), history).let { raw ->
+        // при поиске (includeDead) запасные («Только если ничего нет») не отбрасываются: они стоят после основных, но поиск до них дойдёт
+        PoolPolicy.apply(if (includeDead) raw else PoolPolicy.applyReserve(raw))
+    }
 
     /** Добавляет к кандидатам оценку типа конфига по опыту в этой сети. */
     private fun withProtocolLearning(list: List<Candidate>, history: ((String) -> HistStat?)?): List<Candidate> {
@@ -398,6 +403,8 @@ class TargetVerifier(
     /** Содержимое страницы через сервер: true — «не поддерживается в вашей стране»; null — не удалось узнать. */
     private val region: (link: String, url: String) -> Boolean? = { _, _ -> null },
     private val veto: (link: String, url: String) -> Boolean = { _, _ -> false },
+    /** Просьба остановиться: следующую пачку серверов не проверяем, найденное возвращаем. */
+    private val stop: () -> Boolean = { false },
 ) {
     /** Сколько серверов проверено при последнем вызове (для журнала). */
     @Volatile var lastTested = 0
@@ -426,7 +433,7 @@ class TargetVerifier(
         val okHosts = HashSet<String>()
         var tested = 0
         var i = 0
-        while (i < order.size && ok.size < keep && tested < maxTests) {
+        while (i < order.size && ok.size < keep && tested < maxTests && !stop()) {
             // запасные должны быть на разных серверах: тот же хост с другим протоколом падает вместе с первым
             val batch = ArrayList<Candidate>()
             while (i < order.size && batch.size < parallel) {

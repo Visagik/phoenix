@@ -41,7 +41,7 @@ object CheckLimits {
     /** Для поиска рабочего сервера, когда пользователь ждёт: больше параллельных проверок (в v2rayNG по умолчанию 16). */
     fun searchParallel(context: Context): Int {
         val am = context.getSystemService(android.app.ActivityManager::class.java)
-        return if (am != null && am.isLowRamDevice) 4 else 12
+        return if (am != null && am.isLowRamDevice) 5 else 16
     }
 }
 
@@ -61,6 +61,7 @@ object TargetsRunner {
     const val DISCOVER_BUDGET_MS = 120_000L
 
     private fun speedAllowed(context: Context, settings: AppSettings): Boolean {
+        if (BackgroundBudgetGate.exhausted(context)) return false
         if (settings.speedOnMetered) return true
         return NetInfo.isUnmetered(context)
     }
@@ -111,7 +112,9 @@ object TargetsRunner {
         val probe: (String, String) -> Long = { cfg, url -> ProbeShare.measure(cfg, url) { XrayCore.measureDelay(context, cfg, url) } }
         val notes = ArrayList<String>()
         val guard = RunGuard(storage.mode, NetInfo.label(context))
-        val stale = { guard.stale(Storage(context).mode, NetInfo.label(context)) }
+        val runStart = System.currentTimeMillis()
+        val stopped = { StopRequest.requestedSince(runStart) }
+        val stale = { guard.stale(Storage(context).mode, NetInfo.label(context)) || stopped() }
         val history = storage.history()
         val ctx = NetInfo.label(context)
         val hview = { history.view(ctx) } // читаем заново: опыт пополняется по ходу работы
@@ -131,6 +134,7 @@ object TargetsRunner {
                 probeParallel = gov.probe(govNet, CheckLimits.parallel(context)),
                 loadSample = GatewayProbe.sampler(context),
                 shouldStop = stale,
+                offlineSuspect = ServerSearch.offlineLimit(NetInfo.kind(context) == NetInfo.Kind.MOBILE),
             )
             // «мёртвые» отметки тоже перепроверяем: конфиг мог не отвечать в другой сети
             val order = SearchPool.build(context, storage, withForeign = false).filter { XrayConfig.supports(it.link) && !it.alive }
@@ -182,6 +186,7 @@ object TargetsRunner {
                 val old = checkStore.load()[key]
                 if (old != null && old.mbps >= 0 && old.date == date) continue
                 val speed = SpeedRunner.run(context, c.link) ?: continue
+                try { EnergyMeter.of(java.io.File(context.filesDir, "energy.tsv")).addSpeed(speed.bytes, date, System.currentTimeMillis()) } catch (_: Throwable) { }
                 checkStore.putSpeed(key, speed, date, ConfigIdentity.address(c.link))
                 history.record(c.identity, ctx, true, speed.mbps)
                 measured++
@@ -198,7 +203,8 @@ object TargetsRunner {
                 soft = { link, url -> SpeedRunner.reaches(context, link, url) },
                 exit = { link -> AutoServices.exitOf(context, storage, link) },
                 region = { link, url -> SpeedRunner.regionBlocked(context, link, url) },
-                veto = { link, url -> ServiceVeto(storage.vetoFile).active(link, url) })
+                veto = { link, url -> ServiceVeto(storage.vetoFile).active(link, url) },
+                stop = stopped)
             var updated = 0
             val selected = storage.checkSelection()
             val services = selected.all()
@@ -210,22 +216,49 @@ object TargetsRunner {
             var fullLeft = 1
             val nameOf = rows.associate { it.raw to it.displayName }
             val concrete = { l: List<Candidate> -> ServerKind.concreteFirst(l) { c -> nameOf[c.link].orEmpty() } }
+            // приложения, которые в этой сети идут мимо VPN (открываются напрямую), сервера не требуют: подбор — там, где они закрыты (мобильная сеть)
+            val bypassNow = try { BypassStore(storage.base, storage.mode, NetInfo.label(context)).effective() } catch (_: Throwable) { emptySet() }
+            var tIdx = 0
+            var foundN = 0
+            var noneN = 0
+            var directN = 0
+            var pausedN = 0
+            var testedAll = 0
+            val showDetail = { LiveActivity.targetsDetail.value = TargetsDetail(tIdx, targets.size, foundN, noneN, directN, testedAll, pausedN) }
             for (t in targets) {
+                tIdx++
+                LiveActivity.targets.value = tr("Подбираю серверы для целей: «{}» ({}/{})", t.label, tIdx, targets.size)
+                showDetail()
+                if (stopped()) {
+                    storage.log("TARGET: остановлено вами — остальные цели отложены, найденное сохранено")
+                    break
+                }
                 if (stale()) {
                     storage.log("TARGET: сменились сеть или режим — остальные цели отложены")
                     break
+                }
+                if (t.kind == TargetKind.APP && t.value in bypassNow) {
+                    storage.log("TARGET: «${t.label}» — в этой сети приложение идёт мимо VPN (открывается напрямую), сервер не подбираю")
+                    directN++
+                    continue
                 }
                 // серверы, через которые нужный сервис (YouTube, Claude…) уже открывался, пробуем первыми, не открывавшийся — последними
                 val svc = ServiceMatch.serviceFor(t.checkUrl, services)
                 // «Auto» — выбор самой подписки, страна выхода у него плавает: для сервисов с проверкой региона (Gemini, ChatGPT…) не годится
                 val geo = GeoGate.applies(t.checkUrl)
-                val skipAuto: (String) -> Boolean = { l -> geo && ServerKind.isAuto(nameOf[l] ?: LinkParser.parse(l)?.title?.let { urlDecode(it) }.orEmpty()) }
+                val skipAuto: (String) -> Boolean = { l -> geo && ServerKind.isFloatingExit(nameOf[l] ?: LinkParser.parse(l)?.title?.let { urlDecode(it) }.orEmpty()) }
                 val cl = { l: List<Candidate> -> concrete(l) }
                 var servers = verifier.verify(t, cl(ServiceMatch.order(ServiceMatch.strict(pool, checksNow, svc), checksNow, svc)), skip = skipAuto)
                 var tested = verifier.lastTested
                 // цель, для которой недавно ничего не нашлось даже глубоким поиском, не перебирается заново каждый прогон (в логе — 3–5 минут впустую)
-                val paused = servers.isEmpty() && MissBackoff.skip(missMap, t.id, nowMs)
-                if (paused) storage.log("TARGET: для «${t.label}» глубокий поиск недавно ничего не дал — пауза до следующих шести часов")
+                var paused = servers.isEmpty() && MissBackoff.paused(missMap, t.id, nowMs)
+                // длинная пауза держится, только пока сайт открывается напрямую; пропал прямой доступ — ищем сервер снова
+                if (paused && !MissBackoff.skip(missMap, t.id, nowMs) && !directOpens(t.checkUrl)) {
+                    paused = false
+                    missMap.remove(MissBackoff.directKey(t.id))
+                }
+                if (paused) pausedN++
+                if (paused) storage.log("TARGET: для «${t.label}» глубокий поиск недавно ничего не дал — пауза (6 часов, для «мимо VPN» сутки)")
                 if (servers.isEmpty() && !paused && deepLeft > 0 && wide.size > pool.size) {
                     deepLeft--
                     servers = verifier.verify(t, cl(ServiceMatch.order(wide, checksNow, svc)), maxTests = TARGET_DEEP_TESTS, skip = skipAuto)
@@ -247,8 +280,21 @@ object TargetsRunner {
                 }
                 // «мимо VPN» — не найденный сервер: пауза поиска от него не снимается (иначе каждый прогон заново перебирал все конфиги, находка №9)
                 val onlyDirect = servers.isNotEmpty() && servers.all { it == Target.DIRECT }
-                if ((servers.isEmpty() || onlyDirect) && !paused) missMap[t.id] = nowMs else if (servers.isNotEmpty() && !onlyDirect) missMap.remove(t.id)
+                if ((servers.isEmpty() || onlyDirect) && !paused) {
+                    missMap[t.id] = nowMs
+                    if (onlyDirect) missMap[MissBackoff.directKey(t.id)] = nowMs else missMap.remove(MissBackoff.directKey(t.id))
+                } else if (servers.isNotEmpty() && !onlyDirect) {
+                    missMap.remove(t.id); missMap.remove(MissBackoff.directKey(t.id))
+                }
                 try { storage.missFile.writeTextAtomic(MissBackoff.render(missMap)) } catch (_: Throwable) { }
+                testedAll += tested
+                // остановили посреди подбора: «ничего не нашлось» тут не итог, паузу поиска для цели не ставим
+                if (stopped() && servers.isEmpty()) {
+                    storage.log("TARGET: остановлено вами на «${t.label}» — результата нет, паузу поиска не ставлю")
+                    break
+                }
+                if (servers.isEmpty()) noneN++ else if (onlyDirect) directN++ else foundN++
+                showDetail()
                 // если ничего не нашлось (например, пропала сеть), прежние серверы не затираем
                 if (servers.isNotEmpty()) {
                     targetStore.updateServers(t.id, servers, date)
@@ -279,16 +325,23 @@ class TargetsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             Storage(applicationContext).log("TARGETS: плановая перепроверка отложена — телефон не на зарядке")
             return Result.success()
         }
+        LiveActivity.targets.value = tr("Подбираю серверы для целей…")
         val summary = try {
             TargetsRunner.run(applicationContext)
         } catch (e: kotlinx.coroutines.CancellationException) {
             // система остановила работу (смена сети при подключении VPN, низкий заряд): повторим позже, а не считаем ошибкой
-            Storage(applicationContext).log("TARGETS: прервано системой, повторю через 10 минут")
+            // причина остановки (WorkManager 2.9+): без неё не понять, что именно прерывает проверку целей
+            val why = try { " (причина $stopReason)" } catch (_: Throwable) { "" }
+            Storage(applicationContext).log("TARGETS: прервано системой$why, повторю через 10 минут")
+            LiveActivity.targets.value = ""
+            LiveActivity.targetsDetail.value = null
             enqueueRetry(applicationContext)
             throw e
         } catch (e: Exception) {
             "ошибка: ${e.message}"
         }
+        LiveActivity.targets.value = ""
+        LiveActivity.targetsDetail.value = null
         AppSettings(applicationContext).lastTargetsAt = System.currentTimeMillis()
         Storage(applicationContext).log("TARGETS: $summary")
         LocalSocks.statsLine()?.let { Storage(applicationContext).log(it) }
@@ -311,6 +364,18 @@ class TargetsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             if (NetFlap.busy(System.currentTimeMillis())) builder.setInitialDelay(3, TimeUnit.MINUTES) // сеть меняется часто — не начинать сейчас
             WorkManager.getInstance(context).enqueueUniqueWork(ONCE, ExistingWorkPolicy.KEEP, builder.build())
         }
+
+        /** После свежего сбора или перепроверки: полный поиск для целей чаще раза в 30 минут только тратит сеть (журнал: три поиска за 50 минут на мобильной). */
+        fun enqueueAfterRefresh(context: Context) {
+            val ago = System.currentTimeMillis() - AppSettings(context).lastTargetsAt
+            if (ago in 0 until MIN_GAP_MS) {
+                Storage(context).log("TARGETS: поиск для целей пропущен — был ${ago / 60_000} мин назад (следующий не раньше чем через ${MIN_GAP_MS / 60_000})")
+                return
+            }
+            enqueue(context)
+        }
+
+        private const val MIN_GAP_MS = 30 * 60_000L
 
         private fun enqueueRetry(context: Context) {
             val request = OneTimeWorkRequestBuilder<TargetsWorker>()

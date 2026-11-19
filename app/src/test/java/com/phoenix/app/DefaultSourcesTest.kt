@@ -14,8 +14,8 @@ class DefaultSourcesTest {
     }
 
     @Test fun listsPerMode() {
-        assertEquals(5, DefaultSources.forMode(Mode.BLACKLIST).size)
-        assertEquals(11, DefaultSources.forMode(Mode.WHITELIST).size)
+        assertEquals(12, DefaultSources.forMode(Mode.BLACKLIST).size)
+        assertEquals(17, DefaultSources.forMode(Mode.WHITELIST).size)
         assertEquals(DefaultSources.WHITE.size, DefaultSources.WHITE.toSet().size)
         assertTrue(DefaultSources.WHITE.none { DefaultSources.isExcluded(it) })
         assertTrue(DefaultSources.BLACK.all { it.startsWith("https://") })

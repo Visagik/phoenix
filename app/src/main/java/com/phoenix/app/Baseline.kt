@@ -22,11 +22,13 @@ object Baseline {
      * @param probe задержка в мс либо отрицательное число
      * @param errorOf последняя ошибка ядра в этом потоке (после неудачного [probe])
      * @param pause пауза перед повтором (в тестах — пустая)
+     * @param fast не пробовать запасной адрес после таймаута (только там, где gstatic не фильтруется)
      */
     fun measure(
         probe: (String) -> Long,
         errorOf: () -> String,
         pause: (Long) -> Unit = { Thread.sleep(it) },
+        fast: Boolean = false,
     ): Long {
         var ms = probe(PRIMARY)
         if (ms >= 0) return ms
@@ -41,6 +43,8 @@ object Baseline {
             // gstatic может быть закрыт отдельно от остального (белые списки, фильтр по SNI): один дешёвый запрос к Cloudflare по http
             // без TLS; таймаут/обрыв по обоим адресам — тогда сервер действительно не работает
             if (transient(errorOf())) return ms
+            // массовая перепроверка в обычной сети: gstatic открыт, а запасной адрес лишь удваивает ожидание у каждого мёртвого сервера
+            if (fast) return ms
             val alt = probe(ALTERNATIVES.first())
             return if (alt >= 0) alt else ms
         }

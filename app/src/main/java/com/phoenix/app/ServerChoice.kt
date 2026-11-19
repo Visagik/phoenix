@@ -37,9 +37,10 @@ object ServerChoice {
         "IN" to "Индия", "AE" to "ОАЭ", "IL" to "Израиль", "NO" to "Норвегия", "DK" to "Дания", "HU" to "Венгрия",
     )
 
-    fun cells(check: CheckResult, selected: List<CheckService>, odds: ((String) -> Int?)?): List<AppCell> = selected.map { s ->
+    fun cells(check: CheckResult, selected: List<CheckService>, vetoed: (CheckService) -> Boolean = { false }, odds: ((String) -> Int?)?): List<AppCell> = selected.map { s ->
         val ms = check.services[s.id]
         val mark = when {
+            vetoed(s) -> "✗" // вы отметили «Не работает» для этого сайта на этом сервере: старый замер не в счёт
             ms == null -> "?"
             ms >= 0 -> "✓"
             ms == CheckServices.PARTIAL -> "≈"
@@ -63,6 +64,7 @@ object ServerChoice {
         limit: Int = 40,
         odds: ((key: String, serviceId: String) -> Int?)? = null,
         exitCc: ((key: String) -> String?)? = null,
+        vetoed: ((link: String, url: String) -> Boolean)? = null,
     ): List<ServerOption> {
         val names = rows.associate { it.raw to it.displayName }
         val currentId = ConfigIdentity.key(currentLink)
@@ -81,7 +83,7 @@ object ServerChoice {
                 checked = c.alive,
                 services = if (check != null && !check.dead) check.labelNamed(selected, odds?.let { f -> { sid -> f(CheckStore.keyOf(c.link), sid) } }) else "",
                 speed = if (check != null && !check.dead) check.speedText() else "",
-                apps = if (check != null && !check.dead) ServerChoice.cells(check, selected, odds?.let { f -> { sid -> f(CheckStore.keyOf(c.link), sid) } }) else emptyList(),
+                apps = if (check != null && !check.dead) ServerChoice.cells(check, selected, vetoed = { s -> vetoed?.invoke(c.link, s.url) == true }, odds = odds?.let { f -> { sid -> f(CheckStore.keyOf(c.link), sid) } }) else emptyList(),
                 current = c.identity == currentId || c.host.isNotEmpty() && c.host == ConfigIdentity.host(currentLink),
             )
         }

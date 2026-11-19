@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Значок строки состояния: щит с вырезанным знаком (в строке состояния система красит значок сама, поэтому различаются формы) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,2 L4,5 V11 C4,16 7.4,20.7 12,22 C16.6,20.7 20,16 20,11 V5 Z M11,6.5 H13 V13 H11 Z M11,14.5 H13 V16.5 H11 Z" />
+</vector>

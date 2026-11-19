@@ -13,7 +13,7 @@ data class ConfigRow(
 ) {
     val stable: Boolean get() = days >= 3
     val reality: Boolean get() = raw.contains("security=reality")
-    val displayName: String get() = urlDecode(name).ifBlank { "(без имени)" }
+    val displayName: String by lazy(LazyThreadSafetyMode.PUBLICATION) { urlDecode(name).ifBlank { "(без имени)" } }
 
     val subtitle: String
         get() {

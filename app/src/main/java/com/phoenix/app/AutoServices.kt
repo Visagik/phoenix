@@ -45,6 +45,7 @@ object AutoServices {
             exit = { link -> exitOf(context, storage, link) },
             region = { link, url -> SpeedRunner.regionBlocked(context, link, url) },
             veto = { link, url -> ServiceVeto(storage.vetoFile).active(link, url) },
+            stop = { StopRequest.requestedSince(started) },
         )
         val netBefore = NetInfo.label(context)
         var skippedNet = 0

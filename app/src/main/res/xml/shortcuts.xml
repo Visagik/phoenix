@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="fix"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_fix"
+        android:shortcutLongLabel="@string/shortcut_fix">
+        <intent
+            android:action="com.phoenix.app.shortcut.FIX"
+            android:targetPackage="com.phoenix.app"
+            android:targetClass="com.phoenix.app.ShortcutActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="switch"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_switch"
+        android:shortcutLongLabel="@string/shortcut_switch">
+        <intent
+            android:action="com.phoenix.app.shortcut.SWITCH"
+            android:targetPackage="com.phoenix.app"
+            android:targetClass="com.phoenix.app.ShortcutActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="stop"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_stop"
+        android:shortcutLongLabel="@string/shortcut_stop">
+        <intent
+            android:action="com.phoenix.app.shortcut.STOP"
+            android:targetPackage="com.phoenix.app"
+            android:targetClass="com.phoenix.app.ShortcutActivity" />
+    </shortcut>
+</shortcuts>

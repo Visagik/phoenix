@@ -28,6 +28,9 @@ object DirectProbe {
      */
     private val running = java.util.concurrent.atomic.AtomicBoolean(false)
 
+    /** Результат прохода, когда напрямую не открылось вообще ничего: сети нет или она ещё устаивается, выводов нет — стоит повторить позже. */
+    const val NO_NETWORK = -1
+
     fun run(context: Context, storage: Storage, onlyDue: Boolean = false): Int {
         // перепроверка и смена сети могут позвать проход одновременно: второй не должен затереть итог первого
         if (!running.compareAndSet(false, true)) {
@@ -60,7 +63,21 @@ object DirectProbe {
         // нет вообще ничего (нет сети) — не делаем выводов
         if (ok.values.none { it }) {
             storage.log("BYPASS: напрямую не открылось ничего (${ok.size} адресов) — похоже, сети нет, список обхода не меняю")
-            return 0
+            return NO_NETWORK
+        }
+        // закрытое напрямую подтверждаем второй проверкой в этом же проходе: иначе вывод «через VPN» появлялся только со следующего прохода
+        // (при смене сети на мобильную DeepSeek, Qwen и Steam часами шли напрямую и не открывались)
+        val failed = entries.filter { ok[it.id] == false && !DirectLearn.blocked(DirectLearn.entry(old, net, it.id)) }
+        val again = HashMap<String, Boolean>()
+        if (failed.isNotEmpty()) {
+            try { Thread.sleep(4_000) } catch (_: InterruptedException) { }
+            val pool2 = Executors.newFixedThreadPool(6)
+            try {
+                pool2.invokeAll(failed.map { e -> Callable { e.id to reachable(e.url) } }, 25, TimeUnit.SECONDS)
+                    .mapNotNull { f -> try { if (f.isCancelled) null else f.get() } catch (_: Exception) { null } }.forEach { again[it.first] = it.second }
+            } finally {
+                pool2.shutdownNow()
+            }
         }
         var next: Map<String, LearnEntry> = old
         var changes = 0
@@ -68,6 +85,8 @@ object DirectProbe {
             val res = ok[e.id] ?: continue
             val before = DirectLearn.entry(next, net, e.id)
             next = DirectLearn.record(next, net, e.id, res, now)
+            // повторная проверка тоже не открылась — второй отказ подряд (сервис закрыт); открылась — первый отказ был случайным
+            if (!res && again.containsKey(e.id)) next = DirectLearn.record(next, net, e.id, again[e.id] == true, now)
             val after = DirectLearn.entry(next, net, e.id)
             if (DirectLearn.blocked(before) != DirectLearn.blocked(after)) {
                 changes++

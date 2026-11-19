@@ -7,7 +7,7 @@ import java.io.File
  * Объём трафика — оценка (по размеру типичного запроса), а не точное измерение. Хранится 14 дней; на диск пишется не чаще раза в 5 минут.
  */
 class EnergyMeter(private val file: File) {
-    data class Day(val health: Long = 0, val speed: Long = 0, val search: Long = 0, val bytes: Long = 0, val fetch: Long = 0, val targets: Long = 0, val diag: Long = 0)
+    data class Day(val health: Long = 0, val speed: Long = 0, val search: Long = 0, val bytes: Long = 0, val fetch: Long = 0, val targets: Long = 0, val diag: Long = 0, val mobile: Long = 0)
 
     private val days = LinkedHashMap<String, Day>()
     private var loaded = false
@@ -40,7 +40,7 @@ class EnergyMeter(private val file: File) {
                 val p = l.split('\t')
                 if (p.size >= 5) {
                     days[p[0]] = Day(p[1].toLongOrNull() ?: 0, p[2].toLongOrNull() ?: 0, p[3].toLongOrNull() ?: 0, p[4].toLongOrNull() ?: 0,
-                        p.getOrNull(5)?.toLongOrNull() ?: 0, p.getOrNull(6)?.toLongOrNull() ?: 0, p.getOrNull(7)?.toLongOrNull() ?: 0)
+                        p.getOrNull(5)?.toLongOrNull() ?: 0, p.getOrNull(6)?.toLongOrNull() ?: 0, p.getOrNull(7)?.toLongOrNull() ?: 0, p.getOrNull(8)?.toLongOrNull() ?: 0)
                 }
             }
         } catch (_: Exception) {
@@ -54,7 +54,7 @@ class EnergyMeter(private val file: File) {
         load()
         val d = days[day] ?: Day()
         val n = count.toLong()
-        days[day] = when (kind) {
+        val after = when (kind) {
             "health" -> d.copy(health = d.health + n, bytes = d.bytes + n * HEALTH_BYTES)
             "speed" -> d.copy(speed = d.speed + n, bytes = d.bytes + n * SPEED_BYTES)
             "search" -> d.copy(search = d.search + n, bytes = d.bytes + n * SEARCH_BYTES)
@@ -63,6 +63,22 @@ class EnergyMeter(private val file: File) {
             "diag" -> d.copy(diag = d.diag + n, bytes = d.bytes + n * DIAG_BYTES)
             else -> return
         }
+        // сколько из этого ушло по мобильной сети: по нему считается суточный лимит фоновых проверок
+        val mobileNow = try { NetHooks.mobile() } catch (_: Throwable) { false }
+        days[day] = if (mobileNow) after.copy(mobile = after.mobile + (after.bytes - d.bytes)) else after
+        dirty = true
+        if (now - lastSave >= SAVE_EVERY_MS) save(now)
+    }
+
+    /** Замер скорости по настоящему объёму: средняя оценка в 300 КБ занижала расход в разы (замер в фоне качает до 8 МБ). Счётчик замеров растёт на один. */
+    @Synchronized
+    fun addSpeed(bytes: Long, day: String, now: Long) {
+        if (bytes <= 0) return
+        load()
+        val d = days[day] ?: Day()
+        val after = d.copy(speed = d.speed + 1, bytes = d.bytes + bytes)
+        val mobileNow = try { NetHooks.mobile() } catch (_: Throwable) { false }
+        days[day] = if (mobileNow) after.copy(mobile = after.mobile + bytes) else after
         dirty = true
         if (now - lastSave >= SAVE_EVERY_MS) save(now)
     }
@@ -73,7 +89,7 @@ class EnergyMeter(private val file: File) {
         val keep = days.keys.sortedDescending().take(KEEP_DAYS).toSet()
         days.keys.retainAll(keep)
         try {
-            file.writeTextAtomic(days.entries.sortedBy { it.key }.joinToString("") { (k, d) -> "$k\t${d.health}\t${d.speed}\t${d.search}\t${d.bytes}\t${d.fetch}\t${d.targets}\t${d.diag}\n" })
+            file.writeTextAtomic(days.entries.sortedBy { it.key }.joinToString("") { (k, d) -> "$k\t${d.health}\t${d.speed}\t${d.search}\t${d.bytes}\t${d.fetch}\t${d.targets}\t${d.diag}\t${d.mobile}\n" })
             dirty = false
             lastSave = now
         } catch (_: Exception) {
@@ -86,12 +102,15 @@ class EnergyMeter(private val file: File) {
         return days[day] ?: Day()
     }
 
+    /** Сколько байт (оценка) за [day] потрачено фоновыми проверками по мобильной сети. */
+    fun mobileBytes(day: String): Long = day(day).mobile
+
     /** «проверок туннеля 120, замеров скорости 3, проверено серверов 450; около 1.4 МБ». */
     fun text(day: String): String {
         val d = day(day)
         if (d.health + d.speed + d.search + d.fetch + d.targets + d.diag == 0L) return "ничего не делалось"
         return "проверок туннеля ${d.health}, замеров скорости ${d.speed}, проверено серверов ${d.search}" +
             (if (d.fetch > 0) ", скачано источников ${d.fetch}" else "") + (if (d.targets > 0) ", проверок сервисов целей ${d.targets}" else "") +
-            (if (d.diag > 0) ", проверок Google (Gemini/NotebookLM) ${d.diag}" else "") + "; около ${mb(d.bytes)}"
+            (if (d.diag > 0) ", проверок Google (Gemini/NotebookLM) ${d.diag}" else "") + "; около ${mb(d.bytes)}" + (if (d.mobile > 0) ", из них по мобильной сети ${mb(d.mobile)}" else "")
     }
 }

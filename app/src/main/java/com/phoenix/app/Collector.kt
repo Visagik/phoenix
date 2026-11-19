@@ -45,12 +45,16 @@ class Collector(
 
     private data class Fetched(val code: Int, val body: String?, val vpnTried: Boolean = false, val note: String = "", val etag: String = "", val lastMod: String = "",
         /** не 0 — сеть источник не отдала (это был код ответа), а в конфиги взята его прежняя копия из кэша */
-        val staleCode: Int = 0)
+        val staleCode: Int = 0,
+        /** источник отдал страницу без конфигов (портал, защита от ботов), взята прежняя копия: ни успех, ни неудача источника */
+        val stub: Boolean = false)
     private class Pending(val url: String, val start: SourceState, val reactivated: Boolean)
 
     /** @param trigger кто запустил (alarm / worker / manual / catch-up) — попадает в журнал для диагностики */
     suspend fun run(trigger: String = "manual"): Outcome {
-        if (!lock.tryLock()) return Outcome(true, "Сборка уже выполняется", skipped = true)
+        // ручной сбор ждёт идущий плановый (его отменил REPLACE, но блокирующий ввод-вывод ещё держит замок); плановый при занятости пропускается
+        val got = if (trigger == "manual") kotlinx.coroutines.withTimeoutOrNull(MANUAL_WAIT_MS) { lock.lock(); true } == true else lock.tryLock()
+        if (!got) return Outcome(true, "Сборка уже выполняется", skipped = true)
         RunState.running.value = true
         return try {
             withContext(Dispatchers.IO) { pipeline(trigger) }
@@ -95,7 +99,7 @@ class Collector(
         // --- 1. Список источников: общий (с запасным кэшем) + свои ссылки ---
         progress("Загружаю список источников…")
         val listUrl = sourcesListUrl ?: storage.sourcesListUrl()
-        val remote = if (listUrl.isBlank()) null else fetchWithRetry(listUrl, 2).body
+        val remote = if (listUrl.isBlank()) null else fetchWithRetry(listUrl, 2).body?.takeIf { FetchPolicy.looksLikeSourceList(it) }
         val listText: String? = when {
             listUrl.isBlank() -> null
             remote != null -> remote.also { storage.sourcesCacheFile.writeTextAtomic(it) }
@@ -156,12 +160,14 @@ class Collector(
         val manual = trigger == "manual"
         storage.sourceCacheDir.mkdirs()
         val fromCacheN = java.util.concurrent.atomic.AtomicInteger()
+        val startedN = java.util.concurrent.atomic.AtomicInteger()
         val notModifiedN = java.util.concurrent.atomic.AtomicInteger()
         val viaVpnN = java.util.concurrent.atomic.AtomicInteger()
         val results: List<Fetched?> = coroutineScope {
             toFetch.map { p ->
                 async {
                     semaphore.withPermit {
+                        progress(tr("Скачиваю источники: {} из {} ({})", startedN.incrementAndGet(), toFetch.size, try { java.net.URI(p.url).host ?: "" } catch (_: Throwable) { "" }))
                         val cacheFile = File(storage.sourceCacheDir, SourceCadence.hashOf(setOf(p.url)) + ".txt")
                         val cachedAny = if (cacheFile.exists()) try { cacheFile.readText() } catch (_: Exception) { null } else null
                         val cached = if (!manual) cachedAny else null
@@ -178,11 +184,15 @@ class Collector(
                             else if (f.body == null && cachedAny != null && FetchPolicy.looksLikeSubscription(cachedAny) &&
                                 System.currentTimeMillis() - cacheFile.lastModified() < STALE_CACHE_MS
                             ) Fetched(200, cachedAny, f.vpnTried, "из кэша: источник не ответил, взята прежняя копия", staleCode = f.code)
+                            // источник ответил, но страницей без конфигов (портал входа, защита от ботов): прежняя копия лучше пустого ответа
+                            else if (f.body != null && !FetchPolicy.looksLikeSubscription(f.body) && cachedAny != null && FetchPolicy.looksLikeSubscription(cachedAny) &&
+                                System.currentTimeMillis() - cacheFile.lastModified() < STALE_CACHE_MS
+                            ) Fetched(200, cachedAny, f.vpnTried, "из кэша: источник отдал страницу без конфигов, взята прежняя копия", stub = true)
                             else f
                         }.also { f ->
                             if (f.code == 200 && f.body != null && !f.note.startsWith("из кэша")) validators.put(p.url, f.etag, f.lastMod)
                             if (f.body != null && f.note == "через VPN") viaVpnN.incrementAndGet()
-                            if (f.body != null && f.staleCode == 0 && FetchPolicy.looksLikeSubscription(f.body)) try { cacheFile.writeTextAtomic(f.body) } catch (_: Exception) { }
+                            if (f.body != null && f.staleCode == 0 && !f.stub && FetchPolicy.looksLikeSubscription(f.body)) try { cacheFile.writeTextAtomic(f.body) } catch (_: Exception) { }
                         }
                     }
                 }
@@ -227,7 +237,8 @@ class Collector(
                     // прежняя копия — не успех источника: счётчик неудач идёт как при обычной неудаче (мёртвый источник не должен жить вечно)
                     val ns = SourcePolicy.onFailure(p.start, res.staleCode, today)
                     states[p.url] = if (FetchPolicy.uncertain(res.staleCode) && !res.vpnTried) p.start else ns
-                } else states[p.url] = SourcePolicy.onSuccess(today)
+                } else if (res.stub) states[p.url] = p.start
+                else states[p.url] = SourcePolicy.onSuccess(today)
                 storage.log("OK: ${p.url} (${body.length} симв., ${keys.size} конфигов)" + (if (res.note.isNotEmpty()) " [${res.note}]" else "") + (if (keys.isEmpty()) " — в ответе нет конфигов (страница-заглушка или пустой источник)" else ""))
                 draft.sources += SourceLine(p.url, SourceKind.OK, "${body.length} симв., ${keys.size} конфигов", p.reactivated)
             } else {
@@ -235,7 +246,7 @@ class Collector(
                 // ошибка, по которой нельзя судить, что источник умер (блокировка, защита от ботов, обрыв), без проверки через VPN в счёт не идёт
                 val uncertain = FetchPolicy.uncertain(res.code) && !res.vpnTried
                 states[p.url] = if (uncertain) p.start else ns
-                storage.log("FAIL: ${p.url} (код ${res.code}, " + (if (uncertain) "в счёт неудач не идёт" else "неудача #${ns.fails}") + (if (res.note.isNotEmpty()) "; ${res.note}" else "") + ")")
+                storage.log("FAIL: ${p.url} (код ${res.code}${if (res.code == 200) " — ответ пустой или короче 100 символов" else ""}, " + (if (uncertain) "в счёт неудач не идёт" else "неудача #${ns.fails}") + (if (res.note.isNotEmpty()) "; ${res.note}" else "") + ")")
                 val detail = "код ${res.code}, неудача #${ns.fails}" + (if (res.note.isNotEmpty()) " (${res.note})" else "") + if (!ns.active) ", заблокирован" else ""
                 draft.sources += SourceLine(p.url, SourceKind.FAIL, detail, p.reactivated)
             }
@@ -487,6 +498,7 @@ class Collector(
             "https://raw.githubusercontent.com/solovyov-jenya2004/all_subs/refs/heads/main/sources.txt"
 
         // Весь прогон должен укладываться в ~10 минут, которые WorkManager даёт обычной задаче.
+        const val MANUAL_WAIT_MS = 120_000L
         const val MAX_FETCH_MS = 5 * 60 * 1000L
         /** Насколько старую копию источника ещё можно взять вместо недоступного: дальше конфиги скорее мертвы, чем нужны */
         const val STALE_CACHE_MS = 7L * 24 * 3600 * 1000
@@ -494,7 +506,7 @@ class Collector(
         const val RETRIES = 2
         const val RETRY_DELAY_MS = 5_000L
         const val PARALLEL = 6
-        const val MAX_BODY_CHARS = 8_000_000
+        const val MAX_BODY_CHARS = 3_000_000
         const val MAX_PER_ADDRESS = 3
 
         val DEFAULT_BLACKLIST = listOf(

@@ -1,0 +1,31 @@
+name: desktop
+# Версия для Linux (папка desktop): тесты и пакет .deb. Android-сборку (build.yml) это не затрагивает.
+on:
+  push:
+    paths:
+      - 'desktop/**'
+      - 'tools/kt-harness/pure.txt'
+      - 'app/src/main/java/**'
+      - 'app/src/main/assets/**'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch:
+jobs:
+  deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Tests
+        working-directory: desktop
+        run: ../gradlew test --no-daemon
+      - name: Package .deb
+        working-directory: desktop
+        run: ../gradlew packageDeb --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phoenix-linux-deb
+          path: desktop/build/compose/binaries/main/deb/*.deb

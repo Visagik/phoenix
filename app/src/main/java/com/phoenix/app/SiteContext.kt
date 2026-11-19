@@ -133,4 +133,14 @@ object MissBackoff {
     fun render(map: Map<String, Long>): String = map.entries.joinToString("\n") { "${it.key}\t${it.value}" } + if (map.isEmpty()) "" else "\n"
 
     fun skip(map: Map<String, Long>, id: String, now: Long): Boolean = map[id]?.let { now >= it && now - it < TTL_MS } ?: false
+
+    /** Для цели, которая открывается напрямую (серверы не нужны), глубокий поиск не повторяем сутки: по журналу 18–19.11 DeepSeek перебирался заново через 11 ч, 3,5 мин впустую. */
+    const val DIRECT_TTL_MS = 24 * 60 * 60_000L
+    private const val DIRECT_PREFIX = "DIRECT:"
+
+    fun directKey(id: String): String = DIRECT_PREFIX + id
+
+    /** Пауза поиска: обычная (6 ч) или длинная для «мимо VPN» (24 ч). */
+    fun paused(map: Map<String, Long>, id: String, now: Long): Boolean =
+        skip(map, id, now) || map[directKey(id)]?.let { now >= it && now - it < DIRECT_TTL_MS } == true
 }

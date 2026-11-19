@@ -36,6 +36,18 @@ object SettingsKeys {
         "quiet_manual" to 'b',
         "quiet_from" to 'i',
         "quiet_to" to 'i',
+        // добавленные позже; списки «по одному в строке» (страны, приложения) в копию не входят: формат копии построчный
+        "animations" to 'b',
+        "language" to 's',
+        "theme" to 'i',
+        "activity_style" to 'i',
+        "recheck_speed" to 'i',
+        "apps_mode" to 'i',
+        "pin_hours" to 'i',
+        "bg_wifi_only" to 'b',
+        "bg_mobile_mb" to 'i',
+        "auto_backup" to 'b',
+        "dns_provider" to 's',
     )
 
     /** Человеческие названия режимных настроек (для списка «что переопределено»). */
@@ -71,6 +83,15 @@ object SettingsKeys {
     fun separateKey(mode: String): String = "sep_$mode"
 
     /** Всё, что уходит в резервную копию: общие, обычные значения режимов, их отдельные и флаги «свои настройки». */
+    /** Общие настройки, которые сбрасывает «Вернуть рекомендуемые». Язык, тема, анимации, расписание и тихие часы — личные, их не трогаем. */
+    val RESETTABLE_COMMON: List<String> = listOf(
+        "only_charging", "auto_mode", "app_aware_failover", "focus_mode", "apps_mode", "pin_hours", "bg_wifi_only", "bg_mobile_mb", "dns_provider",
+    )
+
+    /** Ключи, которые удаляются при сбросе: режимные настройки выбранной области ([scopeMode] null — общие) и общие из [RESETTABLE_COMMON]. */
+    fun recommendedResetKeys(scopeMode: String?): List<String> =
+        SCOPED.keys.map { scopedKey(it, scopeMode) } + RESETTABLE_COMMON
+
     fun portable(modes: List<String>): Map<String, Char> {
         val out = LinkedHashMap<String, Char>()
         out.putAll(COMMON)

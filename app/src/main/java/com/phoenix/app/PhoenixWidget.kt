@@ -58,7 +58,7 @@ class SwitchTileService : TileService() {
     }
 }
 
-/** Плитка «Умная смена» в шторке: проверяет сеть и туннель и подбирает сервер под открытое приложение. */
+/** Плитка «Не работает» в шторке (та же логика, что у кнопки в уведомлении: разбор и умная смена или пометка сервиса): проверяет сеть и туннель и подбирает сервер под открытое приложение. */
 class SmartTileService : TileService() {
     private var scope: CoroutineScope? = null
 
@@ -78,12 +78,12 @@ class SmartTileService : TileService() {
     override fun onClick() {
         super.onClick()
         if (VpnState.status.value.phase != VpnPhase.CONNECTED) return
-        PhoenixVpnService.smartSwitch(this)
+        PhoenixVpnService.fix(this)
     }
 
     private fun render(status: VpnStatus) {
         val tile = qsTile ?: return
-        tile.label = "Умная смена"
+        tile.label = "Не работает"
         val on = status.phase == VpnPhase.CONNECTED
         tile.state = if (on) Tile.STATE_ACTIVE else Tile.STATE_UNAVAILABLE
         if (Build.VERSION.SDK_INT >= 29) tile.subtitle = if (on) "под это приложение" else "VPN выключен"
@@ -117,12 +117,12 @@ class PhoenixWidgetProvider : AppWidgetProvider() {
                 R.id.widget_root,
                 PendingIntent.getActivity(context, 4, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             )
-            v.setTextViewText(R.id.widget_smart, if (on) "Умная смена ›" else "")
+            v.setTextViewText(R.id.widget_smart, if (on) "Не работает ›" else "")
             if (on) {
                 v.setOnClickPendingIntent(
                     R.id.widget_smart,
                     PendingIntent.getService(
-                        context, 7, Intent(context, PhoenixVpnService::class.java).setAction(PhoenixVpnService.ACTION_SMART),
+                        context, 7, Intent(context, PhoenixVpnService::class.java).setAction(PhoenixVpnService.ACTION_FIX),
                         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                     )
                 )

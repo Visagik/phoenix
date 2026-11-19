@@ -38,6 +38,12 @@ object FetchPolicy {
         return true
     }
 
+    /** Похоже на общий список ссылок-источников, а не на страницу входа Wi-Fi или заглушку: иначе такой ответ затирал бы сохранённый список. */
+    fun looksLikeSourceList(body: String): Boolean {
+        if (body.trimStart().startsWith("<")) return false
+        return body.lineSequence().count { val t = it.trim(); t.startsWith("https://") || t.startsWith("http://") } >= 2
+    }
+
     /** Ответ похож на подписку: есть ссылки на конфиги (в открытом виде или в base64). */
     fun looksLikeSubscription(body: String): Boolean {
         val text = if (body.contains("://")) body else (LinkParser.decodeBase64(body) ?: body)

@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.horizontalScroll
@@ -39,6 +40,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -48,6 +50,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -64,6 +67,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -150,6 +154,10 @@ fun ConnectionPage(vm: MainViewModel) {
     val autoRecheck by vm.autoRecheck.collectAsStateWithLifecycle()
     val scope by vm.scope.collectAsStateWithLifecycle()
     val separate by vm.separate.collectAsStateWithLifecycle()
+    val dnsId by vm.dnsProvider.collectAsStateWithLifecycle()
+    val dnsTrialAt by vm.dnsTrialAt.collectAsStateWithLifecycle()
+    var resetTick by remember { mutableStateOf(0) }
+    var askReset by remember { mutableStateOf(false) }
 
     // На этом экране правится выбранная область; уходя с него, возвращаем «действующие настройки активного режима».
     DisposableEffect(Unit) {
@@ -245,6 +253,20 @@ fun ConnectionPage(vm: MainViewModel) {
             tr("Замер скачивает до 8 МБ. По умолчанию — только по Wi-Fi."),
             metered,
         ) { vm.setSpeedOnMetered(it) }
+        // как долго держится сервер, выбранный вручную (кнопкой «Сменить сервер» или в списке): автоперебор его не трогает
+        val pinSettings = remember { AppSettings(context) }
+        var pinHours by remember(resetTick) { mutableStateOf(pinSettings.pinHours) }
+        GroupLabel(tr("Закреплённый сервер"))
+        Hint(tr("Сервер, выбранный вручную, сам не меняется. Через это время закрепление снимается, и приложение снова выбирает сервер само."))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PinPolicy.OPTIONS.forEach { h ->
+                FilterChip(
+                    selected = pinHours == h,
+                    onClick = { pinHours = h; pinSettings.pinHours = h },
+                    label = { Text(tr(PinPolicy.label(h))) },
+                )
+            }
+        }
         SwitchRow(
             tr("Закрыть QUIC (UDP 443)"),
             tr("Многие серверы не пропускают UDP: приложения ждут ответа и не открываются, хотя Telegram работает. При закрытом QUIC они сразу переходят на обычный TCP. Рекомендуется оставить включённым. Применяется при следующем подключении."),
@@ -378,6 +400,47 @@ fun ConnectionPage(vm: MainViewModel) {
         } else {
             Hint(tr("Потяните шторку вниз → значок карандаша (изменить) → перетащите «Phoenix VPN» в активные плитки."))
         }
+        Spacer(Modifier.height(16.dp))
+        Text(tr("DNS в туннеле"), style = MaterialTheme.typography.titleMedium)
+        Hint(tr("Какие серверы имён используют приложения внутри VPN. Если сайты не открываются, попробуйте другой. При смене у вас 30 секунд, чтобы проверить сайт и подтвердить; иначе вернётся прежний."))
+        DnsProvider.entries.forEach { p ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(selected = dnsId == p.name, onClick = { vm.setDnsProvider(p.name) }, enabled = dnsTrialAt <= 0L)
+                Text(tr(p.title))
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        OutlinedButton(onClick = { askReset = true }) { Text(tr("Вернуть рекомендуемые")) }
+        Hint(tr("Сбрасывает настройки этого экрана до значений по умолчанию. Язык, тема, расписание, списки и данные не трогаются."))
+    }
+    if (dnsTrialAt > 0L) {
+        var now by remember(dnsTrialAt) { mutableStateOf(System.currentTimeMillis()) }
+        LaunchedEffect(dnsTrialAt) {
+            while (true) { now = System.currentTimeMillis(); kotlinx.coroutines.delay(500) }
+        }
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text(tr("Проверка DNS")) },
+            text = { Text(tr("Включён: {}. Откройте любой сайт или приложение. Если всё работает, нажмите «Оставить». Через {} с вернётся прежний.", tr(DnsProvider.fromId(dnsId).title), DnsTrial.remainingSec(dnsTrialAt, now))) },
+            confirmButton = { TextButton(onClick = { vm.confirmDns() }) { Text(tr("Оставить")) } },
+            dismissButton = { TextButton(onClick = { vm.rollbackDns() }) { Text(tr("Вернуть прежний")) } },
+        )
+    }
+    if (askReset) {
+        AlertDialog(
+            onDismissRequest = { askReset = false },
+            title = { Text(tr("Вернуть рекомендуемые")) },
+            text = { Text(tr("Настройки подключения вернутся к значениям по умолчанию. Продолжить?")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    askReset = false
+                    val n = vm.resetRecommended()
+                    resetTick++
+                    Toast.makeText(context, if (n > 0) tr("Возвращено настроек: {}", n) else tr("Уже стоят рекомендуемые"), Toast.LENGTH_SHORT).show()
+                }) { Text(tr("Вернуть")) }
+            },
+            dismissButton = { TextButton(onClick = { askReset = false }) { Text(tr("Отмена")) } },
+        )
     }
 }
 
@@ -430,7 +493,7 @@ fun TargetsPage(vm: MainViewModel) {
         if (global == Policy.AUTO) {
             item {
                 Hint(
-                    tr("«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.")
+                    tr("«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, «Только это», «Весь VPN») задают своё для этого приложения.\n\nСайты — всегда в режиме «Только это». Приложение — «Только это», если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — «Весь VPN», когда выдан доступ к данным об использовании.")
                 )
             }
         }
@@ -461,7 +524,7 @@ fun TargetsPage(vm: MainViewModel) {
         }
         if (busy.isNotEmpty()) item { Text(busy, style = MaterialTheme.typography.bodySmall) }
         else if (status.isNotBlank()) item { Text(status, style = MaterialTheme.typography.bodySmall) }
-        item { HorizontalDivider() }
+        item { Spacer(Modifier.height(8.dp)) }
         if (targets.isEmpty()) item { Hint(tr("Целей пока нет. Добавьте приложение (список берётся с телефона) или сайт.")) }
         items(targets, key = { it.id }) { t ->
             Card(Modifier.fillMaxWidth()) {
@@ -655,25 +718,24 @@ fun BypassSitesSection(vm: MainViewModel) {
 /** Раздел «Диагностика»: сводка «что сейчас», журнал с фильтрами и поиском, отчёт последнего сбора. */
 @Composable
 fun DiagPage(vm: MainViewModel) {
-    var tab by remember { mutableStateOf(0) }
+    // 0 — сводка; 1 — журнал; 2 — отчёт сбора; 3 — расход, статистика, «Можно вернуть», данные
+    var sub by remember { mutableStateOf(0) }
+    BackHandler(enabled = sub != 0) { sub = 0 }
     Column(Modifier.fillMaxSize()) {
-        FlowRow(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(tr("Сводка"), tr("Журнал"), tr("Отчёт сбора")).forEachIndexed { i, t ->
-                FilterChip(selected = tab == i, onClick = { tab = i }, label = { Text(t) })
-            }
-        }
+        if (sub != 0) TextButton(onClick = { sub = 0 }, modifier = Modifier.padding(horizontal = 4.dp)) { Text("‹ " + tr("Сводка")) }
         Box(Modifier.weight(1f)) {
-            when (tab) {
-                0 -> SummaryPage(vm)
+            when (sub) {
+                0 -> SummaryPage(vm) { sub = it }
                 1 -> LogPage(vm)
-                else -> ReportTab(vm)
+                2 -> ReportTab(vm)
+                else -> DiagExtras(vm)
             }
         }
     }
 }
 
 @Composable
-private fun SummaryPage(vm: MainViewModel) {
+private fun SummaryPage(vm: MainViewModel, onMore: (Int) -> Unit) {
     val context = LocalContext.current
     var tick by remember { mutableStateOf(0) }
     var summary by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
@@ -688,22 +750,20 @@ private fun SummaryPage(vm: MainViewModel) {
             day = vm.logDay()
         }
     }
-    val counts = Diagnostics.counts(day)
-    val problems = day.filter { Diagnostics.isProblem(it) }.takeLast(8)
+    val counts = remember(day) { Diagnostics.counts(day) }
+    val problems = remember(day) { day.filter { Diagnostics.isProblem(it) }.takeLast(8) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            OutlinedButton(onClick = { tick++ }) { Text(tr("Обновить")) }
-            OutlinedButton(onClick = {
-                val text = Diagnostics.bundle(summary, counts, vm.logLines("", 400))
-                val clip = context.getSystemService(android.content.ClipboardManager::class.java)
-                clip.setPrimaryClip(android.content.ClipData.newPlainText("phoenix-diagnostics", text))
-                Toast.makeText(context, tr("Диагностика скопирована"), Toast.LENGTH_SHORT).show()
-            }) { Text(tr("Копировать всё")) }
-            OutlinedButton(onClick = {
-                val text = Diagnostics.bundle(summary, counts, vm.logLines("", 400))
-                val ok = Exporter.saveToDownloads(context, "phoenix-diagnostics.txt", text)
-                Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить"), Toast.LENGTH_SHORT).show()
-            }) { Text(tr("В файл")) }
+        val headline = remember(counts) { Diagnostics.headline(counts) }
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+            Text(
+                when (headline) {
+                    Diagnostics.Headline.OK -> tr("Всё работает")
+                    Diagnostics.Headline.UNSTABLE -> tr("Сервер сменился {} раз за сутки: сеть нестабильна", counts.failovers)
+                    Diagnostics.Headline.PROBLEMS -> tr("Есть проблемы: {} за сутки. Подробности в журнале", counts.problems)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp),
+            )
         }
         if (big.isNotEmpty()) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -722,6 +782,29 @@ private fun SummaryPage(vm: MainViewModel) {
                 Column(Modifier.padding(16.dp)) {
                     Text(tr("Цели и сервисы"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
                     TargetMatrix(matrix.first, matrix.second)
+                }
+            }
+        }
+        var all by remember { mutableStateOf(false) }
+        TextButton(onClick = { all = !all }) { Text(if (all) tr("Скрыть подробности") else tr("Подробнее")) }
+        if (all) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onMore(1) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Журнал")) }
+                OutlinedButton(onClick = { onMore(2) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Отчёт сбора")) }
+                OutlinedButton(onClick = { onMore(3) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Что приложение делает само, статистика, данные")) }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedButton(onClick = { tick++ }) { Text(tr("Обновить")) }
+                    OutlinedButton(onClick = {
+                        val text = Diagnostics.bundle(summary, counts, vm.logLines("", 400))
+                        val clip = context.getSystemService(android.content.ClipboardManager::class.java)
+                        clip.setPrimaryClip(android.content.ClipData.newPlainText("phoenix-diagnostics", text))
+                        Toast.makeText(context, tr("Диагностика скопирована"), Toast.LENGTH_SHORT).show()
+                    }) { Text(tr("Копировать всё")) }
+                    OutlinedButton(onClick = {
+                        val text = Diagnostics.bundle(summary, counts, vm.logLines("", 400))
+                        val ok = Exporter.saveToDownloads(context, "phoenix-diagnostics.txt", text)
+                        Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить"), Toast.LENGTH_SHORT).show()
+                    }) { Text(tr("В файл")) }
                 }
             }
         }
@@ -757,6 +840,19 @@ private fun SummaryPage(vm: MainViewModel) {
     }
 }
 
+/** Отфильтрованный журнал, готовый к показу (считается на фоновом потоке). */
+private class LogView(val lines: List<String>, val shown: List<String>, val text: String, val pretty: List<Pair<String, Boolean>>) {
+    companion object {
+        val EMPTY = LogView(emptyList(), emptyList(), "", emptyList())
+        fun build(all: List<String>, group: String, query: String, problemsOnly: Boolean): LogView {
+            val lines = Diagnostics.filter(all, group, query, problemsOnly)
+            val shown = lines.takeLast(800)
+            val pretty = shown.map { Diagnostics.pretty(it) to Diagnostics.isProblem(it) }
+            return LogView(lines, shown, pretty.joinToString("\n") { it.first }, pretty)
+        }
+    }
+}
+
 @Composable
 fun LogPage(vm: MainViewModel) {
     val context = LocalContext.current
@@ -768,10 +864,16 @@ fun LogPage(vm: MainViewModel) {
     var saving by remember { mutableStateOf(false) }
     val ioScope = rememberCoroutineScope()
 
+    LaunchedEffect(Unit) { withContext(Dispatchers.IO) { MemInfo.log(context, "открыт журнал") } }
     LaunchedEffect(tick) { all = withContext(Dispatchers.IO) { vm.logLines("", 40_000) } }
-    val lines = remember(all, group, query, problemsOnly) { Diagnostics.filter(all, group, query, problemsOnly) }
-    val shown = remember(lines) { lines.takeLast(800) }
-    val text = remember(shown) { shown.joinToString("\n") { Diagnostics.pretty(it) } }
+    // фильтр по суткам журнала (до 40 000 строк, регулярки) и разбор последних строк — не в основном потоке, с паузой после ввода
+    val view by produceState(LogView.EMPTY, all, group, query, problemsOnly) {
+        if (query.isNotEmpty()) delay(300)
+        value = withContext(Dispatchers.Default) { LogView.build(all, group, query, problemsOnly) }
+    }
+    val lines = view.lines
+    val shown = view.shown
+    val text = view.text
 
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -840,7 +942,7 @@ fun LogPage(vm: MainViewModel) {
         } else {
             // самые свежие записи внизу; список прокручивается
             val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-            val pretty = remember(shown) { shown.map { Diagnostics.pretty(it) to Diagnostics.isProblem(it) } }
+            val pretty = view.pretty
             LaunchedEffect(pretty) { if (pretty.isNotEmpty()) listState.scrollToItem(pretty.lastIndex) }
             LazyColumn(Modifier.fillMaxSize(), state = listState) {
                 items(pretty.size, key = { it }) { i ->
@@ -885,6 +987,22 @@ fun BackupPage(vm: MainViewModel) {
         Hint(
             tr("Импорт ничего не стирает: списки объединяются (чёрный список источников только пополняется), цели добавляются к имеющимся, одиночные настройки берутся из файла. Файл текстовый, его можно открыть и посмотреть. В нём могут быть ссылки на ваши источники — не отправляйте его посторонним.")
         )
+        // автокопия: раз в неделю во внутреннюю память, последние три
+        val abContext = LocalContext.current
+        val abSettings = remember { AppSettings(abContext) }
+        var autoBackupOn by remember { mutableStateOf(abSettings.autoBackup) }
+        Spacer(Modifier.height(12.dp))
+        SwitchRow(
+            tr("Автокопия раз в неделю"),
+            tr("Копия настроек и данных без журнала сохраняется во внутреннюю память приложения после планового сбора, хранятся последние три. При удалении приложения она пропадёт — для этого есть экспорт в файл."),
+            autoBackupOn,
+        ) { autoBackupOn = it; abSettings.autoBackup = it }
+        val lastAuto = abSettings.lastAutoBackupAt
+        Hint(
+            if (lastAuto > 0) tr("Последняя автокопия: {}", java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(lastAuto)))
+            else tr("Автокопий пока нет: первая появится после ближайшего сбора."),
+        )
+        OutlinedButton(onClick = { vm.restoreAutoBackup() }) { Text(tr("Восстановить из последней автокопии")) }
         if (status.isNotBlank()) {
             Spacer(Modifier.height(12.dp))
             Text(status, style = MaterialTheme.typography.bodyMedium)
@@ -925,7 +1043,7 @@ fun FirmwarePage() {
         Spacer(Modifier.height(8.dp))
         Text(tr("Что уже разрешено"), style = MaterialTheme.typography.titleMedium)
         // одно место для всех прав: кнопка «Исправить» только у невыданных
-        val okColor = PhoenixTheme.ok(isSystemInDarkTheme())
+        val okColor = PhoenixTheme.ok(appDark())
         perms.forEach { p ->
             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(

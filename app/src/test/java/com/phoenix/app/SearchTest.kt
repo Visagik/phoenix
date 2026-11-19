@@ -61,6 +61,28 @@ class SearchTest {
     }
 
     @Test
+    fun deadHostStopsAfterStrikes() {
+        val calls = AtomicInteger()
+        val list = (1..10).map { Candidate("vless://11111111-2222-3333-4444-5555555555%02d@1.2.3.4:443?security=tls#n$it".format(it), "k$it", 0, -1.0, 0) }
+        val codes = ConcurrentHashMap<String, Long>()
+        val s = ServerSearch(reach = { h, _ -> h }, probe = { _, _ -> calls.incrementAndGet(); -1L }, probeParallel = 1, onePerHost = false, hostStrikes = 3)
+        runBlocking { s.find(list, want = 100, budgetMs = 5_000) { c, ms -> codes[c.identity] = ms } }
+        assertEquals(3, calls.get())
+        assertEquals(7, codes.values.count { it == ServerSearch.HOST_SKIPPED })
+        assertEquals(7, s.hostSkipped)
+    }
+
+    @Test
+    fun hostWithOneWorkingConfigIsNeverSkipped() {
+        val calls = AtomicInteger()
+        val list = (1..10).map { Candidate("vless://11111111-2222-3333-4444-5555555555%02d@1.2.3.4:443?security=tls#n$it".format(it), "k$it", 0, -1.0, 0) }
+        val s = ServerSearch(reach = { h, _ -> h }, probe = { _, _ -> if (calls.incrementAndGet() == 1) 40L else -1L }, probeParallel = 1, onePerHost = false, hostStrikes = 3)
+        runBlocking { s.find(list, want = 100, budgetMs = 5_000) }
+        assertEquals(10, calls.get())
+        assertEquals(0, s.hostSkipped)
+    }
+
+    @Test
     fun budgetEndsASearchThatIsTooSlow() {
         val s = ServerSearch(reach = { h, _ -> h }, probe = { _, _ -> Thread.sleep(2_000); 10L }, probeParallel = 2)
         val t0 = System.currentTimeMillis()

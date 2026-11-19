@@ -89,9 +89,25 @@ object XrayCore {
      * Доступность адреса через конфиг (ядро поднимает временный экземпляр без входов).
      * @return задержка в мс, либо -1 если не получилось
      */
-    fun measureDelay(context: Context, config: String, url: String): Long =
-        if (url == Baseline.PRIMARY) Baseline.measure({ rawDelay(context, config, it) }, { threadError.get().orEmpty() })
-        else rawDelay(context, config, url)
+    fun measureDelay(context: Context, config: String, url: String, urgent: Boolean = false, fast: Boolean = false): Long {
+        val gate = if (urgent) urgentGate else probeGate
+        gate.acquire()
+        return try {
+            if (url == Baseline.PRIMARY) Baseline.measure({ rawDelay(context, config, it) }, { threadError.get().orEmpty() }, fast = fast)
+            else rawDelay(context, config, url)
+        } finally {
+            gate.release()
+        }
+    }
+
+    /** Одновременных проб через временное ядро на весь процесс: поиск, перепроверка и цели вместе (у каждого был свой лимит, Go держит память). */
+    private val probeGate = java.util.concurrent.Semaphore(32, true)
+
+    /**
+     * Отдельный лимит для проб службы (смена сервера, цели у открытого приложения): пока в фоне идёт перепроверка или поиск для целей,
+     * срочный поиск не должен стоять в общей очереди (после общего лимита в 6 смена сервера на мобильной сети стала заметно медленнее).
+     */
+    private val urgentGate = java.util.concurrent.Semaphore(12, true)
 
     private val threadError = ThreadLocal<String>()
 

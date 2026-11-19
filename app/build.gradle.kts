@@ -14,8 +14,11 @@ android {
         applicationId = "com.phoenix.app"
         minSdk = 29
         targetSdk = 35
-        versionCode = 78
-        versionName = "3.9.65"
+        // Релизная версия. Для проверки самообновления можно собрать «старую» версию, не меняя исходники:
+        // ./gradlew assembleDebug -PphoenixVersionName=3.9.65 -PphoenixVersionCode=79
+        versionCode = (project.findProperty("phoenixVersionCode") as String?)?.toIntOrNull() ?: 80
+        versionName = "3.9.66"
+        (project.findProperty("phoenixVersionName") as String?)?.let { versionName = it }
 
         ndk {
             // libv2ray.aar содержит нативные библиотеки; оставляем только arm64 (все современные телефоны)

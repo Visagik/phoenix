@@ -95,6 +95,16 @@ object GoogleAi {
     const val GEO_ORACLE_URL = "https://notebooklm.google.com/"
     private val oracleHosts = listOf("gemini.google.com", "bard.google.com", "aistudio.google.com", "ai.google.dev")
 
+    /**
+     * Какой адрес открывать для проверки региона. У NotebookLM заглушка «не поддерживается» (?location=unsupported) появляется только в цепочке
+     * переходов, которая начинается с notebooklm.google.com; прямой заход на notebook.google её не даёт и выглядит открытым (журнал 19.11:
+     * сервис «Notebook» стоял ✓ на серверах, где сам NotebookLM закрыт). Поэтому для всех адресов NotebookLM берём исходный.
+     */
+    fun regionUrl(url: String): String {
+        val h = url.substringAfter("://").substringBefore('/').substringBefore('?').substringBefore(':').lowercase()
+        return if (ServiceVeto.canon(h) == ServiceVeto.canon("notebooklm.google.com")) GEO_ORACLE_URL else url
+    }
+
     /** Для этих адресов страна выхода по самой странице не видна: решает проверка NotebookLM через тот же сервер. */
     fun needsOracle(url: String): Boolean {
         val h = url.substringAfter("://").substringBefore('/').substringBefore('?').lowercase()

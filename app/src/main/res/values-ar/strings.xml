@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_fix">لا يعمل</string>
+    <string name="shortcut_switch">تغيير الخادم</string>
+    <string name="shortcut_stop">قطع الاتصال</string>
+</resources>

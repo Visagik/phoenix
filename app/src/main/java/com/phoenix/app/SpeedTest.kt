@@ -21,10 +21,11 @@ object SpeedTest {
     const val MAX_BYTES = 8L * 1024 * 1024
     const val MIN_BYTES = 64L * 1024
 
-    /** Файлы для замера: первый — Cloudflare, запасной — OVH. */
+    /** Файлы для замера: первый — Cloudflare, запасные — OVH и CacheFly (в службе список такой же: проверка не должна упираться в один хост). */
     val URLS = listOf(
         "https://speed.cloudflare.com/__down?bytes=10000000",
         "https://proof.ovh.net/files/10Mb.dat",
+        "https://cachefly.cachefly.net/10mb.test",
     )
 
     fun measure(

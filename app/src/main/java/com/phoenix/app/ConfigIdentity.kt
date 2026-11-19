@@ -21,7 +21,7 @@ object ConfigIdentity {
 
     /** Имя без флагов, эмодзи, знаков и регистра: «🇩🇪 Germany #3 | [DE] TG:ok…» → «germany 3». */
     fun normalizeName(raw: String): String {
-        val s = geoSuffix.replace(urlDecode(raw).take(MAX_NAME_INPUT), "")
+        val s = geoSuffix.replace(urlDecode(raw.take(MAX_NAME_INPUT * 3)).take(MAX_NAME_INPUT), "")
         val sb = StringBuilder()
         var lastSpace = true
         for (c in s) {

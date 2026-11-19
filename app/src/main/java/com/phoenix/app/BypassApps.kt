@@ -192,7 +192,9 @@ class BypassStore(private val dir: File, private val mode: Mode? = null, private
     fun effective(installed: Collection<String> = emptyList()): Set<String> {
         val off = DirectWatch.excludedPackages(blockedIds())
         val auto = discovered(installed)
+        // свои приложения из каталога сервисов (Steam, DeepSeek, Qwen…) тоже следят за сетью: где напрямую не открываются — идут через VPN
+        // и используют сервер своей цели; остальные свои приложения остаются в обходе всегда
         return ((if (presetEnabled) RussianApps.PACKAGES else emptyList()) + auto +
-            (if (openEnabled) OpenServices.PACKAGES else emptyList())).filter { it !in off }.toSet() + userApps()
+            (if (openEnabled) OpenServices.PACKAGES else emptyList())).filter { it !in off }.toSet() + userApps().filter { it !in off }
     }
 }

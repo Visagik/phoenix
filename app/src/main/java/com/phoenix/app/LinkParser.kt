@@ -27,7 +27,18 @@ object LinkParser {
     private val scheme = Regex("^(vless|vmess|trojan|ss|hysteria2|hy2)://")
     private val hostPort = Regex("@(\\[[0-9a-fA-F:.]+]|[^@/:?#\\s]+):(\\d{1,5})")
 
+    /** Одну и ту же ссылку разбирают по 4–6 раз за проход рейтинга (host, address, key, staleFor): результат запоминается. Ссылка неизменяема, размер ограничен. */
+    private const val CACHE_MAX = 16_384
+    private val cache = BoundedCache<String, java.util.Optional<ParsedLink>>(CACHE_MAX)
+
     fun parse(line: String): ParsedLink? {
+        cache.get(line)?.let { return it.orElse(null) }
+        val r = parseUncached(line)
+        cache.put(line, java.util.Optional.ofNullable(r))
+        return r
+    }
+
+    internal fun parseUncached(line: String): ParsedLink? {
         val trimmed = line.trim()
         val m = scheme.find(trimmed) ?: return null
         val protocol = m.groupValues[1].let { if (it == "hy2") "hysteria2" else it }
@@ -108,8 +119,30 @@ object LinkParser {
     }
 }
 
-fun urlDecode(s: String): String = try {
-    URLDecoder.decode(s, "UTF-8")
-} catch (e: Exception) {
-    s
+private fun hexVal(c: Char): Int = when (c) {
+    in '0'..'9' -> c - '0'
+    in 'a'..'f' -> c - 'a' + 10
+    in 'A'..'F' -> c - 'A' + 10
+    else -> -1
+}
+
+/** Как URLDecoder.decode(s, "UTF-8"), но без исключений: неполная «%» остаётся как есть («100% скорость» раньше не раскодировалось совсем). */
+fun urlDecode(s: String): String {
+    if (s.indexOf('%') < 0 && s.indexOf('+') < 0) return s
+    val sb = StringBuilder(s.length)
+    val bytes = java.io.ByteArrayOutputStream()
+    fun flush() { if (bytes.size() > 0) { sb.append(bytes.toString("UTF-8")); bytes.reset() } }
+    var i = 0
+    while (i < s.length) {
+        val c = s[i]
+        if (c == '%' && i + 2 < s.length) {
+            val h = hexVal(s[i + 1]); val l = hexVal(s[i + 2])
+            if (h >= 0 && l >= 0) { bytes.write(h * 16 + l); i += 3; continue }
+        }
+        flush()
+        sb.append(if (c == '+') ' ' else c)
+        i++
+    }
+    flush()
+    return sb.toString()
 }

@@ -4,4 +4,6 @@
     <style name="Theme.Phoenix" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowLightStatusBar">true</item>
     </style>
+    <!-- невидимый экран ярлыков: сразу закрывается -->
+    <style name="Theme.Phoenix.Shortcut" parent="android:Theme.Translucent.NoTitleBar" />
 </resources>

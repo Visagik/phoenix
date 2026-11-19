@@ -37,12 +37,20 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.Phoenix">
         <activity
+            android:name=".ShortcutActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Phoenix.Shortcut"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity="" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
             <!-- «Поделиться» ссылкой на подписку: она попадёт в свои источники -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -123,7 +131,7 @@
             android:name=".SmartTileService"
             android:exported="true"
             android:icon="@drawable/ic_tile"
-            android:label="Умная смена"
+            android:label="Не работает"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />

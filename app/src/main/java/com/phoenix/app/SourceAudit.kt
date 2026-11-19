@@ -37,6 +37,13 @@ object SourceAudit {
     const val MIN_CONFIGS = 5
     const val MAX_APPLY = 5
 
+    /**
+     * Наборы для ручного аудита: из сохранённых списков конфигов по источникам (последний успешный ответ каждого), без источников из [exclude]
+     * (чёрный список). Порядок — как в файле. Ручной аудит только предлагает, в чёрный список ничего не кладёт сам.
+     */
+    fun fromMembers(members: Map<String, Set<String>>, exclude: Set<String>): List<SourceSet> =
+        members.entries.filter { it.key !in exclude }.mapIndexed { i, e -> SourceSet(e.key, i, e.value) }
+
     fun analyze(all: List<SourceSet>): AuditResult {
         val src = all.filter { it.keys.size >= MIN_CONFIGS }.sortedBy { it.order }
         val overlaps = ArrayList<OverlapLine>()
@@ -170,7 +177,18 @@ class Blacklist(private val file: File) {
             val cut = line.indexOf(" #")
             if (cut < 0) Entry(line, "")
             else Entry(line.substring(0, cut).trim(), line.substring(cut + 2).trim())
-        }.filter { it.url.isNotEmpty() }
+        }.filter { it.url.isNotEmpty() }.let { dedup(it) }
+    }
+
+    /** Одна ссылка — одна запись (первая по порядку); если у первой нет пояснения, берётся пояснение из повтора. Так дубли «со словом и без» уходят при ближайшей записи файла. */
+    private fun dedup(list: List<Entry>): List<Entry> {
+        val byUrl = LinkedHashMap<String, Entry>()
+        for (e in list) {
+            val have = byUrl[e.url]
+            if (have == null) byUrl[e.url] = e
+            else if (have.reason.isEmpty() && e.reason.isNotEmpty()) byUrl[e.url] = e
+        }
+        return byUrl.values.toList()
     }
 
     fun urls(): Set<String> = load().map { it.url }.toSet()

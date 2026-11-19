@@ -59,7 +59,7 @@ object StateInfo {
                     (if (st.autostartConfirmed) tr("отмечено вами (система не даёт проверить); нажмите, чтобы открыть снова. ") else tr("система не даёт проверить сама: нажмите, включите и вернитесь — отметка сохранится. ")) + OemGuide.hint(v),
                     optional = true, fix = { Background.openAutostart(context); st.autostartConfirmed = true })
             },
-            PermCheck(tr("Доступ к статистике использования"), ForegroundWatcher.hasAccess(context), tr("нужен только для варианта Б (переключение VPN при открытии приложения)"),
+            PermCheck(tr("Доступ к статистике использования"), ForegroundWatcher.hasAccess(context), tr("нужен только для режима «Весь VPN» (переключение VPN при открытии приложения)"),
                 optional = true, fix = { ForegroundWatcher.openAccessSettings(context) }),
         )
     }
@@ -110,25 +110,17 @@ object StateInfo {
     }
 }
 
-/** Единый экран «Состояние»: права галочками, что сейчас происходит, размер журнала. */
+/** Блоки бывшего экрана «Состояние», которые остались: расход на проверки, статистика, «Можно вернуть», размер данных. Показываются в «Диагностика → Подробнее». */
 @Composable
-fun StatePage(vm: MainViewModel) {
+fun DiagExtras(vm: MainViewModel) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     var tick by remember { mutableStateOf(0) }
-    var perms by remember { mutableStateOf<List<PermCheck>>(emptyList()) }
-    var summary by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var sizes by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     DisposableEffect(owner) {
         val obs = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) tick++ }
         owner.lifecycle.addObserver(obs)
         onDispose { owner.lifecycle.removeObserver(obs) }
-    }
-    var eventsTick by remember { mutableStateOf(0) }
-    var events by remember { mutableStateOf<List<EventTimeline.Item>?>(null) }
-    LaunchedEffect(eventsTick) {
-        if (eventsTick == 0) return@LaunchedEffect
-        events = withContext(Dispatchers.IO) { vm.recentEvents() }
     }
     var energy by remember { mutableStateOf<List<String>>(emptyList()) }
     LaunchedEffect(tick) { energy = withContext(Dispatchers.IO) { vm.energyLines() } }
@@ -138,47 +130,12 @@ fun StatePage(vm: MainViewModel) {
     var undoList by remember { mutableStateOf<List<UndoStore.Entry>>(emptyList()) }
     var undoNote by remember { mutableStateOf("") }
     LaunchedEffect(undoTick, tick) { undoList = withContext(Dispatchers.IO) { vm.undoEntries() } }
-    var leakTick by remember { mutableStateOf(0) }
-    var leakText by remember { mutableStateOf("") }
-    LaunchedEffect(leakTick) {
-        if (leakTick == 0) return@LaunchedEffect
-        leakText = tr("проверяю…")
-        leakText = withContext(Dispatchers.IO) { StateInfo.leakTest() }
-    }
     LaunchedEffect(tick) {
         withContext(Dispatchers.IO) {
-            perms = StateInfo.permissions(context, withClock = false)
-            summary = vm.diagSummary()
             sizes = StateInfo.sizes(context)
-            perms = StateInfo.permissions(context)
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
-        Text(tr("Права и фоновая работа"), style = MaterialTheme.typography.titleMedium)
-        perms.forEach { p ->
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (p.ok) "✓" else if (p.optional) "–" else "✗",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (p.ok) PhoenixTheme.ok(androidx.compose.foundation.isSystemInDarkTheme()) else if (p.optional) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(end = 8.dp),
-                )
-                Column(Modifier.weight(1f)) {
-                    Text(p.title, style = MaterialTheme.typography.bodyMedium)
-                    Text(p.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if ((!p.ok || p.optional) && p.fix != null) TextButton(onClick = { p.fix.invoke() }) { Text(tr("Открыть")) }
-            }
-        }
-        Text(
-            tr("Автозапуск и «Не выгружать из памяти» на MIUI/HyperOS, Funtouch, EMUI программно не проверить — их смотрите на странице «Фоновая работа (прошивка)»."),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        Spacer(Modifier.height(10.dp))
-        Spacer(Modifier.height(4.dp))
-        Spacer(Modifier.height(10.dp))
         Text(tr("Статистика"), style = MaterialTheme.typography.titleMedium)
         Text(
             tr("Сколько VPN работал, как часто менялся сервер и на каких серверах держался дольше всего. Хранится только на телефоне, 30 дней."),
@@ -189,17 +146,6 @@ fun StatePage(vm: MainViewModel) {
         Spacer(Modifier.height(10.dp))
         Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(10.dp))
-        Text(tr("Что произошло?"), style = MaterialTheme.typography.titleMedium)
-        Text(
-            tr("Главные события за последние 15 минут из журнала: падения сервера, смены сети, поиск, переключения."),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(onClick = { eventsTick++ }) { Text(tr("Показать")) }
-        events?.let { list ->
-            if (list.isEmpty()) Text(tr("За последние 15 минут ничего важного не происходило."), style = MaterialTheme.typography.bodyMedium)
-            list.forEach { Text("${it.time}  ${it.text}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp)) }
-        }
         if (energy.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Spacer(Modifier.height(4.dp))
@@ -240,6 +186,39 @@ fun StatePage(vm: MainViewModel) {
         Spacer(Modifier.height(10.dp))
         Spacer(Modifier.height(4.dp))
         Spacer(Modifier.height(10.dp))
+        Text(tr("Данные"), style = MaterialTheme.typography.titleMedium)
+        sizes.forEach { (k, v) ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(k, style = MaterialTheme.typography.bodyMedium)
+                Text(v, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(tr("Размер журнала"), style = MaterialTheme.typography.titleMedium)
+        val appSet = remember { AppSettings(context) }
+        var logLevel by remember { mutableStateOf(appSet.logSize) }
+        androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 6.dp)) {
+            listOf(LogSize.SHORT to tr("Короткий · 1 МБ"), LogSize.NORMAL to tr("Обычный · 5 МБ"), LogSize.DETAILED to tr("Подробный · 20 МБ")).forEach { (v, label) ->
+                androidx.compose.material3.FilterChip(selected = logLevel == v, onClick = { logLevel = v; appSet.logSize = v; LogTrim.configure(v) }, label = { Text(label) })
+            }
+        }
+        Text(tr("Подробный нужен для разбора редкого сбоя; на экране показываются последние 5 МБ"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(10.dp))
+        LeakBlock()
+    }
+}
+
+/** Проверка утечек: адрес «мимо VPN» и «через VPN». Показывается в «Подключение», внизу. */
+@Composable
+fun LeakBlock() {
+    var leakTick by remember { mutableStateOf(0) }
+    var leakText by remember { mutableStateOf("") }
+    LaunchedEffect(leakTick) {
+        if (leakTick == 0) return@LaunchedEffect
+        leakText = tr("проверяю…")
+        leakText = withContext(Dispatchers.IO) { StateInfo.leakTest() }
+    }
+    Column(Modifier.fillMaxWidth()) {
         Text(tr("Проверка утечек"), style = MaterialTheme.typography.titleMedium)
         Text(
             tr("Сравнивает адрес «мимо VPN» и «через VPN». Приложение само вне туннеля, поэтому DNS-утечки других приложений отсюда не видны."),
@@ -248,15 +227,5 @@ fun StatePage(vm: MainViewModel) {
         )
         TextButton(onClick = { leakTick++ }) { Text(tr("Проверить")) }
         if (leakText.isNotEmpty()) Text(leakText, style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(10.dp))
-        Spacer(Modifier.height(4.dp))
-        Spacer(Modifier.height(10.dp))
-        Text(tr("Данные"), style = MaterialTheme.typography.titleMedium)
-        sizes.forEach { (k, v) ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(k, style = MaterialTheme.typography.bodyMedium)
-                Text(v, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
     }
 }

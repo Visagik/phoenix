@@ -4,6 +4,10 @@ import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -56,23 +60,52 @@ fun appLabel(context: Context, pkg: String): String = remember(pkg) {
 }
 
 
+/** Точка статуса: одна форма — один статус (● открыт, ◐ частично, ✕ закрыт, ○ не проверен), чтобы не зависеть от цвета. */
+@Composable
+fun StatusDot(st: ServiceStatus, color: androidx.compose.ui.graphics.Color, size: androidx.compose.ui.unit.Dp) {
+    androidx.compose.foundation.Canvas(androidx.compose.ui.Modifier.size(size)) {
+        val w = this.size.minDimension
+        val stroke = w * 0.16f
+        val r = (w - stroke) / 2f
+        val c = androidx.compose.ui.geometry.Offset(w / 2f, w / 2f)
+        when (st) {
+            ServiceStatus.OPEN -> drawCircle(color, radius = w / 2f, center = c)
+            ServiceStatus.PARTIAL -> {
+                drawCircle(color, radius = r, center = c, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+                drawArc(color, startAngle = 90f, sweepAngle = 180f, useCenter = true,
+                    topLeft = androidx.compose.ui.geometry.Offset(stroke, stroke), size = androidx.compose.ui.geometry.Size(w - 2 * stroke, w - 2 * stroke))
+            }
+            ServiceStatus.CLOSED -> {
+                val m = w * 0.12f
+                drawLine(color, androidx.compose.ui.geometry.Offset(m, m), androidx.compose.ui.geometry.Offset(w - m, w - m), strokeWidth = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                drawLine(color, androidx.compose.ui.geometry.Offset(w - m, m), androidx.compose.ui.geometry.Offset(m, w - m), strokeWidth = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            }
+            ServiceStatus.UNKNOWN -> drawCircle(color, radius = r, center = c, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+        }
+    }
+}
+
 /** Таблица «цели × сервисы»: точка в клетке — открыт (зелёная), частично (жёлтая), закрыт (красная), не проверен (серая). */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun TargetMatrix(services: List<CheckService>, rows: List<MatrixRow>) {
     val scheme = androidx.compose.material3.MaterialTheme.colorScheme
-    val dark = androidx.compose.foundation.isSystemInDarkTheme()
+    val dark = appDark()
     fun dot(st: ServiceStatus) = when (st) {
         ServiceStatus.OPEN -> PhoenixTheme.ok(dark)
         ServiceStatus.PARTIAL -> PhoenixTheme.amber(dark)
         ServiceStatus.CLOSED -> scheme.error
-        ServiceStatus.UNKNOWN -> scheme.outlineVariant
+        ServiceStatus.UNKNOWN -> scheme.outline
     }
+    androidx.compose.foundation.layout.BoxWithConstraints {
+    // ширина столбца подстраивается: на узком экране или при многих сервисах точки сжимаются, а название цели не меньше ~110 dp
+    val colW = ((maxWidth - 110.dp) / services.size.coerceAtLeast(1)).coerceIn(18.dp, 32.dp)
     androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
         androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.weight(1f))
             services.forEach { s ->
                 Text(s.id, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1, modifier = androidx.compose.ui.Modifier.width(32.dp))
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1, modifier = androidx.compose.ui.Modifier.width(colW))
             }
         }
         rows.forEach { r ->
@@ -82,15 +115,13 @@ fun TargetMatrix(services: List<CheckService>, rows: List<MatrixRow>) {
                     Text(r.server, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
                 r.statuses.forEach { st ->
-                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.width(32.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                        androidx.compose.foundation.layout.Box(
-                            androidx.compose.ui.Modifier.size(12.dp).background(dot(st), androidx.compose.foundation.shape.CircleShape),
-                        )
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.width(colW), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                        StatusDot(st, dot(st), 12.dp)
                     }
                 }
             }
         }
-        androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp)) {
             listOf(
                 ServiceStatus.OPEN to tr("открыт"),
                 ServiceStatus.PARTIAL to tr("частично"),
@@ -98,10 +129,47 @@ fun TargetMatrix(services: List<CheckService>, rows: List<MatrixRow>) {
                 ServiceStatus.UNKNOWN to tr("не проверен"),
             ).forEach { (st, label) ->
                 androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.size(8.dp).background(dot(st), androidx.compose.foundation.shape.CircleShape))
+                    StatusDot(st, dot(st), 10.dp)
                     Text(" " + label, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
                 }
             }
         }
     }
+    }
 }
+
+/**
+ * Строка сервисов текущего сервера под кнопками главной: «TG ✓  YT ✓  CL ≈  ST ✗  NT ·».
+ * Состояние не только цветом, но и знаком и описанием для TalkBack; на узком экране или крупном шрифте прокручивается вбок.
+ */
+@Composable
+fun ServiceStrip(services: List<CheckService>, result: CheckResult?) {
+    if (services.isEmpty()) return
+    val scheme = androidx.compose.material3.MaterialTheme.colorScheme
+    val dark = appDark()
+    val fresh = result != null && !result.dead
+    androidx.compose.foundation.layout.Row(
+        androidx.compose.ui.Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(14.dp, androidx.compose.ui.Alignment.CenterHorizontally),
+    ) {
+        services.forEach { s ->
+            val st = if (fresh) result!!.status(s.id) else ServiceStatus.UNKNOWN
+            val (mark, color, word) = when (st) {
+                ServiceStatus.OPEN -> Triple("✓", PhoenixTheme.ok(dark), tr("открыт"))
+                ServiceStatus.PARTIAL -> Triple("≈", PhoenixTheme.amber(dark), tr("частично"))
+                ServiceStatus.CLOSED -> Triple("✗", scheme.error, tr("закрыт"))
+                ServiceStatus.UNKNOWN -> Triple("·", scheme.onSurfaceVariant, tr("не проверен"))
+            }
+            Text(
+                s.id + " " + mark,
+                style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                color = color,
+                maxLines = 1,
+                modifier = androidx.compose.ui.Modifier.androidxSemantics(s.title + ": " + word),
+            )
+        }
+    }
+}
+
+private fun androidx.compose.ui.Modifier.androidxSemantics(text: String): androidx.compose.ui.Modifier =
+    this.semantics { contentDescription = text }

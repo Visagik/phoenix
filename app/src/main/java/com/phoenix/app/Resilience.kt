@@ -152,6 +152,20 @@ class RepeatMute(private val quietMs: Long = 30 * 60_000L) {
  * Журнал 07.11: в чёрных списках очередь из ~630 своих серверов никогда не доходила до белых, а Gemini и NotebookLM закрыты на «обычных» выходах.
  * После каждых [every] своих идёт один чужой, пока чужие не кончатся.
  */
+/**
+ * Поиск сервера — гонка: проверяются все кандидаты сразу, и побеждают те, кто ответил первым, а не те, кто стоит выше в очереди
+ * (журнал 20.11: для Notebook в очереди были серверы с ✓, а выбралась непроверенная Финляндия из белых списков — она просто ответила быстрее).
+ * Поэтому серверы, где нужный сервис уже открывался, проверяются отдельным первым этапом.
+ */
+object ReadyFirst {
+    /** Серверы очереди, подходящие открытому приложению; пусто, если такого этапа не нужно (нет приложения, подходят все или никто). */
+    fun pick(ordered: List<Candidate>, fit: Set<String>?): List<Candidate> {
+        if (fit.isNullOrEmpty()) return emptyList()
+        val ready = ordered.filter { it.identity in fit }
+        return if (ready.isEmpty() || ready.size >= ordered.size) emptyList() else ready
+    }
+}
+
 object QueueMix {
     fun <T> mix(own: List<T>, foreign: List<T>, every: Int = 2): List<T> {
         if (foreign.isEmpty()) return own

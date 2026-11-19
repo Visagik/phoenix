@@ -7,6 +7,10 @@ import org.junit.Test
 
 class ServerKindTest {
     @Test fun detectsAuto() {
+        assertTrue(ServerKind.isFloatingExit("🤖 AI"))
+        assertTrue(ServerKind.isFloatingExit("Auto → [🚀 Оптимальная]"))
+        assertFalse(ServerKind.isFloatingExit("Germany 92 🇩🇪"))
+        assertFalse(ServerKind.isAuto("🤖 AI"))
         assertTrue(ServerKind.isAuto("Auto 3 → [🚀 Оптимальная]"))
         assertTrue(ServerKind.isAuto("Auto → [🚀 Оптимальная]"))
         assertFalse(ServerKind.isAuto("Germany 🇩🇪 | [DE] TG:ok"))

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_fix">Не працює</string>
+    <string name="shortcut_switch">Змінити сервер</string>
+    <string name="shortcut_stop">Відключити</string>
+</resources>

@@ -21,6 +21,8 @@ data class ServerEntry(
     val checked: String,
     val dead: Boolean,
     val stale: Boolean = false,
+    /** Готовая строка показателей (считается один раз вне отрисовки). */
+    val metricsText: String = "",
 ) {
     val stable: Boolean get() = days >= 3
     val checkedOnce: Boolean get() = checked.isNotEmpty()
@@ -124,6 +126,38 @@ object ServerTable {
         val checked = list.count { it.checkedOnce }
         val alive = list.count { it.checkedOnce && !it.dead }
         return tr("Всего {} · проверено {} · живых {}", list.size, checked, alive)
+    }
+
+    /** Короткая сводка над списком: «553 · живых 145», «показано N» только когда включены фильтры. */
+    fun shortSummary(list: List<ServerEntry>, shown: Int): String {
+        val alive = list.count { it.checkedOnce && !it.dead }
+        return list.size.toString() + " · " + tr("живых {}", alive) + if (shown != list.size) " · " + tr("показано {}", shown) else ""
+    }
+
+    /** Цвет задержки: 0 — быстро (до 150 мс), 1 — приемлемо (до 400), 2 — медленно, мёртвый или не измерялся. */
+    fun latencyTone(e: ServerEntry): Int {
+        val ms = e.pingMs
+        return when {
+            e.dead || ms == null || ms <= 0 -> 2
+            ms <= 150 -> 0
+            ms <= 400 -> 1
+            else -> 2
+        }
+    }
+
+    /** Что показать справа в свёрнутой строке: задержка, «нет ответа» или чёрточка. */
+    fun latencyText(e: ServerEntry): String = when {
+        e.dead -> tr("не отвечает")
+        e.pingMs == null || e.pingMs <= 0 -> "—"
+        else -> tr("{} мс", e.pingMs)
+    }
+
+    /** Вторая строка свёрнутой карточки: протокол и итог по сервисам, без шума. */
+    fun subtitle(e: ServerEntry): String {
+        val parts = ArrayList<String>()
+        parts += e.protocol.uppercase() + if (e.reality) " Reality" else ""
+        if (!e.dead && e.checkedOnce) parts += tr("сервисов: {}", "${e.ok}✓" + (if (e.partial > 0) " ${e.partial}≈" else "") + (if (e.blocked > 0) " ${e.blocked}✗" else ""))
+        return parts.joinToString(" · ")
     }
 
     /** Строка показателей для карточки. */

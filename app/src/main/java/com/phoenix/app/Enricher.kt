@@ -13,14 +13,16 @@ class Enricher(private val storage: Storage) {
         val cache = loadCache()
         val newEntries = StringBuilder()
 
-        // Этап 1: названия
+        // Этап 1: названия. Страна из имени относится к своей строке, а не к адресу: на одном хосте (ретранслятор, CDN) бывают
+        // серверы с разными выходами, и «USA 42» раньше получал страну первого встреченного имени («NL»). В кэш по хосту имена не пишутся.
         var fromNames = 0
-        for (p in items) {
+        val byName = arrayOfNulls<String>(items.size)
+        val hostNames = HashMap<String, MutableSet<String>>()
+        for ((i, p) in items.withIndex()) {
             val host = p.host ?: continue
-            if (host in cache) continue
             val cc = NameGeo.detect(p.title) ?: continue
-            cache[host] = cc
-            newEntries.append(host).append('\t').append(cc).append('\n')
+            byName[i] = cc
+            hostNames.getOrPut(host) { HashSet() }.add(cc)
             fromNames++
         }
 
@@ -33,7 +35,7 @@ class Enricher(private val storage: Storage) {
             for (ip in missing) {
                 val cc = db.lookup(ip) ?: continue
                 cache[ip] = cc
-                newEntries.append(ip).append('\t').append(cc).append('\n')
+                newEntries.append(ip).append('\t').append(cc).append("\tip\n")
                 byTable++
             }
         }
@@ -46,7 +48,7 @@ class Enricher(private val storage: Storage) {
         var unknown = 0
         val countries = HashMap<String, Int>()
         val out = ArrayList<String>(items.size)
-        for (p in items) {
+        for ((i, p) in items.withIndex()) {
             val base = p.urlPart + if (p.name.isNotEmpty()) "#" + p.name else ""
             val host = p.host
             if (host == null) {
@@ -54,7 +56,8 @@ class Enricher(private val storage: Storage) {
                 out += base
                 continue
             }
-            val cc = cache[host]
+            // своё имя; иначе страна, в которой сходятся все именованные конфиги этого хоста; иначе таблица IP
+            val cc = byName[i] ?: hostNames[host]?.singleOrNull() ?: cache[host]
             if (cc == null) {
                 unknown++
                 out += base
@@ -75,7 +78,8 @@ class Enricher(private val storage: Storage) {
         if (storage.geoCacheFile.exists()) {
             storage.geoCacheFile.forEachLine { line ->
                 val parts = line.split('\t')
-                if (parts.size >= 2 && parts[0].isNotBlank() && parts[1].length == 2) map[parts[0]] = parts[1]
+                // только записи таблицы IP (третий столбец «ip»): старые записи из имён отбрасываются, таблица считается заново дёшево
+                if (parts.size >= 3 && parts[2] == "ip" && parts[0].isNotBlank() && parts[1].length == 2) map[parts[0]] = parts[1]
             }
         }
         // файл только дописывается и за месяцы разрастался до сотен тысяч строк — держим последние записи (находка №12)
@@ -83,7 +87,7 @@ class Enricher(private val storage: Storage) {
             val keep = map.entries.toList().takeLast(CACHE_KEEP)
             map.clear()
             keep.forEach { map[it.key] = it.value }
-            try { storage.geoCacheFile.writeTextAtomic(keep.joinToString("") { it.key + "\t" + it.value + "\n" }) } catch (_: Throwable) { }
+            try { storage.geoCacheFile.writeTextAtomic(keep.joinToString("") { it.key + "\t" + it.value + "\tip\n" }) } catch (_: Throwable) { }
         }
         return map
     }

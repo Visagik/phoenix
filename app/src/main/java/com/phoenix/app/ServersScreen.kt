@@ -4,10 +4,33 @@ package com.phoenix.app
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,7 +47,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
@@ -33,6 +58,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private fun toEntry(r: ConfigRow, c: CheckResult?, sel: List<CheckService>): ServerEntry {
     val fresh = c != null && !c.staleFor(r.raw)
@@ -73,15 +100,63 @@ private fun toEntry(r: ConfigRow, c: CheckResult?, sel: List<CheckService>): Ser
     )
 }
 
+/** Ключ проверки по ссылке: разбор имени и SHA-1 — дорогие, одну и ту же ссылку не разбираем повторно. */
+private val keyCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+private fun keyOf(raw: String): String {
+    if (keyCache.size > 6000) keyCache.clear()
+    return keyCache.getOrPut(raw) { CheckStore.keyOf(raw) }
+}
+
+/** Готовый к показу список «Серверов»: считается на фоновом потоке. */
+private class ServersModel(
+    val entries: List<ServerEntry>,
+    val visible: List<ServerEntry>,
+    val countries: List<String>,
+    val protocols: List<String>,
+    val summary: String,
+) {
+    companion object {
+        val EMPTY = ServersModel(emptyList(), emptyList(), emptyList(), emptyList(), "")
+
+        fun build(
+            rows: List<ConfigRow>, checks: Map<String, CheckResult>, selected: List<CheckService>,
+            filter: ServerFilter, sort: ServerSort, desc: Boolean?,
+        ): ServersModel {
+            val entries = rows.map { r ->
+                val e = toEntry(r, checks[keyOf(r.raw)], selected)
+                e.copy(metricsText = ServerTable.metrics(e))
+            }
+            return ServersModel(
+                entries,
+                ServerTable.apply(entries, filter, sort, desc),
+                ServerTable.countries(entries).take(12),
+                ServerTable.protocols(entries),
+                ServerTable.summary(entries),
+            )
+        }
+    }
+}
+
+/** Строка прогресса перепроверки и сводки: подписка на прогресс здесь, а не на всём экране. */
+@Composable
+private fun RecheckLine(rechecking: Boolean, summary: String) {
+    val progress by RecheckState.progress.collectAsStateWithLifecycle()
+    Text(
+        (if (rechecking) "⏳ " + progress.ifBlank { tr("Перепроверяю…") } + "\n" else "") + summary,
+        style = MaterialTheme.typography.bodyMedium,
+    )
+}
+
 /** Окно «Серверы»: все показатели, фильтры и сортировка. Список с главного экрана перенесён сюда. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServersPage(vm: MainViewModel, onConnect: (ConfigRow) -> Unit) {
     val context = LocalContext.current
+    LaunchedEffect(Unit) { withContext(Dispatchers.IO) { MemInfo.log(context, "открыт список «Серверы»") } }
     val rows by vm.rows.collectAsStateWithLifecycle()
     val checks by vm.checks.collectAsStateWithLifecycle()
     val selected by vm.selectedServices.collectAsStateWithLifecycle()
     val rechecking by RecheckState.running.collectAsStateWithLifecycle()
-    val recheckProgress by RecheckState.progress.collectAsStateWithLifecycle()
 
     var sort by rememberSaveable { mutableStateOf(ServerSort.BEST) }
     var desc by rememberSaveable { mutableStateOf<Boolean?>(null) }
@@ -89,11 +164,20 @@ fun ServersPage(vm: MainViewModel, onConnect: (ConfigRow) -> Unit) {
     var showTools by rememberSaveable { mutableStateOf(false) }
     var openRaw by rememberSaveable { mutableStateOf("") }
 
-    val entries = remember(rows, checks, selected) { rows.map { toEntry(it, checks[CheckStore.keyOf(it.raw)], selected) } }
     val byRaw = remember(rows) { rows.associateBy { it.raw } }
-    val visible = remember(entries, filter, sort, desc) { ServerTable.apply(entries, filter, sort, desc) }
-    val countries = remember(entries) { ServerTable.countries(entries).take(12) }
-    val protocols = remember(entries) { ServerTable.protocols(entries) }
+    // текущий и закреплённый сервер: выделяются в списке
+    val vpnNow by VpnState.status.collectAsStateWithLifecycle()
+    val pinnedNow by VpnState.pinned.collectAsStateWithLifecycle()
+    val currentId = remember(vpnNow.link, vpnNow.phase) { if (vpnNow.phase == VpnPhase.CONNECTED && vpnNow.link.isNotBlank()) ConfigIdentity.key(vpnNow.link) else "" }
+    // разбор ссылок, сортировка и фильтры — не в основном потоке (1500 строк: иначе прокрутка и ввод в поиске подвисают);
+    // при смене данных прежний расчёт отменяется, на экране остаётся предыдущий результат
+    val model by produceState(ServersModel.EMPTY, rows, checks, selected, filter, sort, desc) {
+        value = withContext(Dispatchers.Default) { ServersModel.build(rows, checks, selected, filter, sort, desc) }
+    }
+    val entries = model.entries
+    val visible = model.visible
+    val countries = model.countries
+    val protocols = model.protocols
 
     Column(Modifier.fillMaxSize()) {
         // шапка (сортировка, фильтры, поиск, кнопки) — первым элементом списка: прокручивается вместе с ним и не съедает экран
@@ -104,11 +188,28 @@ fun ServersPage(vm: MainViewModel, onConnect: (ConfigRow) -> Unit) {
             item(key = "header") {
                 Column {
             Column(Modifier.padding(vertical = 8.dp)) {
-                Text(
-                    (if (rechecking) "⏳ " + recheckProgress.ifBlank { tr("Перепроверяю…") } + "\n" else "") +
-                        ServerTable.summary(entries) + tr(" · показано {}", visible.size),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                // прогресс читается в отдельной функции: его обновление не перестраивает весь экран
+                var menu by remember { mutableStateOf(false) }
+                val collecting by RunState.running.collectAsStateWithLifecycle()
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { RecheckLine(rechecking, ServerTable.shortSummary(entries, visible.size)) }
+                    Box {
+                        IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, contentDescription = tr("Ещё")) }
+                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                            DropdownMenuItem(text = { Text(tr("Собрать сейчас")) }, enabled = !collecting, onClick = { menu = false; vm.runNow() })
+                            DropdownMenuItem(text = { Text(if (rechecking) tr("Проверяю…") else tr("Перепроверить всё")) }, enabled = !rechecking, onClick = { menu = false; vm.recheckAll() })
+                            DropdownMenuItem(text = { Text(tr("Только приложения")) }, enabled = !rechecking, onClick = { menu = false; vm.recheckApps() })
+                            DropdownMenuItem(text = { Text(tr("Копировать ({})", visible.size)) }, enabled = visible.isNotEmpty(), onClick = { menu = false; Exporter.copy(context, visible.joinToString("\n") { it.raw }, visible.size) })
+                            DropdownMenuItem(text = { Text("V2RayNG") }, onClick = { menu = false; Exporter.openV2RayNG(context) })
+                            DropdownMenuItem(text = { Text(tr("В файл")) }, onClick = {
+                                menu = false
+                                val text = vm.enrichedText()
+                                val ok = text.isNotEmpty() && Exporter.saveToDownloads(context, Storage.ENRICHED_NAME, text)
+                                Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить файл"), Toast.LENGTH_SHORT).show()
+                            })
+                        }
+                    }
+                }
                 OutlinedTextField(
                     value = filter.query,
                     onValueChange = { filter = filter.copy(query = it) },
@@ -116,10 +217,83 @@ fun ServersPage(vm: MainViewModel, onConnect: (ConfigRow) -> Unit) {
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 )
-                TextButton(onClick = { showTools = !showTools }) {
-                    Text(if (showTools) tr("Скрыть сортировку и фильтры ▲") else tr("Сортировка, фильтры и действия ▼"))
+                // быстрые фильтры строкой; остальное — в нижнем листе («Фильтры»), чтобы список был сразу под полем поиска
+                val extra = listOf(filter.onlyChecked, filter.onlyStable, filter.minOk >= 3, filter.protocol.isNotEmpty(), filter.country.isNotEmpty()).count { it }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = filter.onlyAlive, onClick = { filter = filter.copy(onlyAlive = true) }, label = { Text(tr("Живые")) })
+                    FilterChip(selected = !filter.onlyAlive, onClick = { filter = filter.copy(onlyAlive = false) }, label = { Text(tr("Все")) })
+                    FilterChip(selected = extra > 0, onClick = { showTools = true }, label = { Text(if (extra > 0) tr("Фильтры: {}", extra) else tr("Фильтры и сортировка")) })
                 }
-                if (showTools) {
+            }
+            if (visible.isEmpty()) {
+                Text(
+                    if (entries.isEmpty()) tr("Серверов пока нет")  else tr("Под фильтры ничего не подходит."),
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (entries.isNotEmpty()) TextButton(onClick = { filter = ServerFilter() }) { Text(tr("Сбросить")) }
+                else TextButton(onClick = { vm.runNow() }) { Text(tr("Собрать")) }
+            }
+                }
+            }
+            items(visible, key = { it.raw }, contentType = { "server" }) { e ->
+                val open = openRaw == e.raw
+                val isCurrent = currentId.isNotEmpty() && remember(e.raw) { ConfigIdentity.key(e.raw) } == currentId
+                val isPinned = isCurrent && pinnedNow
+                val scheme = MaterialTheme.colorScheme
+                val dark = appDark()
+                val tone = ServerTable.latencyTone(e)
+                val pingColor = when (tone) { 0 -> PhoenixTheme.ok(dark); 1 -> PhoenixTheme.amber(dark); else -> scheme.onSurfaceVariant }
+                Card(
+                    Modifier.fillMaxWidth().then(if (e.dead && !isCurrent) Modifier.alpha(0.55f) else Modifier).clickable { openRaw = if (open) "" else e.raw },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = if (isCurrent) scheme.secondaryContainer else scheme.surfaceContainer),
+                    border = if (isPinned) BorderStroke(1.dp, scheme.primary) else null,
+                ) {
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        // свёрнуто: кружок страны, имя и тип слева, задержка справа; подробности и кнопки — у раскрытой строки
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(36.dp).clip(CircleShape).background(scheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
+                                Text((e.cc ?: "").takeIf { it.length == 2 } ?: "–", style = MaterialTheme.typography.labelMedium)
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(DisplayName.plain(e.name), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
+                                Text(ServerTable.subtitle(e), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(ServerTable.latencyText(e), style = MaterialTheme.typography.titleMedium, color = pingColor, maxLines = 1)
+                                if (isCurrent) Text(if (isPinned) tr("закреплён") else tr("сейчас"), style = MaterialTheme.typography.labelSmall, color = scheme.primary)
+                            }
+                        }
+                        if (open) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(e.metricsText.ifEmpty { ServerTable.metrics(e) }, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                        }
+                        if (e.stale) {
+                            Text(tr("Адрес сменился после проверки: данные устарели"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        if (open) {
+                            FlowRow {
+                                TextButton(onClick = { byRaw[e.raw]?.let(onConnect) }) { Text(tr("Подключить")) }
+                                TextButton(onClick = { Exporter.copy(context, e.raw, 1) }) { Text(tr("Копировать")) }
+                                TextButton(onClick = { vm.runChecks(listOf(e.raw)) }) { Text(tr("Проверить")) }
+                                TextButton(onClick = { vm.measureSpeed(e.raw) }) { Text(tr("Скорость")) }
+                                TextButton(onClick = {
+                                    PoolPolicyStore.hide(context, ConfigIdentity.key(e.raw))
+                                    UiMessages.post(tr("Сервер скрыт. Вернуть: Ещё → Страны и серверы"))
+                                }) { Text(tr("Не использовать")) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (showTools) {
+        ModalBottomSheet(onDismissRequest = { showTools = false }) {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(tr("Сортировка (нажмите на выбранный пункт, чтобы развернуть):"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ServerSort.entries.forEach { s ->
@@ -150,52 +324,7 @@ fun ServersPage(vm: MainViewModel, onConnect: (ConfigRow) -> Unit) {
                         FilterChip(selected = filter.country == cc, onClick = { filter = filter.copy(country = if (filter.country == cc) "" else cc) }, label = { Text(cc) })
                     }
                 }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-                    OutlinedButton(onClick = {
-                        Exporter.copy(context, visible.joinToString("\n") { it.raw }, visible.size)
-                    }, enabled = visible.isNotEmpty()) { Text(tr("Копировать ({})", visible.size)) }
-                    OutlinedButton(onClick = { vm.recheckAll() }, enabled = !rechecking) { Text(if (rechecking) tr("Проверяю…") else tr("Перепроверить всё")) }
-                    OutlinedButton(onClick = { vm.recheckApps() }, enabled = !rechecking) { Text(tr("Только приложения")) }
-                    OutlinedButton(onClick = { Exporter.openV2RayNG(context) }) { Text("V2RayNG") }
-                    OutlinedButton(onClick = {
-                        val text = vm.enrichedText()
-                        val ok = text.isNotEmpty() && Exporter.saveToDownloads(context, Storage.ENRICHED_NAME, text)
-                        Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить файл"), Toast.LENGTH_SHORT).show()
-                    }) { Text(tr("В файл")) }
-                }
-                }
-            }
-            if (visible.isEmpty()) {
-                Text(
-                    if (entries.isEmpty()) tr("Серверов ещё нет. Нажмите «Собрать сейчас» на главном экране.") else tr("Под фильтры ничего не подходит."),
-                    modifier = Modifier.padding(12.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-                }
-            }
-            items(visible, key = { it.raw }) { e ->
-                val open = openRaw == e.raw
-                Card(Modifier.fillMaxWidth().clickable { openRaw = if (open) "" else e.raw }) {
-                    Column(Modifier.padding(start = 12.dp, top = 12.dp, end = 4.dp, bottom = 4.dp)) {
-                        Text((if (e.stable) "★ " else "") + e.name, maxLines = 2, style = MaterialTheme.typography.bodyMedium)
-                        Spacer(Modifier.height(4.dp))
-                        Text(ServerTable.metrics(e), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (e.stale) {
-                            Text(tr("Адрес сменился после проверки: данные устарели"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        FlowRow {
-                            TextButton(onClick = { byRaw[e.raw]?.let(onConnect) }) { Text(tr("Подключить")) }
-                            if (open) {
-                                TextButton(onClick = { Exporter.copy(context, e.raw, 1) }) { Text(tr("Копировать")) }
-                                TextButton(onClick = { vm.runChecks(listOf(e.raw)) }) { Text(tr("Проверить")) }
-                                TextButton(onClick = { vm.measureSpeed(e.raw) }) { Text(tr("Скорость")) }
-                            } else {
-                                TextButton(onClick = { openRaw = e.raw }) { Text("⋯") }
-                            }
-                        }
-                    }
-                }
+                TextButton(onClick = { filter = ServerFilter(query = filter.query) }) { Text(tr("Сбросить фильтры")) }
             }
         }
     }

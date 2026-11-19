@@ -221,9 +221,16 @@ class CheckStore private constructor(private val file: File) {
 
         /** Ключ — личность конфига (протокол + имя), а не адрес: результаты переживают смену сервера. */
         fun keyOf(link: String): String {
+            keyCache.get(link)?.let { return it }
             val digest = MessageDigest.getInstance("SHA-1").digest(ConfigIdentity.key(link).toByteArray())
-            return digest.joinToString("") { "%02x".format(it) }.take(12)
+            val k = digest.joinToString("") { "%02x".format(it) }.take(12)
+            keyCache.put(link, k)
+            return k
         }
+
+        /** Ключ считается на каждый конфиг при каждой перерисовке (HomePanel, «Серверы»): без кэша ANR 17.11 (urlDecode + SHA-1 в главном потоке). */
+        private const val KEY_CACHE_MAX = 16_384
+        private val keyCache = BoundedCache<String, String>(KEY_CACHE_MAX)
     }
 }
 
@@ -330,12 +337,9 @@ object ServiceMatch {
 
     /** Сервис, адрес которого совпадает с адресом проверки цели (по домену), либо null. */
     fun serviceFor(checkUrl: String, services: List<CheckService>): CheckService? {
-        var h = hostOf(checkUrl)
+        val h = hostOf(checkUrl)
         if (h.isEmpty()) return null
-        // NotebookLM — сервис Google с той же проверкой региона, что у Gemini: отдельной проверки у него нет, и без этой
-        // подстановки сервер, где Gemini открывается, при поиске под NotebookLM ничем не выделялся (журнал 15.11)
-        if (h == "notebooklm.google.com" || h == "notebooklm.google" || h == "notebook.google.com" || h == "notebook.google") h = "gemini.google.com"
-        return services.firstOrNull { val sh = hostOf(it.url); sh == h || h.endsWith(".$sh") || sh.endsWith(".$h") }
+        return services.firstOrNull { ServiceVeto.sameSite(hostOf(it.url), h) }
     }
 
     /** Группа сервера для сервиса: открылся (0), отвечает (1), не проверялся (2), не открылся (3), без замера и страна выхода закрыта для сервиса (4). */
@@ -435,6 +439,8 @@ class ServiceChecker(
     private val region: ((link: String, url: String) -> Boolean?)? = null,
     /** Пользователь отметил, что на этом сервере сайт не открывается. */
     private val veto: ((link: String, url: String) -> Boolean)? = null,
+    /** Просьба остановиться (кнопка «Остановить и сохранить»): новые серверы не берём, уже готовые результаты остаются. */
+    private val stop: () -> Boolean = { false },
 ) {
     /**
      * Конфиги одного сервера (общий хост, разные протоколы) проверяются по очереди, начиная с самого приоритетного,
@@ -458,6 +464,7 @@ class ServiceChecker(
                     withContext(Dispatchers.IO) {
                         val out = ArrayList<Pair<String, CheckResult>>()
                         for (link in group) {
+                            if (stop()) break
                             val key = CheckStore.keyOf(link)
                             // onResult вызывается в IO-потоке: там же можно сразу писать результат в файл
                             val result = checkOne(link, services, date).also { onResult(key, it) }
@@ -491,7 +498,19 @@ class ServiceChecker(
         val results = LinkedHashMap<String, Long>()
         val country by lazy { exit?.invoke(link) }
         // Gemini отвечает 200 и из закрытых стран, а NotebookLM честно перенаправляет на «unsupported»: он служит проверкой того, как Google видит этот сервер
-        val googleGeoClosed by lazy { region?.invoke(link, GoogleAi.GEO_ORACLE_URL) == true }
+        // проверка страницы может не удаться (таймаут, перегрузка параллельных проверок): повторяем один раз, а если и тогда
+        // ответа нет — сервис не считаем уверенно открытым (журнал 15.11: Turkey и Ukraine в проверке «✓», а NotebookLM через них закрыт)
+        // результат один раз на адрес (NotebookLM — и оракул, и свой сервис: второй запуск ядра не нужен); повтор только у живого
+        // конфига: у мёртвого лишняя попытка — это лишние 16 с на сервер без пользы
+        val regionCache = HashMap<String, Boolean?>()
+        fun regionTry(url: String): Boolean? {
+            val f = region ?: return false
+            if (regionCache.containsKey(url)) return regionCache[url]
+            val v = f(link, url) ?: (if (base >= 0) f(link, url) else null)
+            regionCache[url] = v
+            return v
+        }
+        val googleGeoClosed: Boolean? by lazy { regionTry(GoogleAi.GEO_ORACLE_URL) }
         fun one(s: CheckService) {
             val ms = probe(config, s.url)
             val r = when {
@@ -501,10 +520,18 @@ class ServiceChecker(
             }
             val geoClosed = r != CheckServices.FAILED && GeoGate.applies(s.url) && GeoGate.blocks(s.url, country)
             // сайт открылся с кодом 200, но это может быть страница «не поддерживается в вашей стране»: смотрим её содержимое
-            val pageClosed = r != CheckServices.FAILED && !geoClosed && GeoGate.applies(s.url) &&
-                (region?.invoke(link, s.url) == true || (GoogleAi.needsOracle(s.url) && googleGeoClosed))
+            val pageChecked = r != CheckServices.FAILED && !geoClosed && GeoGate.applies(s.url)
+            val own = if (pageChecked) regionTry(GoogleAi.regionUrl(s.url)) else false
+            val oracle = if (pageChecked && GoogleAi.needsOracle(s.url)) googleGeoClosed else false
+            val pageClosed = own == true || oracle == true
+            // ни «закрыто», ни «открыто» страница не сказала — отвечает, но уверенно открытым не считаем (≈, после подтверждённых ✓)
+            val unsure = pageChecked && !pageClosed && (own == null || oracle == null)
             val vetoed = r != CheckServices.FAILED && veto?.invoke(link, s.url) == true
-            results[s.id] = if (geoClosed || pageClosed || vetoed) CheckServices.FAILED else r
+            results[s.id] = when {
+                geoClosed || pageClosed || vetoed -> CheckServices.FAILED
+                unsure && r >= 0 -> CheckServices.PARTIAL
+                else -> r
+            }
         }
         if (base < 0) {
             // gstatic может быть закрыт (белые списки), а нужное приложение через этот сервер работает (как в v2rayNG):

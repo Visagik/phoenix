@@ -32,7 +32,7 @@ example.com или ссылка	example.com o un enlace
 {} ч	{} h
 {} ч назад	hace {} h
 {} — TLS и Reality могут не работать; включите автоматическое время	{} — TLS y Reality pueden fallar; active la hora automática
-«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	«Como en todas partes» para una aplicación significa: usar la elección hecha arriba para todas. Los demás botones (auto, A, B) fijan su propia elección para esta aplicación.\n\nLos sitios siempre usan la opción A. Una aplicación usa A si el núcleo puede reconocerla por su conexión (el resto del tráfico no se toca); si no puede, usa B cuando se ha concedido acceso al uso.
+«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, «Только это», «Весь VPN») задают своё для этого приложения.\n\nСайты — всегда в режиме «Только это». Приложение — «Только это», если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — «Весь VPN», когда выдан доступ к данным об использовании.	«Como en todas partes» para una aplicación significa: usar la elección hecha arriba para todas. Los demás botones (auto, «Solo esto», «Toda la VPN») fijan su propia elección para esta aplicación.\n\nLos sitios siempre usan «Solo esto». Una aplicación usa «Solo esto» si el núcleo puede reconocerla por su conexión (el resto del tráfico no se toca); si no puede, «Toda la VPN» cuando se ha concedido acceso al uso.
 Только это	Solo esto
 А: только оно через свой сервер	A: solo ella por su propio servidor
 Автозапуск (MIUI / HyperOS)	Inicio automático (MIUI / HyperOS)
@@ -373,7 +373,7 @@ example.com или ссылка	example.com o un enlace
 ещё не было	aún no ha habido
 ещё не скачивалась	aún no se ha descargado
 живых {} из {}	{} de {} activos
-запасные серверы, вариант А или Б	servidores de reserva, opción A o B
+запасные серверы: «Только это» или «Весь VPN»	servidores de reserva: «Solo esto» o «Toda la VPN»
 кабель	cable
 как везде	como en todas partes
 мобильная сеть	red móvil
@@ -388,7 +388,7 @@ example.com или ссылка	example.com o un enlace
 нет сети	sin red
 нет — сбор по расписанию может сдвигаться	no: la recopilación programada puede desplazarse
 нет — система может выгружать приложение	no: el sistema puede descargar la aplicación
-нужен только для варианта Б (переключение VPN при открытии приложения)	solo para la opción B (cambio de VPN al abrir la aplicación)
+нужен только для режима «Весь VPN» (переключение VPN при открытии приложения)	solo para «Toda la VPN» (cambio de VPN al abrir la aplicación)
 определяю…	detectando…
 отключён	desconectado
 открытие приложения	apertura de la aplicación
@@ -542,3 +542,187 @@ MIUI: Настройки → Приложения → Phoenix → Контрол
 Автосбор может не сработать	La recopilación automática puede no ejecutarse
 Автосбор не запланирован	La recopilación automática no está programada
 Следующий сбор: {}	Próxima recopilación: {}
+Серверов пока нет	Aún no hay servidores
+Собрать	Recopilar
+Не работает	No funciona
+Не работает на этом сервере	No funciona en este servidor
+разбираюсь, что не работает…	averiguando qué falla…
+Нет серверов → соберите их: меню ⋮ → «Собрать сейчас»	Sin servidores → recopílalos: menú ⋮ → «Recopilar ahora»
+Нет разрешения VPN → откройте приложение и нажмите на круг	Sin permiso de VPN → abre la app y toca el círculo
+Не запустилось → нажмите на круг ещё раз или выберите другой сервер	No arrancó → toca el círculo otra vez o elige otro servidor
+Нет разрешения VPN → нажмите на круг и разрешите подключение	Sin permiso de VPN → toca el círculo y permite la conexión
+Подключение не началось → нажмите на круг ещё раз	La conexión no empezó → toca el círculo otra vez
+Сбор завершён. Серверов: {}	Recopilación terminada. Servidores: {}
+Перепроверка завершена	Reverificación terminada
+Помощь и данные	Ayuda y datos
+целей: {}	objetivos: {}
+своих: {}	propias: {}
+каждые {} ч	cada {} h
+каждый день	cada día
+Всё работает	Todo funciona
+Сервер сменился {} раз за сутки: сеть нестабильна	El servidor cambió {} veces en un día: la red es inestable
+Есть проблемы: {} за сутки. Подробности в журнале	Hay problemas: {} en un día. Detalles en el registro
+Скрыть подробности	Ocultar detalles
+Подробнее	Más
+Что приложение делает само, статистика, данные	Qué hace la app sola, estadísticas, datos
+{} из {}	{} de {}
+Автозапуск	Inicio automático
+Без этого Android не даст включить защиту.	Sin esto Android no permitirá activar la protección.
+Видно, что VPN работает, и его можно выключить из шторки.	Se ve que la VPN funciona y se puede apagar desde la barra.
+Если пропустить: VPN может пропадать после очистки памяти.	Si lo omites: la VPN puede desaparecer al limpiar la memoria.
+Если пропустить: возможны обрывы в фоне.	Si lo omites: puede haber cortes en segundo plano.
+Если пропустить: время сбора сдвигается.	Si lo omites: la hora de recopilación se desplaza.
+Если пропустить: серверы можно собрать позже, меню ⋮ на главной.	Si lo omites: puedes recopilar servidores luego, menú ⋮ en inicio.
+Если пропустить: системное окно появится при первом нажатии на круг.	Si lo omites: el aviso del sistema aparecerá al tocar el círculo por primera vez.
+Если пропустить: состояния VPN в шторке не будет.	Si lo omites: no se verá el estado de la VPN en la barra.
+Иначе телефон выключит VPN и ночной сбор.	Si no, el teléfono detendrá la VPN y la recopilación nocturna.
+Начать	Empezar
+Отдельный сервер для отдельного приложения	Un servidor distinto para cada app
+Первые серверы	Primeros servidores
+Проверяет, открываются ли нужные сервисы	Comprueba si se abren los servicios necesarios
+Пропустить	Omitir
+Пропустить всё	Omitir todo
+Разрешение VPN	Permiso de VPN
+Разрешите автозапуск для Phoenix в настройках телефона и вернитесь сюда.	Permite el inicio automático de Phoenix en los ajustes del teléfono y vuelve aquí.
+Разрешить	Permitir
+Российские сайты — напрямую	Los sitios rusos van directos
+Сам находит рабочий сервер	Encuentra solo un servidor que funcione
+Сбор в выбранное время, а не когда удобно системе.	Recopilación a la hora elegida, no cuando le venga bien al sistema.
+Соберём список серверов — это займёт несколько минут.	Recopilaremos la lista de servidores; tarda unos minutos.
+Уже готово	Ya está
+Первые шаги	Primeros pasos
+повторить настройку: разрешения и первые серверы	repetir la configuración: permisos y primeros servidores
+Внешний вид	Apariencia
+Анимации	Animaciones
+свечение круга; системное «Убрать анимацию» их тоже выключает	brillo del círculo; «Quitar animaciones» del sistema también las desactiva
+Все	Todos
+Сбросить	Restablecer
+Сбросить фильтры	Restablecer filtros
+Фильтры и сортировка	Filtros y orden
+Фильтры: {}	Filtros: {}
+📌 закреплён · сменить	📌 fijado · cambiar
+Свой сервер для приложений	Servidor propio para apps
+Есть новая версия {}	Hay una versión nueva: {}
+Нет разрешения на работу в фоне	Sin permiso para funcionar en segundo plano
+Нет разрешения на уведомления	Sin permiso de notificaciones
+Нет точных будильников: сбор сдвигается	Sin alarmas exactas: la recopilación se desplaza
+Требует внимания	Requiere atención
+● нужно {}	● falta: {}
+Проверяемые сервисы перенесены: Ещё → Серверы ›	Los servicios comprobados se movieron: Más → Servidores ›
+Проверяемые сервисы	Servicios comprobados
+какие сервисы открывать через серверы (TG, YT…), свои сервисы, проверка по кнопке	qué servicios abrir a través de servidores (TG, YT…), servicios propios, comprobación manual
+Нажмите, чтобы подключить	Toca para conectar
+Тема	Tema
+Как в системе	Como el sistema
+Светлая	Clara
+Тёмная	Oscura
+Размер журнала	Tamaño del registro
+Короткий · 1 МБ	Corto · 1 MB
+Обычный · 5 МБ	Normal · 5 MB
+Подробный · 20 МБ	Detallado · 20 MB
+Подробный нужен для разбора редкого сбоя; на экране показываются последние 5 МБ	El detallado sirve para analizar un fallo raro; la pantalla muestra los últimos 5 MB
+Сеть для сбора и перепроверки	Red para recopilar y revisar
+Любая	Cualquiera
+Только Wi-Fi	Solo Wi-Fi
+Если удачного сбора не было больше трёх суток, он пройдёт в любой сети. Ручной запуск и поиск сервера при обрыве от этого не зависят.	Si no hubo una recopilación correcta en más de tres días, se hará en cualquier red. El inicio manual y la búsqueda de servidor tras una caída no dependen de esto.
+Лимит проверок по мобильной сети в сутки	Límite diario de comprobaciones con datos móviles
+Без лимита	Sin límite
+{} МБ	{} MB
+Касается автоматической перепроверки и замеров скорости. Поиск сервера при обрыве не ограничивается никогда.	Afecta a las revisiones automáticas y a las pruebas de velocidad. La búsqueda de servidor tras una caída nunca se limita.
+Страны и серверы	Países y servidores
+предпочитаемые и исключённые страны, скрытые серверы	países preferidos y excluidos, servidores ocultos
+правил: {}	reglas: {}
+Ограничение временно снято: подходящих живых серверов нет	Restricción levantada por ahora: no hay servidores activos adecuados
+Стран пока нет: сначала соберите серверы	Aún no hay países: primero recopile servidores
+Предпочитать серверы из	Preferir servidores de
+Такие серверы идут раньше остальных живых; медленные и мёртвые это не спасает.	Estos servidores van antes que otros activos; los lentos y los caídos no se salvan.
+Никогда не подключаться через	No conectar nunca a través de
+В режиме белых списков российские выходы часто единственные рабочие: исключайте их с осторожностью.	En modo de listas blancas, las salidas rusas suelen ser las únicas que funcionan: exclúyalas con cuidado.
+Скрытых серверов нет	No hay servidores ocultos
+Скрытые серверы ({})	Servidores ocultos ({})
+Скрыть сервер можно в «Серверы»: откройте строку и нажмите «Не использовать».	Puede ocultar un servidor en «Servidores»: abra la fila y pulse «No usar».
+Не использовать	No usar
+Сервер скрыт. Вернуть: Ещё → Страны и серверы	Servidor oculto. Restaurar: Más → Países y servidores
+Язык	Idioma
+VPN не подключён	La VPN no está conectada
+живых {}	activos {}
+показано {}	mostrados {}
+закреплён	fijado
+сейчас	ahora
+Нет сети	Sin red
+Ищу сервер	Buscando servidor
+Подключусь, когда сеть появится	Me conectaré cuando vuelva la red
+Какие приложения идут через VPN	Qué aplicaciones usan la VPN
+Все, кроме списка	Todas menos las de la lista
+Только выбранные	Solo las seleccionadas
+Через VPN идут только выбранные приложения (как белый список) и приложения из «Свой сервер для приложений»; всё остальное напрямую. Сайты идут через VPN, только если через него идёт браузер.	Solo van por la VPN las aplicaciones seleccionadas (como una lista blanca) y las de «Servidor propio para apps»; el resto va directo. Los sitios usan la VPN solo si el navegador está seleccionado.
+Через VPN идёт всё, кроме приложений из списка ниже (как чёрный список).	Todo pasa por la VPN excepto las aplicaciones de la lista de abajo (como una lista negra).
+Приложения через VPN ({})	Aplicaciones por la VPN ({})
+Список пуст: пока он пуст, работает режим «Все, кроме списка».	La lista está vacía: mientras lo esté, se usa el modo «Todas menos las de la lista».
+Приложения через VPN	Aplicaciones por la VPN
+Список сохранён	Lista guardada
+Только если ничего нет	Solo si no hay otra opción
+Закреплённый сервер	Servidor fijado
+Сервер, выбранный вручную, сам не меняется. Через это время закрепление снимается, и приложение снова выбирает сервер само.	Un servidor elegido manualmente no se cambia solo. Pasado este tiempo se quita la fijación y la aplicación vuelve a elegir el servidor sola.
+Пока не отключу	Hasta que me desconecte
+1 час	1 hora
+6 часов	6 horas
+Сутки	24 horas
+Автокопия раз в неделю	Copia automática semanal
+Копия настроек и данных без журнала сохраняется во внутреннюю память приложения после планового сбора, хранятся последние три. При удалении приложения она пропадёт — для этого есть экспорт в файл.	Tras una recogida programada se guarda en la memoria interna de la aplicación una copia de ajustes y datos sin el registro; se conservan las tres últimas. Se pierde al desinstalar la aplicación: para eso está la exportación a un archivo.
+Последняя автокопия: {}	Última copia automática: {}
+Автокопий пока нет: первая появится после ближайшего сбора.	Aún no hay copias automáticas: la primera aparecerá tras la próxima recogida.
+Восстановить из последней автокопии	Restaurar desde la última copia automática
+автокопий пока нет	aún no hay copias automáticas
+Проверить повторы сейчас	Buscar duplicados ahora
+Списки источников ещё не сохранены: сначала нужен хотя бы один сбор	Aún no se han guardado las listas de fuentes: primero hace falta al menos una recogida
+Проверено источников: {}. Пересечений: {}, предложений: {}	Fuentes comprobadas: {}. Solapamientos: {}, propuestas: {}
+Вернуть рекомендуемые	Restaurar recomendados
+Сбрасывает настройки этого экрана до значений по умолчанию. Язык, тема, расписание, списки и данные не трогаются.	Restablece los ajustes de esta pantalla a sus valores predeterminados. El idioma, el tema, el horario, las listas y los datos no se tocan.
+Настройки подключения вернутся к значениям по умолчанию. Продолжить?	Los ajustes de conexión volverán a sus valores predeterminados. ¿Continuar?
+Возвращено настроек: {}	Ajustes restaurados: {}
+Уже стоят рекомендуемые	Ya están los valores recomendados
+Phoenix: VPN и статус	Phoenix: VPN y estado
+Phoenix: сбор источников	Phoenix: recogida de fuentes
+DNS в туннеле	DNS en el túnel
+Какие серверы имён используют приложения внутри VPN. Если сайты не открываются, попробуйте другой. При смене у вас 30 секунд, чтобы проверить сайт и подтвердить; иначе вернётся прежний.	Qué servidores de nombres usan las aplicaciones dentro de la VPN. Si los sitios no se abren, pruebe otro. Tras el cambio tiene 30 segundos para comprobar un sitio y confirmar; si no, vuelve el anterior.
+Cloudflare + Google (по умолчанию)	Cloudflare + Google (predeterminado)
+Google	Google
+Quad9	Quad9
+AdGuard (с блокировкой рекламы)	AdGuard (bloquea anuncios)
+Проверка DNS	Comprobación de DNS
+Включён: {}. Откройте любой сайт или приложение. Если всё работает, нажмите «Оставить». Через {} с вернётся прежний.	Activado: {}. Abra cualquier sitio o aplicación. Si todo funciona, pulse «Conservar». En {} s volverá el anterior.
+Оставить	Conservar
+Вернуть прежний	Volver al anterior
+меняю сервер для «{}»…	cambiando el servidor para «{}»…
+для «{}» выбран другой сервер, откройте его заново	se eligió otro servidor para «{}», ábralo de nuevo
+Собираю конфиги…	Recopilando configuraciones…
+Подбираю серверы для целей: «{}» ({}/{})	Buscando servidores para objetivos: «{}» ({}/{})
+Подбираю серверы для целей…	Buscando servidores para objetivos…
+Сейчас ничего не ищу и не проверяю	Ahora no busco ni compruebo nada
+Ищу рабочий сервер…	Buscando un servidor que funcione…
+Перепроверка: {} из {} ({}%), живых {}	Nueva comprobación: {} de {} ({}%), activos {}
+осталось ~{} с	quedan ~{} s
+осталось ~{} мин	quedan ~{} min
+осталось ~{} ч {} мин	quedan ~{} h {} min
+Скачиваю источники: {} из {} ({})	Descargando fuentes: {} de {} ({})
+Главный экран: чем занят	Pantalla principal: qué hace
+что показывать над списком серверов: поиск, сборка, перепроверка	qué mostrar sobre la lista de servidores: búsqueda, recopilación, comprobación
+Кратко	Breve
+Подробно	Detallado
+С журналом	Con registro
+Скорость перепроверки	Velocidad de la revisión
+Быстрая запускает больше проверок сразу: быстрее, но сильнее грузит роутер и батарею	La rápida lanza más comprobaciones a la vez: más veloz, pero carga más el router y la batería
+Щадящая	Suave
+Обычная	Normal
+Быстрая	Rápida
+нажмите, чтобы свернуть подробности	toca para ocultar los detalles
+нажмите, чтобы показать подробности	toca para mostrar los detalles
+Остановить и сохранить	Detener y guardar
+Останавливаю, сохраняю результаты…	Deteniendo, guardando resultados…
+Прошло {} · {} серверов в минуту	Transcurrido {} · {} servidores por minuto
+Живых {} · порт закрыт {} · порт открыт, но интернета нет {} · пропущено по адресу {}	Activos {} · puerto cerrado {} · puerto abierto sin internet {} · omitidos por dirección {}
+Скорость «{}»: портов одновременно {}, проб {}, уровень сети {}	Velocidad «{}»: puertos a la vez {}, pruebas {}, nivel de red {}
+конфиги другого режима	configuraciones de otro modo
+Не проверяю: {} (недавно мёртвые, в этой сети подряд не работали)	No se comprueban: {} (muertos recientes, fallan seguido en esta red)
+Цели {}/{}: найдено {}, без сервера {}, мимо VPN {}, на паузе {} · проверено серверов {}	Objetivos {}/{}: encontrados {}, sin servidor {}, sin VPN {}, en pausa {} · servidores comprobados {}

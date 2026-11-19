@@ -27,7 +27,7 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:text="Выключен"
-        android:textColor="#CCFFFFFF"
+        android:textColor="#FFF0D9C4"
         android:textSize="12sp" />
 
     <TextView

@@ -35,6 +35,17 @@ object Diagnostics {
         }
     }
 
+    /** Итог за сутки одной фразой для верха «Диагностики»: порог нестабильности — 6 смен сервера. */
+    enum class Headline { OK, UNSTABLE, PROBLEMS }
+
+    fun headline(c: Counts): Headline = when {
+        c.failovers >= UNSTABLE_FAILOVERS -> Headline.UNSTABLE
+        c.problems > 0 -> Headline.PROBLEMS
+        else -> Headline.OK
+    }
+
+    const val UNSTABLE_FAILOVERS = 6
+
     /** Сколько событий каждого вида было (по строкам журнала). */
     data class Counts(
         val failovers: Int,

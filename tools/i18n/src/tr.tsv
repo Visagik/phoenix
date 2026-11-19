@@ -32,7 +32,7 @@ example.com или ссылка	example.com veya bağlantı
 {} ч	{} sa
 {} ч назад	{} sa önce
 {} — TLS и Reality могут не работать; включите автоматическое время	{} — TLS ve Reality çalışmayabilir; otomatik saati açın
-«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, А, Б) задают своё для этого приложения.\n\nСайты — всегда по варианту А. Приложение — по А, если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — по Б, когда выдан доступ к данным об использовании.	Bir uygulama için «her yerde olduğu gibi» yukarıdaki seçimi herkes için kullanmak demektir. Diğer düğmeler (otomatik, A, B) bu uygulama için kendi seçimini belirler.\n\nSiteler her zaman A seçeneğini kullanır. Uygulama, çekirdek uygulamayı bağlantısından tanıyabiliyorsa A'yı kullanır (diğer trafiğe dokunulmaz); tanıyamıyorsa, kullanım erişimi verilmişse B'yi kullanır.
+«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, «Только это», «Весь VPN») задают своё для этого приложения.\n\nСайты — всегда в режиме «Только это». Приложение — «Только это», если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — «Весь VPN», когда выдан доступ к данным об использовании.	Bir uygulama için «her yerde olduğu gibi» yukarıdaki seçimi herkes için kullanmak demektir. Diğer düğmeler (otomatik, “Yalnızca bu”, “Tüm VPN”) bu uygulama için kendi seçimini belirler.\n\nSiteler her zaman “Yalnızca bu” kullanır. Uygulama, çekirdek uygulamayı bağlantısından tanıyabiliyorsa “Yalnızca bu”yu kullanır (diğer trafiğe dokunulmaz); tanıyamıyorsa, kullanım erişimi verilmişse “Tüm VPN”i kullanır.
 Только это	Yalnızca bu
 А: только оно через свой сервер	A: yalnızca o kendi sunucusundan geçer
 Автозапуск (MIUI / HyperOS)	Otomatik başlatma (MIUI / HyperOS)
@@ -373,7 +373,7 @@ example.com или ссылка	example.com veya bağlantı
 ещё не было	henüz yok
 ещё не скачивалась	henüz indirilmedi
 живых {} из {}	{} / {} canlı
-запасные серверы, вариант А или Б	yedek sunucular, A veya B seçeneği
+запасные серверы: «Только это» или «Весь VPN»	yedek sunucular: “Yalnızca bu” veya “Tüm VPN”
 кабель	kablo
 как везде	her yerdeki gibi
 мобильная сеть	mobil ağ
@@ -388,7 +388,7 @@ example.com или ссылка	example.com veya bağlantı
 нет сети	ağ yok
 нет — сбор по расписанию может сдвигаться	hayır — zamanlanmış toplama kayabilir
 нет — система может выгружать приложение	hayır — sistem uygulamayı bellekten atabilir
-нужен только для варианта Б (переключение VPN при открытии приложения)	yalnızca B seçeneği için gerekli (uygulama açılınca VPN'i değiştirme)
+нужен только для режима «Весь VPN» (переключение VPN при открытии приложения)	yalnızca “Tüm VPN” için gerekli (uygulama açılınca VPN'i değiştirme)
 определяю…	algılanıyor…
 отключён	bağlantı kesildi
 открытие приложения	uygulama açıldı
@@ -542,3 +542,187 @@ MIUI: Настройки → Приложения → Phoenix → Контрол
 Автосбор может не сработать	Otomatik toplama çalışmayabilir
 Автосбор не запланирован	Otomatik toplama planlanmadı
 Следующий сбор: {}	Sonraki toplama: {}
+Серверов пока нет	Henüz sunucu yok
+Собрать	Topla
+Не работает	Çalışmıyor
+Не работает на этом сервере	Bu sunucuda çalışmıyor
+разбираюсь, что не работает…	neyin çalışmadığına bakıyorum…
+Нет серверов → соберите их: меню ⋮ → «Собрать сейчас»	Sunucu yok → toplayın: ⋮ menüsü → «Şimdi topla»
+Нет разрешения VPN → откройте приложение и нажмите на круг	VPN izni yok → uygulamayı açıp daireye dokunun
+Не запустилось → нажмите на круг ещё раз или выберите другой сервер	Başlamadı → daireye tekrar dokunun veya başka sunucu seçin
+Нет разрешения VPN → нажмите на круг и разрешите подключение	VPN izni yok → daireye dokunup bağlantıya izin verin
+Подключение не началось → нажмите на круг ещё раз	Bağlantı başlamadı → daireye tekrar dokunun
+Сбор завершён. Серверов: {}	Toplama bitti. Sunucu: {}
+Перепроверка завершена	Yeniden kontrol bitti
+Помощь и данные	Yardım ve veriler
+целей: {}	hedef: {}
+своих: {}	kendi: {}
+каждые {} ч	her {} sa
+каждый день	her gün
+Всё работает	Her şey çalışıyor
+Сервер сменился {} раз за сутки: сеть нестабильна	Sunucu bir günde {} kez değişti: ağ kararsız
+Есть проблемы: {} за сутки. Подробности в журнале	Sorun var: günde {}. Ayrıntılar günlükte
+Скрыть подробности	Ayrıntıları gizle
+Подробнее	Daha fazla
+Что приложение делает само, статистика, данные	Uygulamanın kendi yaptıkları, istatistik, veriler
+{} из {}	{} / {}
+Автозапуск	Otomatik başlatma
+Без этого Android не даст включить защиту.	Bu olmadan Android korumayı açmanıza izin vermez.
+Видно, что VPN работает, и его можно выключить из шторки.	VPN’in çalıştığı görünür ve bildirim panelinden kapatılabilir.
+Если пропустить: VPN может пропадать после очистки памяти.	Atlanırsa: VPN bellek temizlendikten sonra kaybolabilir.
+Если пропустить: возможны обрывы в фоне.	Atlanırsa: arka planda kopmalar olabilir.
+Если пропустить: время сбора сдвигается.	Atlanırsa: toplama saati kayar.
+Если пропустить: серверы можно собрать позже, меню ⋮ на главной.	Atlanırsa: sunucuları sonra ana ekrandaki ⋮ menüsünden toplayabilirsiniz.
+Если пропустить: системное окно появится при первом нажатии на круг.	Atlanırsa: sistem penceresi daireye ilk dokunuşta çıkar.
+Если пропустить: состояния VPN в шторке не будет.	Atlanırsa: VPN durumu bildirim panelinde görünmez.
+Иначе телефон выключит VPN и ночной сбор.	Aksi halde telefon VPN’i ve gece toplamayı kapatır.
+Начать	Başla
+Отдельный сервер для отдельного приложения	Her uygulama için ayrı sunucu
+Первые серверы	İlk sunucular
+Проверяет, открываются ли нужные сервисы	Gerekli hizmetlerin açılıp açılmadığını denetler
+Пропустить	Atla
+Пропустить всё	Hepsini atla
+Разрешение VPN	VPN izni
+Разрешите автозапуск для Phoenix в настройках телефона и вернитесь сюда.	Telefon ayarlarında Phoenix için otomatik başlatmaya izin verin ve buraya dönün.
+Разрешить	İzin ver
+Российские сайты — напрямую	Rus siteleri doğrudan açılır
+Сам находит рабочий сервер	Çalışan sunucuyu kendisi bulur
+Сбор в выбранное время, а не когда удобно системе.	Toplama sistemin uygun bulduğu zamanda değil, seçilen saatte olur.
+Соберём список серверов — это займёт несколько минут.	Sunucu listesini toplayacağız; birkaç dakika sürer.
+Уже готово	Zaten hazır
+Первые шаги	İlk adımlar
+повторить настройку: разрешения и первые серверы	kurulumu tekrarla: izinler ve ilk sunucular
+Внешний вид	Görünüm
+Анимации	Animasyonlar
+свечение круга; системное «Убрать анимацию» их тоже выключает	dairenin parıltısı; sistemin «Animasyonları kaldır» ayarı da bunları kapatır
+Все	Tümü
+Сбросить	Sıfırla
+Сбросить фильтры	Filtreleri sıfırla
+Фильтры и сортировка	Filtreler ve sıralama
+Фильтры: {}	Filtreler: {}
+📌 закреплён · сменить	📌 sabitlendi · değiştir
+Свой сервер для приложений	Uygulamalar için özel sunucu
+Есть новая версия {}	Yeni sürüm var: {}
+Нет разрешения на работу в фоне	Arka planda çalışma izni yok
+Нет разрешения на уведомления	Bildirim izni yok
+Нет точных будильников: сбор сдвигается	Tam alarm yok: toplama saati kayar
+Требует внимания	Dikkat gerekiyor
+● нужно {}	● gerekli: {}
+Проверяемые сервисы перенесены: Ещё → Серверы ›	Kontrol edilen hizmetler taşındı: Diğer → Sunucular ›
+Проверяемые сервисы	Kontrol edilen hizmetler
+какие сервисы открывать через серверы (TG, YT…), свои сервисы, проверка по кнопке	hangi hizmetlerin sunucular üzerinden açılacağı (TG, YT…), özel hizmetler, isteğe bağlı kontrol
+Нажмите, чтобы подключить	Bağlanmak için dokunun
+Тема	Tema
+Как в системе	Sistemle aynı
+Светлая	Açık
+Тёмная	Koyu
+Размер журнала	Günlük boyutu
+Короткий · 1 МБ	Kısa · 1 MB
+Обычный · 5 МБ	Normal · 5 MB
+Подробный · 20 МБ	Ayrıntılı · 20 MB
+Подробный нужен для разбора редкого сбоя; на экране показываются последние 5 МБ	Ayrıntılı, nadir bir hatayı incelemek içindir; ekranda son 5 MB gösterilir
+Сеть для сбора и перепроверки	Toplama ve yeniden kontrol için ağ
+Любая	Herhangi
+Только Wi-Fi	Yalnızca Wi-Fi
+Если удачного сбора не было больше трёх суток, он пройдёт в любой сети. Ручной запуск и поиск сервера при обрыве от этого не зависят.	Üç günden uzun süredir başarılı toplama olmadıysa herhangi bir ağda çalışır. Elle başlatma ve kopma sonrası sunucu arama bundan etkilenmez.
+Лимит проверок по мобильной сети в сутки	Mobil veride günlük kontrol sınırı
+Без лимита	Sınırsız
+{} МБ	{} MB
+Касается автоматической перепроверки и замеров скорости. Поиск сервера при обрыве не ограничивается никогда.	Otomatik yeniden kontrolleri ve hız ölçümlerini kapsar. Kopma sonrası sunucu arama asla sınırlanmaz.
+Страны и серверы	Ülkeler ve sunucular
+предпочитаемые и исключённые страны, скрытые серверы	tercih edilen ve hariç tutulan ülkeler, gizli sunucular
+правил: {}	kural: {}
+Ограничение временно снято: подходящих живых серверов нет	Kısıtlama geçici olarak kaldırıldı: uygun çalışan sunucu yok
+Стран пока нет: сначала соберите серверы	Henüz ülke yok: önce sunucuları toplayın
+Предпочитать серверы из	Şu ülkelerin sunucularını tercih et
+Такие серверы идут раньше остальных живых; медленные и мёртвые это не спасает.	Bu sunucular diğer çalışanlardan önce gelir; yavaş ve ölü olanları kurtarmaz.
+Никогда не подключаться через	Asla şunun üzerinden bağlanma
+В режиме белых списков российские выходы часто единственные рабочие: исключайте их с осторожностью.	Beyaz liste modunda Rus çıkışları çoğunlukla tek çalışanlardır: dikkatle hariç tutun.
+Скрытых серверов нет	Gizli sunucu yok
+Скрытые серверы ({})	Gizli sunucular ({})
+Скрыть сервер можно в «Серверы»: откройте строку и нажмите «Не использовать».	Bir sunucuyu “Sunucular”dan gizleyebilirsiniz: satırı açıp “Kullanma”ya dokunun.
+Не использовать	Kullanma
+Сервер скрыт. Вернуть: Ещё → Страны и серверы	Sunucu gizlendi. Geri almak için: Daha fazla → Ülkeler ve sunucular
+Язык	Dil
+VPN не подключён	VPN bağlı değil
+живых {}	çalışan {}
+показано {}	gösterilen {}
+закреплён	sabitlendi
+сейчас	şimdi
+Нет сети	Ağ yok
+Ищу сервер	Sunucu aranıyor
+Подключусь, когда сеть появится	Ağ geri geldiğinde bağlanacağım
+Какие приложения идут через VPN	Hangi uygulamalar VPN üzerinden gider
+Все, кроме списка	Liste dışındaki hepsi
+Только выбранные	Yalnızca seçilenler
+Через VPN идут только выбранные приложения (как белый список) и приложения из «Свой сервер для приложений»; всё остальное напрямую. Сайты идут через VPN, только если через него идёт браузер.	VPN üzerinden yalnızca seçilen uygulamalar (beyaz liste gibi) ve “Uygulamalar için kendi sunucum”daki uygulamalar gider; geri kalanı doğrudan çıkar. Siteler yalnızca tarayıcı seçiliyse VPN’den geçer.
+Через VPN идёт всё, кроме приложений из списка ниже (как чёрный список).	Aşağıdaki listedeki uygulamalar dışında her şey VPN üzerinden gider (kara liste gibi).
+Приложения через VPN ({})	VPN üzerinden uygulamalar ({})
+Список пуст: пока он пуст, работает режим «Все, кроме списка».	Liste boş: boş olduğu sürece “Liste dışındaki hepsi” modu çalışır.
+Приложения через VPN	VPN üzerinden uygulamalar
+Список сохранён	Liste kaydedildi
+Только если ничего нет	Yalnızca başka seçenek yoksa
+Закреплённый сервер	Sabitlenen sunucu
+Сервер, выбранный вручную, сам не меняется. Через это время закрепление снимается, и приложение снова выбирает сервер само.	Elle seçtiğiniz sunucu kendiliğinden değişmez. Bu süre sonunda sabitleme kalkar ve uygulama sunucuyu yine kendisi seçer.
+Пока не отключу	Ben kesene kadar
+1 час	1 saat
+6 часов	6 saat
+Сутки	24 saat
+Автокопия раз в неделю	Haftalık otomatik yedek
+Копия настроек и данных без журнала сохраняется во внутреннюю память приложения после планового сбора, хранятся последние три. При удалении приложения она пропадёт — для этого есть экспорт в файл.	Zamanlanmış toplamadan sonra ayarların ve verilerin günlüksüz bir kopyası uygulamanın dahili belleğine kaydedilir; son üçü saklanır. Uygulama silinirse kaybolur — bunun için dosyaya aktarma var.
+Последняя автокопия: {}	Son otomatik yedek: {}
+Автокопий пока нет: первая появится после ближайшего сбора.	Henüz otomatik yedek yok: ilki bir sonraki toplamadan sonra oluşur.
+Восстановить из последней автокопии	Son otomatik yedekten geri yükle
+автокопий пока нет	henüz otomatik yedek yok
+Проверить повторы сейчас	Yinelenenleri şimdi denetle
+Списки источников ещё не сохранены: сначала нужен хотя бы один сбор	Kaynak listeleri henüz kaydedilmedi: önce en az bir toplama gerekir
+Проверено источников: {}. Пересечений: {}, предложений: {}	Denetlenen kaynak: {}. Çakışma: {}, öneri: {}
+Вернуть рекомендуемые	Önerilenleri geri yükle
+Сбрасывает настройки этого экрана до значений по умолчанию. Язык, тема, расписание, списки и данные не трогаются.	Bu ekrandaki ayarları varsayılan değerlere döndürür. Dil, tema, zamanlama, listeler ve veriler değişmez.
+Настройки подключения вернутся к значениям по умолчанию. Продолжить?	Bağlantı ayarları varsayılan değerlere dönecek. Devam edilsin mi?
+Возвращено настроек: {}	Geri yüklenen ayar: {}
+Уже стоят рекомендуемые	Önerilen değerler zaten ayarlı
+Phoenix: VPN и статус	Phoenix: VPN ve durum
+Phoenix: сбор источников	Phoenix: kaynak toplama
+DNS в туннеле	Tünelde DNS
+Какие серверы имён используют приложения внутри VPN. Если сайты не открываются, попробуйте другой. При смене у вас 30 секунд, чтобы проверить сайт и подтвердить; иначе вернётся прежний.	Uygulamaların VPN içinde kullandığı ad sunucuları. Siteler açılmazsa başkasını deneyin. Değişiklikten sonra bir siteyi kontrol edip onaylamak için 30 saniyeniz var; aksi halde öncekine dönülür.
+Cloudflare + Google (по умолчанию)	Cloudflare + Google (varsayılan)
+Google	Google
+Quad9	Quad9
+AdGuard (с блокировкой рекламы)	AdGuard (reklam engelleme)
+Проверка DNS	DNS denemesi
+Включён: {}. Откройте любой сайт или приложение. Если всё работает, нажмите «Оставить». Через {} с вернётся прежний.	Etkin: {}. Herhangi bir site veya uygulamayı açın. Her şey çalışıyorsa «Tut»a dokunun. {} sn sonra öncekine dönülecek.
+Оставить	Tut
+Вернуть прежний	Öncekine dön
+меняю сервер для «{}»…	«{}» için sunucu değiştiriliyor…
+для «{}» выбран другой сервер, откройте его заново	«{}» için başka bir sunucu seçildi, yeniden açın
+Собираю конфиги…	Yapılandırmalar toplanıyor…
+Подбираю серверы для целей: «{}» ({}/{})	Hedefler için sunucu aranıyor: «{}» ({}/{})
+Подбираю серверы для целей…	Hedefler için sunucu aranıyor…
+Сейчас ничего не ищу и не проверяю	Şu an bir şey aramıyor ve kontrol etmiyor
+Ищу рабочий сервер…	Çalışan sunucu aranıyor…
+Перепроверка: {} из {} ({}%), живых {}	Yeniden kontrol: {} / {} (%{}), canlı {}
+осталось ~{} с	~{} sn kaldı
+осталось ~{} мин	~{} dk kaldı
+осталось ~{} ч {} мин	~{} sa {} dk kaldı
+Скачиваю источники: {} из {} ({})	Kaynaklar indiriliyor: {} / {} ({})
+Главный экран: чем занят	Ana ekran: ne yapıyor
+что показывать над списком серверов: поиск, сборка, перепроверка	sunucu listesinin üstünde ne gösterilsin: arama, toplama, yeniden kontrol
+Кратко	Kısa
+Подробно	Ayrıntılı
+С журналом	Günlükle
+Скорость перепроверки	Yeniden kontrol hızı
+Быстрая запускает больше проверок сразу: быстрее, но сильнее грузит роутер и батарею	Hızlı mod aynı anda daha çok kontrol yapar: daha çabuk, ama modemi ve pili daha çok yorar
+Щадящая	Hafif
+Обычная	Normal
+Быстрая	Hızlı
+нажмите, чтобы свернуть подробности	ayrıntıları gizlemek için dokunun
+нажмите, чтобы показать подробности	ayrıntıları göstermek için dokunun
+Остановить и сохранить	Durdur ve kaydet
+Останавливаю, сохраняю результаты…	Durduruluyor, sonuçlar kaydediliyor…
+Прошло {} · {} серверов в минуту	Geçen süre {} · dakikada {} sunucu
+Живых {} · порт закрыт {} · порт открыт, но интернета нет {} · пропущено по адресу {}	Çalışan {} · port kapalı {} · port açık ama internet yok {} · adrese göre atlanan {}
+Скорость «{}»: портов одновременно {}, проб {}, уровень сети {}	Hız «{}»: aynı anda port {}, deneme {}, ağ düzeyi {}
+конфиги другого режима	başka moddan yapılandırmalar
+Не проверяю: {} (недавно мёртвые, в этой сети подряд не работали)	Kontrol edilmeyen: {} (yakın zamanda ölü, bu ağda hep başarısız)
+Цели {}/{}: найдено {}, без сервера {}, мимо VPN {}, на паузе {} · проверено серверов {}	Hedefler {}/{}: bulunan {}, sunucusuz {}, VPN dışı {}, duraklatılan {} · kontrol edilen sunucu {}

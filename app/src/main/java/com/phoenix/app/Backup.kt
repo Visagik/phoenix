@@ -110,13 +110,15 @@ object Backup {
     private fun targetsForExport(lines: List<String>): List<String> =
         lines.map { line -> line.split('\t').take(7).joinToString("\t") }
 
-    fun export(root: File, settings: Map<String, String>, stamp: String): String {
+    /** @param withLog false — без журнала загрузок: автокопия по размеру в разы меньше (журнал — до 5 МБ). */
+    fun export(root: File, settings: Map<String, String>, stamp: String, withLog: Boolean = true): String {
         val sections = LinkedHashMap<String, List<String>>()
         sections["info"] = listOf("exported=$stamp")
         sections["settings"] = settings.map { (k, v) -> "$k=$v" }
         for (mode in Mode.entries) {
             val dir = modeDir(root, mode)
             for ((name, how) in FILES) {
+                if (how == How.LOG && !withLog) continue
                 val f = File(dir, name)
                 var lines = if (how == How.LOG) LogTrim.tailLines(f) else readLines(f)
                 if (name == "targets.tsv") lines = targetsForExport(lines)

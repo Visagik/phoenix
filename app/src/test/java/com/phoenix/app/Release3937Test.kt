@@ -66,9 +66,19 @@ class Release3937Test {
         val r = runBlocking { checker.check(listOf(link), listOf(gemini, yt), "2026-10-29") }.values.first()
         assertEquals(CheckServices.FAILED, r.services["GE"])
         assertTrue(r.services["YT"]!! >= 0) // YouTube не из списка регионов — страницу не разбираем
-        // не удалось узнать (null) — не считаем закрытым
+        // не удалось узнать (null) даже после повтора — не закрыт, но и уверенно открытым не считается: «отвечает» (≈)
         val unknown = ServiceChecker(probe, parallel = 1, exit = { "NL" }, region = { _, _ -> null })
-        assertTrue(runBlocking { unknown.check(listOf(link), listOf(gemini), "2026-10-29") }.values.first().services["GE"]!! >= 0)
+        assertEquals(CheckServices.PARTIAL, runBlocking { unknown.check(listOf(link), listOf(gemini), "2026-10-29") }.values.first().services["GE"])
+        // первая попытка не удалась, повтор сказал «обычная страница» — открыт
+        var calls = 0
+        val retry = ServiceChecker(probe, parallel = 1, exit = { "NL" }, region = { _, _ -> if (calls++ == 0) null else false })
+        assertTrue(runBlocking { retry.check(listOf(link), listOf(gemini), "2026-10-29") }.values.first().services["GE"]!! >= 0)
+        // один и тот же адрес страницы не проверяется дважды (оракул NotebookLM и сам сервис NotebookLM)
+        var asked = 0
+        val nt = CheckService("NT", "NotebookLM", "https://notebooklm.google.com/")
+        val once = ServiceChecker(probe, parallel = 1, exit = { "NL" }, region = { _, _ -> asked++; false })
+        runBlocking { once.check(listOf(link), listOf(gemini, nt), "2026-10-29") }
+        assertEquals(2, asked) // страница Gemini и страница NotebookLM, каждая один раз
     }
 
     @Test fun serviceCheckerHonoursVeto() {

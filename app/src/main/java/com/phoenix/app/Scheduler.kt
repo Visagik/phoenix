@@ -40,8 +40,8 @@ object Scheduler {
     private const val RUN = "phoenix_run"
     const val KEY_TRIGGER = "trigger"
 
-    private fun constraints(onlyCharging: Boolean) = Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.CONNECTED)
+    private fun constraints(onlyCharging: Boolean, wifiOnly: Boolean = false) = Constraints.Builder()
+        .setRequiredNetworkType(if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED)
         .setRequiresCharging(onlyCharging)
         .build()
 
@@ -74,7 +74,7 @@ object Scheduler {
 
         val request = PeriodicWorkRequestBuilder<PhoenixWorker>(periodHours, TimeUnit.HOURS)
             .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-            .setConstraints(constraints(s.onlyCharging))
+            .setConstraints(constraints(s.onlyCharging, s.wifiOnly))
             .setBackoffCriteria(BackoffPolicy.LINEAR, 10, TimeUnit.MINUTES)
             .build()
 
@@ -105,8 +105,12 @@ object Scheduler {
         val s = AppSettings(context)
         val manual = trigger == "manual"
         val delaySec = ColdStart.catchUpDelaySec(trigger, s.lastSuccessAt)
+        val nowMs = System.currentTimeMillis()
+        if (WifiOnlyPolicy.relaxed(s.wifiOnly, manual, s.lastSuccessAt, nowMs)) {
+            try { Storage(context).log("Сбор: Wi-Fi не было больше ${WifiOnlyPolicy.STALE_DAYS} суток → собираю в любой сети") } catch (_: Throwable) { }
+        }
         val builder = OneTimeWorkRequestBuilder<PhoenixWorker>()
-            .setConstraints(constraints(onlyCharging = s.onlyCharging && !manual))
+            .setConstraints(constraints(onlyCharging = s.onlyCharging && !manual, wifiOnly = WifiOnlyPolicy.effective(s.wifiOnly, manual, s.lastSuccessAt, nowMs)))
             .setInputData(workDataOf(KEY_TRIGGER to trigger))
         // срочная задача не может быть отложенной: при первом запуске выбираем отсрочку, чтобы дать экрану прогрузиться
         val request = if (delaySec > 0) builder.setInitialDelay(delaySec, TimeUnit.SECONDS).build()
@@ -246,9 +250,12 @@ class PhoenixWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         var allOk = true
         var anySkipped = false
         for (m in modes) {
-            // повтор после неудачи другого режима не качает заново тот, что только что собрался (находка №8)
-            if (!manual && runAttemptCount > 0 && Storage(ctx, m).latestClean()?.let { System.currentTimeMillis() - it.lastModified() < 30 * 60_000L } == true) {
-                Storage(ctx).log("SCHED: режим «${m.title}» собран меньше 30 минут назад — при повторе пропускаю")
+            // режим, собранный недавно (повтор после неудачи другого режима; ручной сбор одного режима), не качаем заново: иначе ручной сбор
+            // не сдвигал срок, и будильник через минуты повторял оба режима (журнал 19.11 11:28 → 11:37, находка №8)
+            val recentMs = if (interval && runAttemptCount == 0) settings.intervalHours * 3_600_000L * 3 / 4 else 30 * 60_000L
+            val age = Storage(ctx, m).latestClean()?.let { System.currentTimeMillis() - it.lastModified() }
+            if (!manual && age != null && age in 0 until recentMs) {
+                Storage(ctx).log("SCHED: режим «${m.title}» собран ${age / 60_000} мин назад — пропускаю")
                 continue
             }
             val outcome = Collector(ctx, mode = m).run(trigger)
@@ -257,6 +264,7 @@ class PhoenixWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             summaries += if (modes.size > 1) "${m.title}: ${outcome.summary}" else outcome.summary
         }
         settings.recordResult(summaries.joinToString("; "))
+        AutoBackup.runIfDue(ctx)
         // Сбор не запускался, потому что уже шёл другой (другая уникальная задача заняла тот же замок): это не успех и
         // не неудача этой задачи — тот, другой прогон сам обновит срок, будильник и перепроверку, когда закончит.
         if (anySkipped) return Result.success()
@@ -272,7 +280,14 @@ class PhoenixWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         // Свежие данные — повод перепроверить серверы целей (если они есть).
         // Сначала полная перепроверка конфигов (она же проверяет сервисы, список обхода и ставит приоритеты, а в конце сама запускает
         // перепроверку целей); если перепроверка не стартовала (выключена или была недавно) — только цели.
-        if (allOk && !Recheck.enqueueIfDue(ctx, Storage(ctx).mode)) TargetsWorker.enqueue(ctx)
+        if (allOk) {
+            // кнопка «Собрать» — ручной запуск: перепроверка серверов не ждёт зарядки и не отступает из-за скачков сети, иначе сразу шёл поиск целей по старым серверам
+            val started = if (manual) Recheck.enqueueIfDue(ctx, Storage(ctx).mode, reason = "вручную", urgent = true) else Recheck.enqueueIfDue(ctx, Storage(ctx).mode)
+            if (!started) {
+                if (manual) Storage(ctx).log("SCHED: перепроверка не запущена (выключена, уже идёт или была недавно) — ищу только серверы для целей")
+                if (manual) TargetsWorker.enqueue(ctx) else TargetsWorker.enqueueAfterRefresh(ctx)
+            }
+        }
         return if (allOk || runAttemptCount >= 2) Result.success() else Result.retry()
     }
 
@@ -280,7 +295,7 @@ class PhoenixWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Phoenix", NotificationManager.IMPORTANCE_LOW)
+            NotificationChannel(CHANNEL_ID, tr("Phoenix: сбор источников"), NotificationManager.IMPORTANCE_LOW)
         )
         val notification = Notification.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download)

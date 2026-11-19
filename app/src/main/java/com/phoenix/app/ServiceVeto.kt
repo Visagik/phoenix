@@ -15,7 +15,17 @@ class ServiceVeto private constructor(private val file: File) {
 
         fun hostOf(url: String): String = url.substringAfter("://").substringBefore('/').substringBefore('?').substringBefore(':').lowercase()
 
-        fun sameSite(a: String, b: String) = a == b || a.endsWith(".$b") || b.endsWith(".$a")
+        /** У NotebookLM три адреса (notebooklm.google.com, notebooklm.google, notebook.google): для пометок и сервисов это один сайт (журнал 19.11: «Не работает» ставилось на один адрес, а сервис «Notebook» был задан другим — галочка оставалась). */
+        fun canon(host: String): String = when (host.lowercase()) {
+            "notebooklm.google.com", "notebooklm.google", "notebook.google" -> "notebooklm.google.com"
+            else -> host.lowercase()
+        }
+
+        fun sameSite(a: String, b: String): Boolean {
+            val x = canon(a)
+            val y = canon(b)
+            return x == y || x.endsWith(".$y") || y.endsWith(".$x")
+        }
     }
 
     private class Entry(val key: String, val host: String, val until: Long)

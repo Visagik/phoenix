@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_fix">No funciona</string>
+    <string name="shortcut_switch">Cambiar servidor</string>
+    <string name="shortcut_stop">Desconectar</string>
+</resources>

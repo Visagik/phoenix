@@ -61,17 +61,20 @@ object SourceStats {
  * остальных (среди одинаково живых) и сама ссылка не попадает в чёрный список по аудиту; из «низкой» — позже.
  */
 object SourcePriority {
+    /** Только если остальные серверы не работают: ключ платной подписки или VPS с лимитом, запасной вариант. */
+    const val RESERVE = -2
     const val LOW = -1
     const val NORMAL = 0
     const val HIGH = 1
 
     fun title(level: Int): String = when {
         level > 0 -> "Высокий"
+        level <= RESERVE -> "Только если ничего нет"
         level < 0 -> "Низкий"
         else -> "Обычный"
     }
 
-    fun clamp(level: Int): Int = level.coerceIn(LOW, HIGH)
+    fun clamp(level: Int): Int = level.coerceIn(RESERVE, HIGH)
 
     /** Строки «ссылка<TAB>уровень»; обычный уровень не хранится. */
     fun encode(map: Map<String, Int>): String =

@@ -54,7 +54,8 @@ object ServerChoiceLoader {
         )
         return ServerChoice.options(ranked, rows, checks, storage.checkSelection().selected(), VpnState.status.value.link,
             odds = CheckStore(storage.checksFile).odds(),
-            exitCc = ExitStore(storage.exitFile).load().let { m -> { key: String -> m[key]?.cc } })
+            exitCc = ExitStore(storage.exitFile).load().let { m -> { key: String -> m[key]?.cc } },
+            vetoed = ServiceVeto(storage.vetoFile).let { v -> { link: String, url: String -> v.active(link, url) } })
     }
 }
 

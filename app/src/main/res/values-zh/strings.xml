@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_fix">无法使用</string>
+    <string name="shortcut_switch">切换服务器</string>
+    <string name="shortcut_stop">断开连接</string>
+</resources>

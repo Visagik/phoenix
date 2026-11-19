@@ -41,6 +41,10 @@ object DirectCatalog {
         DirectEntry("aliexpress", "https://www.aliexpress.com/", listOf("domain:aliexpress.com", "domain:alicdn.com"), listOf("com.aliexpress.android"), false),
         DirectEntry("zoom", "https://zoom.us/", listOf("domain:zoom.us"), listOf("us.zoom.videomeetings"), false),
         DirectEntry("twitch", "https://www.twitch.tv/", listOf("domain:twitch.tv", "domain:ttvnw.net"), listOf("tv.twitch.android.app"), false),
+        // ИИ-сервисы: на Wi-Fi открываются, в мобильной сети с белыми списками — нет. В набор обхода сами не входят, но если пользователь
+        // добавил их в обход, то по сети (напрямую открывается — мимо VPN, нет — через VPN со своим сервером цели)
+        DirectEntry("deepseek", "https://chat.deepseek.com/", listOf("domain:deepseek.com"), listOf("com.deepseek.chat"), false),
+        DirectEntry("qwen", "https://chat.qwen.ai/", listOf("domain:qwen.ai"), listOf("ai.qwenlm.chat.android"), false),
     )
 }
 

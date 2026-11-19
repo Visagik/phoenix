@@ -57,11 +57,11 @@ class Release4Pack4Test {
         assertEquals(ServiceStatus.UNKNOWN, r.status("NT"))
     }
 
-    @Test fun notebookLmUsesGeminiServiceCheck() {
+    @Test fun notebookLmHasNoGeminiAlias() {
+        // у Gemini и NotebookLM регион проверяется по-разному (журнал 15.11: у половины серверов Gemini открыт, NotebookLM закрыт)
         val gem = CheckService("GE", "Gemini", "https://gemini.google.com/")
-        val tg = CheckService("TG", "Telegram", "https://web.telegram.org/")
-        assertEquals(gem, ServiceMatch.serviceFor("https://notebooklm.google.com/", listOf(tg, gem)))
-        assertEquals(gem, ServiceMatch.serviceFor("https://notebook.google.com/", listOf(tg, gem)))
-        assertEquals(null, ServiceMatch.serviceFor("https://notebooklm.google.com/", listOf(tg)))
+        val nt = CheckService("NT", "NotebookLM", "https://notebooklm.google.com/")
+        assertEquals(null, ServiceMatch.serviceFor("https://notebooklm.google.com/", listOf(gem)))
+        assertEquals(nt, ServiceMatch.serviceFor("https://notebooklm.google.com/", listOf(gem, nt)))
     }
 }

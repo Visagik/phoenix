@@ -84,9 +84,15 @@ class GeoIpDb private constructor(
 object GeoIp {
     @Volatile var source: (() -> InputStream)? = null
 
-    fun load(): GeoIpDb? = try {
-        source?.invoke()?.use { GeoIpDb.read(it) }
+    @Volatile private var cached: GeoIpDb? = null
+
+    /** Таблица (3,5 МБ) разбирается один раз за процесс: раньше при каждом обогащении заново. */
+    fun load(): GeoIpDb? = cached ?: try {
+        source?.invoke()?.use { GeoIpDb.read(it) }?.also { cached = it }
     } catch (_: Exception) {
         null
     }
+
+    /** Для тестов: сбросить кэш при смене источника. */
+    internal fun reset() { cached = null }
 }

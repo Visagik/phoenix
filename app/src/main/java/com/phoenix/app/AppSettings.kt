@@ -79,6 +79,27 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
         get() = prefs.getBoolean("only_charging", false)
         set(v) = prefs.edit().putBoolean("only_charging", v).apply()
 
+    /** Сбор и перепроверку выполнять только по Wi-Fi (см. [WifiOnlyPolicy]: через трое суток без сбора ограничение снимается). */
+    var wifiOnly: Boolean
+        get() = prefs.getBoolean("bg_wifi_only", false)
+        set(v) = prefs.edit().putBoolean("bg_wifi_only", v).apply()
+
+    /** Суточный лимит фоновых проверок по мобильной сети, МБ; 0 — без лимита (см. [BackgroundBudget]). */
+    var mobileBudgetMb: Int
+        get() = BackgroundBudget.clampMb(prefs.getInt("bg_mobile_mb", BackgroundBudget.DEFAULT_MB))
+        set(v) = prefs.edit().putInt("bg_mobile_mb", BackgroundBudget.clampMb(v)).apply()
+
+    /** Страны, которые предпочитать, страны и серверы, к которым не подключаться (по одному в строке; см. [PoolPolicy]). */
+    var poolPrefer: String
+        get() = prefs.getString("pool_prefer", "") ?: ""
+        set(v) = prefs.edit().putString("pool_prefer", v).apply()
+    var poolAvoid: String
+        get() = prefs.getString("pool_avoid", "") ?: ""
+        set(v) = prefs.edit().putString("pool_avoid", v).apply()
+    var poolHidden: String
+        get() = prefs.getString("pool_hidden", "") ?: ""
+        set(v) = prefs.edit().putString("pool_hidden", v).apply()
+
     // ---- режим, переподключение, политика целей ----
 
     /** Сам определять тип блокировок (белые/чёрные списки) и переключать режим. */
@@ -118,6 +139,42 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
     var speedOnMetered: Boolean
         get() = bool("speed_on_metered", false)
         set(v) = putBool("speed_on_metered", v)
+
+    /** Раз в неделю сохранять копию настроек и данных во внутреннюю память (последние три). */
+    var autoBackup: Boolean
+        get() = prefs.getBoolean("auto_backup", true)
+        set(v) = prefs.edit().putBoolean("auto_backup", v).apply()
+
+    var lastAutoBackupAt: Long
+        get() = prefs.getLong("auto_backup_at", 0L)
+        set(v) = prefs.edit().putLong("auto_backup_at", v).apply()
+
+    /** DNS туннеля (имя из [DnsProvider]); одно значение на все режимы. */
+    var dnsProvider: String
+        get() = DnsProvider.fromId(prefs.getString("dns_provider", null)).name
+        set(v) = prefs.edit().putString("dns_provider", DnsProvider.fromId(v).name).apply()
+
+    /** Проба нового DNS: какой был раньше и когда началась (0 — пробы нет). */
+    var dnsTrialPrev: String
+        get() = DnsProvider.fromId(prefs.getString("dns_trial_prev", null)).name
+        set(v) = prefs.edit().putString("dns_trial_prev", DnsProvider.fromId(v).name).apply()
+
+    var dnsTrialAt: Long
+        get() = prefs.getLong("dns_trial_at", 0L)
+        set(v) = prefs.edit().putLong("dns_trial_at", v).apply()
+
+    /** Если проба DNS просрочена — вернуть прежний. @return true, если откат был сделан */
+    fun settleDnsTrial(now: Long): Boolean {
+        if (!DnsTrial.expired(dnsTrialAt, now)) return false
+        dnsProvider = dnsTrialPrev
+        dnsTrialAt = 0L
+        return true
+    }
+
+    /** Сколько часов держать сервер, выбранный вручную (0 — пока не отключу). Одно значение на все режимы. */
+    var pinHours: Int
+        get() = PinPolicy.clamp(prefs.getInt("pin_hours", 0))
+        set(v) = prefs.edit().putInt("pin_hours", PinPolicy.clamp(v)).apply()
 
     /** Менять сервер, если через него почти ничего не качается (интернет «есть», но страницы и фото не грузятся). */
     var slowSwitch: Boolean
@@ -263,6 +320,49 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
         get() = prefs.getBoolean("focus_mode", false)
         set(v) = prefs.edit().putBoolean("focus_mode", v).apply()
 
+    /** Анимации главного экрана (свечение круга); системное «Убрать анимацию» их выключает независимо от этого переключателя. */
+    var animations: Boolean
+        get() = prefs.getBoolean("animations", true)
+        set(v) = prefs.edit().putBoolean("animations", v).apply()
+
+    /** Язык интерфейса на Android 10–12 (на 13+ его выбирает система); пусто — как в системе. */
+    var language: String
+        get() = LanguageChoice.clamp(prefs.getString("language", ""))
+        set(v) = prefs.edit().putString("language", LanguageChoice.clamp(v)).apply()
+
+    /** Какие приложения идут через VPN: 0 все, кроме списка обхода; 1 только выбранные (см. [AppsMode]). */
+    var appsMode: Int
+        get() = AppsMode.clamp(prefs.getInt("apps_mode", 0))
+        set(v) = prefs.edit().putInt("apps_mode", AppsMode.clamp(v)).apply()
+
+    /** Приложения, идущие через VPN в режиме «только выбранные» (по одному в строке). */
+    var onlyApps: String
+        get() = prefs.getString("only_apps", "") ?: ""
+        set(v) = prefs.edit().putString("only_apps", v).apply()
+
+    /** Тема: 0 как в системе, 1 светлая, 2 тёмная (см. [ThemeChoice]). */
+    var recheckSpeed: Int
+        get() = RecheckSpeed.clamp(prefs.getInt("recheck_speed", RecheckSpeed.DEFAULT))
+        set(v) = prefs.edit().putInt("recheck_speed", RecheckSpeed.clamp(v)).apply()
+
+    var activityStyle: Int
+        get() = ActivityStyle.clamp(prefs.getInt("activity_style", ActivityStyle.DEFAULT))
+        set(v) = prefs.edit().putInt("activity_style", ActivityStyle.clamp(v)).apply()
+
+    var theme: Int
+        get() = ThemeChoice.clamp(prefs.getInt("theme", 0))
+        set(v) = prefs.edit().putInt("theme", ThemeChoice.clamp(v)).apply()
+
+    /** Размер журнала: 0 короткий, 1 обычный, 2 подробный (см. [LogSize]). */
+    var logSize: Int
+        get() = LogSize.clamp(prefs.getInt("log_size", 1))
+        set(v) = prefs.edit().putInt("log_size", LogSize.clamp(v)).apply()
+
+    /** Номер пройденной версии первого запуска (см. [Onboarding]); 0 — не проходил. */
+    var onboardingSeen: Int
+        get() = prefs.getInt("onboarding_seen", 0)
+        set(v) = prefs.edit().putInt("onboarding_seen", v).apply()
+
     /** Пользователь сам отметил, что включил автозапуск (система не даёт это проверить). */
     var autostartConfirmed: Boolean
         get() = prefs.getBoolean("autostart_confirmed", false)
@@ -291,6 +391,17 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
         get() = prefs.getLong("last_targets_at", 0L)
         set(v) = prefs.edit().putLong("last_targets_at", v).apply()
 
+    /** «Вернуть рекомендуемые»: удаляет сохранённые значения (без них действуют умолчания). Личные настройки, расписание и данные не трогаются. */
+    fun resetRecommended(): Int {
+        val present = prefs.all.keys
+        val keys = SettingsKeys.recommendedResetKeys(modeName()).filter { it in present }
+        if (keys.isEmpty()) return 0
+        val e = prefs.edit()
+        keys.forEach { e.remove(it) }
+        e.apply()
+        return keys.size
+    }
+
     /** Настройки, которые уходят в резервную копию (ключ → тип: b, i, f, s). Служебные отметки сбора не переносим. */
     private val portable = SettingsKeys.portable(Mode.entries.map { it.name })
 
@@ -314,6 +425,7 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
                         k.endsWith("global_policy") -> Policy.entries.any { it.name == v }
                         k.endsWith("ipv6_mode") -> Ipv6Mode.entries.any { it.name == v }
                         k == "schedule_kind" -> ScheduleKind.entries.any { it.name == v }
+                        k == "dns_provider" -> DnsProvider.entries.any { it.name == v }
                         else -> true
                     }
                     if (ok) { e.putString(k, v); n++ }

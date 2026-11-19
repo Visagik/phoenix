@@ -27,6 +27,22 @@
    `PHOENIX_KEYSTORE_B64` (`base64 -w0 ~/keys/phoenix-release.jks`), `PHOENIX_STORE_PASSWORD`, `PHOENIX_KEY_PASSWORD`, `PHOENIX_KEY_ALIAS`.
 5. Заполнить `tools/core.lock`: `TAG` релиза ядра в 2dust/AndroidLibXrayLite и `SHA256` (`sha256sum app/libs/libv2ray.aar`).
 
+## Быстрый выпуск вручную (debug-подпись, как 3.9.64)
+Пока `tools/core.lock` и секреты CI не заполнены, workflow `release` на теге остановится на проверках (красный ✗ — это ожидаемо, релиз он не создаст).
+```
+./gradlew assembleDebug
+cp app/build/outputs/apk/debug/app-debug.apk phoenix-3.9.66-debug.apk
+sha256sum phoenix-3.9.66-debug.apk
+git add -A && git commit -m "Phoenix 3.9.66" && git push
+gh release create v3.9.66 phoenix-3.9.66-debug.apk --title "Phoenix 3.9.66" --notes-file RELEASE_NOTES_3.9.66.md
+```
+Подпись должна совпасть с установленной сборкой (debug-ключ этой машины), иначе обновление поверх не встанет.
+
+## Как проверить самообновление
+1. Собрать «старую» версию: `./gradlew assembleDebug -PphoenixVersionName=3.9.65 -PphoenixVersionCode=79` и установить на телефон.
+2. Выпустить 3.9.66 (код 80, см. выше).
+3. На телефоне: «Ещё → Обновления» (или дождаться уведомления) → «Скачать и установить». Проверить: контрольная сумма сошлась, установка поверх, настройки и цели на месте, версия 3.9.66.
+
 ## Каждый выпуск
 1. Поднять `versionCode` и `versionName` в `app/build.gradle.kts`, написать `RELEASE_NOTES_<версия>.md`, обновить CHANGELOG.
 2. `git commit`, затем `git tag v<версия> && git push && git push --tags`.

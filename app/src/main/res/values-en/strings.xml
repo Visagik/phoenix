@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_fix">Not working</string>
+    <string name="shortcut_switch">Switch server</string>
+    <string name="shortcut_stop">Disconnect</string>
+</resources>

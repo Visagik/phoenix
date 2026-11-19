@@ -23,6 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger
 object RecheckState {
     val running = MutableStateFlow(false)
     val progress = MutableStateFlow("")
+
+    /** Подробности хода: пусто, пока перепроверка не идёт или ещё не проверен ни один сервер. */
+    val detail = MutableStateFlow<RecheckDetail?>(null)
 }
 
 /**
@@ -72,14 +75,16 @@ object Recheck {
         if (NetInfo.kind(context) == NetInfo.Kind.NONE || FailoverGate.offlineRecently(ModeDetector.offlineAt, started)) {
             // без сети все конфиги «не отвечают», и перепроверка испортила бы приоритеты (в логе: живых 0 из 677)
             storage.log("RECHECK: пропущена ($reason) — у телефона нет интернета")
-            RecheckState.running.value = false
+            RecheckState.running.value = false; RecheckState.detail.value = null
             return "нет сети"
         }
         val netBefore = NetInfo.label(context)
         try {
             AppSettings(context).lastRecheckAt = started
-            val groups = SearchPool.groups(context, storage, withForeign)
+            val allGroups = SearchPool.groups(context, storage, withForeign)
                 .map { (st, list) -> st to list.filter { XrayConfig.supports(it.link) } }
+            val quarantineSkipped = allGroups.sumOf { (_, l) -> l.count { RecheckSkip.quarantined(it) } }
+            val groups = allGroups.map { (st, l) -> st to l.filterNot { RecheckSkip.quarantined(it) } }
             val totalCount = groups.sumOf { it.second.size }
             if (totalCount == 0) {
                 RecheckState.progress.value = "Нет конфигов для проверки"
@@ -88,46 +93,87 @@ object Recheck {
             storage.log(
                 "RECHECK: старт ($reason), режим ${mode.title}, конфигов $totalCount" +
                     groups.joinToString("") { (st, l) -> ", ${if (st.mode == mode) "свои" else "из режима «${st.mode.title}»"} ${l.size}" } +
-                    (if (withForeign) "" else " (только этот режим)")
+                    (if (withForeign) "" else " (только этот режим)") +
+                    (if (quarantineSkipped > 0) "; пропущено $quarantineSkipped: недавно мёртвые и в этой сети подряд не работали" else "")
             )
             val reachCache = ConcurrentHashMap<String, String>()
             val done = AtomicInteger()
+            val judged = AtomicInteger()
             val alive = AtomicInteger()
+            val tcpDead = AtomicInteger()
+            val skippedLive = AtomicInteger()
+            var lastDetailAt = 0L
             val guard = RunGuard(mode, NetInfo.label(context))
             var abortNote = ""
+            var userStopped = false
             var checked = 0
             for ((st, list) in groups) {
                 val left = budgetMs - (System.currentTimeMillis() - started)
                 if (left <= 0 || list.isEmpty()) continue
                 val sink = SearchSink(st, context)
+                val speed = AppSettings(context).recheckSpeed
+                val probeBase = RecheckSpeed.probes(speed, CheckLimits.searchParallel(context))
                 val gov = GovernedLimits.get(st)
                 val govNet = NetInfo.label(context)
                 gov.begin(govNet)
+                // ручной запуск и «Быстрая» — выбор человека: уровень, накопленный из-за сбоев сети, урезает их слабее
+                val lvlCap = when { speed == RecheckSpeed.FAST -> 0; reason == "вручную" -> 1; else -> ParallelGovernor.MAX_LEVEL }
+                val detailTcp = minOf(RecheckSpeed.tcpCap(speed), ParallelGovernor.capFor(gov.tcp(govNet, lvlCap), NetInfo.kind(context) == NetInfo.Kind.MOBILE))
+                val detailProbe = gov.probe(govNet, ColdStart.recheckParallel(probeBase, AppSettings(context).lastSuccessAt), lvlCap)
+                MemInfo.log(context, "перепроверка: старт, конфигов ${list.size}")
                 val search = ServerSearch(
                     reach = { h, p ->
                         val key = "$h:$p"
                         val cached = reachCache[key]
                         if (cached != null) cached.ifEmpty { null }
-                        else (ServerHosts.reach(h, p, 2_500)).also { reachCache[key] = it ?: "" }
+                        else (ServerHosts.reach(h, p, RecheckSpeed.reachMs(speed))).also { reachCache[key] = it ?: "" }
                     },
-                    probe = { cfg, url -> ProbeShare.measure(cfg, url) { XrayCore.measureDelay(context, cfg, url) } },
-                    tcpParallel = ParallelGovernor.capFor(gov.tcp(govNet), NetInfo.kind(context) == NetInfo.Kind.MOBILE),
-                    probeParallel = gov.probe(govNet, ColdStart.recheckParallel(CheckLimits.searchParallel(context), AppSettings(context).lastSuccessAt)),
+                    probe = { cfg, url -> ProbeShare.measure(cfg, url) { XrayCore.measureDelay(context, cfg, url, fast = mode == Mode.BLACKLIST) } },
+                    tcpParallel = minOf(RecheckSpeed.tcpCap(speed), ParallelGovernor.capFor(gov.tcp(govNet, lvlCap), NetInfo.kind(context) == NetInfo.Kind.MOBILE)),
+                    probeParallel = gov.probe(govNet, ColdStart.recheckParallel(probeBase, AppSettings(context).lastSuccessAt), lvlCap),
                     maxCandidates = 20_000,
                     onePerHost = false,
                     loadSample = GatewayProbe.sampler(context),
-                    shouldStop = { guard.stale(Storage(context).mode, NetInfo.label(context)) || RunGuard.hopeless(done.get(), alive.get()) },
+                    shouldStop = { StopRequest.requestedSince(started) || guard.stale(Storage(context).mode, NetInfo.label(context)) || RunGuard.hopeless(judged.get(), alive.get()) },
+                    offlineSuspect = ServerSearch.offlineLimit(NetInfo.kind(context) == NetInfo.Kind.MOBILE),
+                    hostStrikes = RecheckSkip.HOST_STRIKES,
                 )
                 search.find(list, want = Int.MAX_VALUE, budgetMs = left) { c, ms ->
                     sink.add(c, ms)
                     if (ms >= 0) alive.incrementAndGet()
+                    if (ms == ServerSearch.TCP_FAIL) tcpDead.incrementAndGet()
+                    if (ms == ServerSearch.HOST_SKIPPED) skippedLive.incrementAndGet()
+                    if (ms != ServerSearch.HOST_SKIPPED) judged.incrementAndGet()
                     val n = done.incrementAndGet()
-                    if (n % 25 == 0) RecheckState.progress.value = "Перепроверка: $n из $totalCount, живых ${alive.get()}"
+                    val nowMs = System.currentTimeMillis()
+                    if (nowMs - lastDetailAt >= 700 || n == totalCount) {
+                        lastDetailAt = nowMs
+                        val a = alive.get()
+                        val td = tcpDead.get()
+                        val sk = skippedLive.get()
+                        RecheckState.detail.value = RecheckDetail(
+                            total = totalCount, done = n, alive = a, tcpFailed = td, probeFailed = (n - a - td - sk).coerceAtLeast(0), skipped = sk,
+                            quarantined = quarantineSkipped, elapsedMs = nowMs - started, speed = speed, tcpParallel = detailTcp, probeParallel = detailProbe,
+                            level = gov.level(govNet), foreign = st.mode != mode,
+                        )
+                    }
+                    if (n % 25 == 0) {
+                        val eta = ActivityText.etaSeconds(n, totalCount, System.currentTimeMillis() - started)
+                        RecheckState.progress.value = tr("Перепроверка: {} из {} ({}%), живых {}", n, totalCount, ActivityText.percent(n, totalCount), alive.get()) +
+                            (when {
+                                eta < 0 -> ""
+                                eta < 60 -> " · " + tr("осталось ~{} с", eta)
+                                eta < 3600 -> " · " + tr("осталось ~{} мин", (eta + 30) / 60)
+                                else -> " · " + tr("осталось ~{} ч {} мин", eta / 3600, (eta % 3600) / 60)
+                            })
+                    }
                     if (sink.pending >= 150) sink.flush()
                 }
                 sink.flush()
                 val offlineNow = search.suspectedOffline
-                st.log("RECHECK: итог по этапам — хостов проверено по TCP ${search.triedTcp} (не открылись ${search.tcpFailed}), запусков ядра ${search.probed}, ответов без запуска (ProbeShare) ${ProbeShare.saved}")
+                MemInfo.log(context, "перепроверка: конец")
+                st.log("RECHECK: итог по этапам — хостов проверено по TCP ${search.triedTcp} (не открылись ${search.tcpFailed}), запусков ядра ${search.probed}, ответов без запуска (ProbeShare) ${ProbeShare.saved}, пропущено по адресу ${search.hostSkipped}")
+                st.log("RECHECK: время по этапам — TCP в среднем ${if (search.triedTcp > 0) search.tcpMsTotal / search.triedTcp else 0} мс на хост, проба через ядро в среднем ${if (search.probed > 0) search.probeMsTotal / search.probed else 0} мс, притормаживал из-за нагрузки роутера ${search.throttled} раз, параллельно TCP ${ParallelGovernor.capFor(gov.tcp(govNet, lvlCap), NetInfo.kind(context) == NetInfo.Kind.MOBILE)}, проб ${gov.probe(govNet, probeBase, lvlCap)}, скорость ${speed}, уровень сети ${gov.level(govNet)}")
                 if (offlineNow) {
                     // серверы подряд не открыли TCP — вероятнее всего, нет интернета у телефона, а не умерли серверы: ограничение не снимаем, а ужесточаем
                     if (gov.outage(govNet, System.currentTimeMillis())) st.log("RECHECK: сеть $govNet потеряла интернет во время перепроверки — в следующий раз параллельных проверок будет меньше")
@@ -141,8 +187,13 @@ object Recheck {
                     st.log("RECHECK: прервана — серверы подряд не открыли TCP, ${abortNote}")
                     break
                 }
+                if (search.aborted && StopRequest.requestedSince(started)) {
+                    userStopped = true
+                    st.log("RECHECK: остановлена вами — проверено ${sink.count} серверов, результаты сохранены")
+                    break
+                }
                 if (search.aborted) {
-                    abortNote = RunGuard.abortReason(guard.stale(Storage(context).mode, NetInfo.label(context)), done.get(), alive.get())
+                    abortNote = RunGuard.abortReason(guard.stale(Storage(context).mode, NetInfo.label(context)), judged.get(), alive.get())
                     st.log("RECHECK: прервана — $abortNote")
                     break
                 }
@@ -151,7 +202,7 @@ object Recheck {
             val interrupted = abortNote.isNotEmpty()
             if (interrupted) storage.log("RECHECK: сервисы, список обхода и приоритеты не трогаю — перепроверка прервана")
             try {
-                if (!interrupted && budgetMs - (System.currentTimeMillis() - started) > 0) {
+                if (!interrupted && !userStopped && budgetMs - (System.currentTimeMillis() - started) > 0) {
                     RecheckState.progress.value = "Проверяю сервисы у рабочих конфигов…"
                     AutoServices.run(context, storage)
                 }
@@ -161,33 +212,34 @@ object Recheck {
                 storage.log("SVC: ошибка автопроверки сервисов: ${e.message}")
             }
             try {
-                if (!interrupted) DirectProbe.run(context, storage, onlyDue = true)
+                if (!interrupted && !StopRequest.requestedSince(started)) DirectProbe.run(context, storage, onlyDue = true)
             } catch (e: Exception) {
                 storage.log("BYPASS: ошибка проверки списка обхода: ${e.message}")
             }
             try {
                 if (interrupted) {
                     // приоритеты по прерванному итогу не меняем
-                } else if (RecheckGuard.suspicious(alive.get(), totalCount) || RecheckGuard.networkChanged(netBefore, NetInfo.label(context))) {
+                } else if (RecheckGuard.suspicious(alive.get(), if (userStopped) checked.coerceAtLeast(1) else totalCount) || RecheckGuard.networkChanged(netBefore, NetInfo.label(context))) {
                     storage.log("PRIO: приоритеты не меняю — итог перепроверки ненадёжен (живых ${alive.get()} из $totalCount, сеть было $netBefore, стало ${NetInfo.label(context)})")
                 } else AutoPriority.update(storage)
             } catch (e: Exception) {
                 storage.log("PRIO: ошибка авто-приоритетов: ${e.message}")
             }
             val seconds = (System.currentTimeMillis() - started) / 1000
-            val summary = "проверено $checked из $totalCount, живых ${alive.get()}, за $seconds с" + (if (abortNote.isNotEmpty()) " (прервана: $abortNote)" else "")
+            val stoppedByUser = userStopped || StopRequest.requestedSince(started)
+            val summary = "проверено $checked из $totalCount, живых ${alive.get()}, за $seconds с" + (if (abortNote.isNotEmpty()) " (прервана: $abortNote)" else "") + (if (stoppedByUser) " (остановлена вами, результаты сохранены)" else "")
             storage.log("RECHECK: $summary")
             LocalSocks.statsLine()?.let { storage.log(it) }
             RecheckState.progress.value = "Перепроверка завершена: $summary"
             PlanBus.notifyChanged()
             try {
                 // после прерывания по отсутствию интернета цели не перепроверяем (повторится при появлении сети); после смены сети или режима — можно
-                if (!interrupted || guard.stale(Storage(context).mode, NetInfo.label(context))) TargetsWorker.enqueue(context) // свежие проверки — повод обновить серверы целей
+                if (!stoppedByUser && (!interrupted || guard.stale(Storage(context).mode, NetInfo.label(context)))) TargetsWorker.enqueueAfterRefresh(context) // свежие проверки — повод обновить серверы целей
             } catch (_: Exception) {
             }
             return summary
         } finally {
-            RecheckState.running.value = false
+            RecheckState.running.value = false; RecheckState.detail.value = null
         }
     }
 
@@ -196,6 +248,7 @@ object Recheck {
         if (!XrayCore.available) return "ядро недоступно"
         if (!RecheckState.running.compareAndSet(false, true)) return "перепроверка уже идёт"
         val storage = Storage(context, mode)
+        val startedSvc = System.currentTimeMillis()
         try {
             if (NetInfo.kind(context) == NetInfo.Kind.NONE || FailoverGate.offlineRecently(ModeDetector.offlineAt, System.currentTimeMillis())) {
                 storage.log("SVC: перепроверка приложений пропущена ($reason) — у телефона нет интернета")
@@ -208,18 +261,18 @@ object Recheck {
             RecheckState.progress.value = text
             PlanBus.notifyChanged()
             try {
-                TargetsWorker.enqueue(context)
+                if (!StopRequest.requestedSince(startedSvc)) TargetsWorker.enqueue(context)
             } catch (_: Exception) {
             }
             return text
         } finally {
-            RecheckState.running.value = false
+            RecheckState.running.value = false; RecheckState.detail.value = null
         }
     }
 
     fun enqueueServices(context: Context, mode: Mode) {
         val request = OneTimeWorkRequestBuilder<RecheckWorker>()
-            .setConstraints(constraints())
+            .setConstraints(constraints(context, manual = true))
             .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_ONLY_SERVICES to true))
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
@@ -227,12 +280,16 @@ object Recheck {
         WorkManager.getInstance(context).enqueueUniqueWork("phoenix_recheck", ExistingWorkPolicy.KEEP, request)
     }
 
-    private fun constraints() = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+    private fun constraints(context: Context, manual: Boolean): Constraints {
+        val st = AppSettings(context)
+        val wifi = WifiOnlyPolicy.effective(st.wifiOnly, manual, st.lastSuccessAt, System.currentTimeMillis())
+        return Constraints.Builder().setRequiredNetworkType(if (wifi) NetworkType.UNMETERED else NetworkType.CONNECTED).build()
+    }
 
     /** Запустить в фоне (переживает закрытие экрана). Повторный запуск, пока идёт прежний, ничего не делает. */
     fun enqueue(context: Context, mode: Mode, withForeign: Boolean = false, reason: String = "вручную") {
         val request = OneTimeWorkRequestBuilder<RecheckWorker>()
-            .setConstraints(constraints())
+            .setConstraints(constraints(context, manual = reason == "вручную"))
             .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_FOREIGN to withForeign, RecheckWorker.KEY_REASON to reason))
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
@@ -256,6 +313,9 @@ object Recheck {
 class RecheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val mode = Mode.entries.firstOrNull { it.name == inputData.getString(KEY_MODE) } ?: Storage(applicationContext).mode
+        // автоматическая перепроверка не тратит больше суточного лимита по мобильной сети; ручная и поиск сервера при обрыве не ограничиваются
+        val autoRun = !inputData.getBoolean(KEY_ONLY_SERVICES, false) && (inputData.getString(KEY_REASON) ?: "вручную") != "вручную"
+        if (autoRun && BackgroundBudgetGate.exhausted(applicationContext)) return Result.success()
         if (inputData.getBoolean(KEY_ONLY_SERVICES, false)) {
             Recheck.runServices(applicationContext, mode)
             return Result.success()

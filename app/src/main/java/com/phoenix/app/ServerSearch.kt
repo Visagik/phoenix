@@ -42,16 +42,28 @@ class ServerSearch(
     private val loadSample: (() -> Long)? = null,
     /** Внешняя причина остановить поиск (сменилась сеть или режим, поиск бесперспективен); проверяется дважды в секунду. */
     private val shouldStop: (() -> Boolean)? = null,
+    /** Сколько серверов подряд без единого открытого TCP считать «нет интернета» (на мобильной сети меньше — см. [offlineLimit]). */
+    private val offlineSuspect: Int = OFFLINE_SUSPECT,
+    /** Сколько проб подряд без единого ответа на одном host:port, после которых остальные конфиги этого адреса пропускаются (0 — не пропускать). */
+    private val hostStrikes: Int = 0,
 ) {
     companion object {
         /** Сервер не открыл TCP-соединение (в этой сети он недоступен; в другой может быть жив). */
         const val TCP_FAIL = -3L
+
+        /** Пробу не делали: на этом host:port уже несколько конфигов подряд не дали интернета, а ни один не сработал. */
+        const val HOST_SKIPPED = -4L
 
         /** Столько серверов подряд без единого открытого TCP — почти наверняка нет интернета, а не умерли все серверы. */
         const val OFFLINE_SUSPECT = 120
 
         /** …и не меньше стольких разных host:port (несколько конфигов одного сервера не должны давать «нет интернета»). */
         const val OFFLINE_MIN_HOSTS = 40
+
+        /** На мобильной сети при плохом покрытии каждая проба стоит батареи: останавливаемся раньше (раньше везде было 120, по журналу 150–290 проб за раз). */
+        const val OFFLINE_SUSPECT_MOBILE = 50
+
+        fun offlineLimit(mobile: Boolean): Int = if (mobile) OFFLINE_SUSPECT_MOBILE else OFFLINE_SUSPECT
     }
 
     /** Поиск остановлен: [OFFLINE_SUSPECT] серверов подряд не открыли TCP, ни один не открылся. */
@@ -68,6 +80,14 @@ class ServerSearch(
     @Volatile var tcpFailed = 0
         private set
     @Volatile var probed = 0
+        private set
+    @Volatile var hostSkipped = 0
+        private set
+
+    /** Суммарное время проверок (по всем потокам, мс): TCP и пробы через ядро; для журнала, чтобы видеть, где уходит время. */
+    @Volatile var tcpMsTotal = 0L
+        private set
+    @Volatile var probeMsTotal = 0L
         private set
 
     /** Сколько раз поиск притормаживал из-за перегрузки шлюза (для журнала). */
@@ -114,6 +134,12 @@ class ServerSearch(
             }
         }
         val probeGate = Semaphore(probeParallel)
+        val hostBad = java.util.concurrent.ConcurrentHashMap<String, AtomicInteger>()
+        val hostGood = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+        val skippedN = AtomicInteger()
+        val hostKeyOf = { c: Candidate -> ConfigIdentity.address(c.link) }
+        val tcpMsSum = java.util.concurrent.atomic.AtomicLong()
+        val probeMsSum = java.util.concurrent.atomic.AtomicLong()
 
         for (c in ordered) {
             scope.launch {
@@ -124,13 +150,18 @@ class ServerSearch(
                     if (parsed?.host != null && parsed.port != null) {
                         val ip = tcpGate.run {
                             if (stop.get()) return@run null
-                            if (parsed.protocol == "hysteria2") ServerHosts.resolveOnly(parsed.host) else reach(parsed.host, parsed.port)
+                            val t0 = System.nanoTime()
+                            try {
+                                if (parsed.protocol == "hysteria2") ServerHosts.resolveOnly(parsed.host) else reach(parsed.host, parsed.port)
+                            } finally {
+                                tcpMsSum.addAndGet((System.nanoTime() - t0) / 1_000_000)
+                            }
                         }
                         if (stop.get() && ip == null && !suspectedOffline) return@launch
                         if (ip == null) {
                             onProbe(c, TCP_FAIL)
                             failedHosts.add("${parsed.host}:${parsed.port}")
-                            if (tcpOk.get() == 0 && tcpFail.incrementAndGet() >= OFFLINE_SUSPECT && failedHosts.size >= OFFLINE_MIN_HOSTS) {
+                            if (tcpOk.get() == 0 && tcpFail.incrementAndGet() >= offlineSuspect && failedHosts.size >= minOf(OFFLINE_MIN_HOSTS, offlineSuspect)) {
                                 suspectedOffline = true
                                 stop.set(true)
                                 done.complete(Unit)
@@ -146,11 +177,26 @@ class ServerSearch(
                         onProbe(c, CheckServices.UNSUPPORTED)
                         return@launch
                     }
+                    val hk = if (hostStrikes > 0) hostKeyOf(c) else ""
+                    val skipHost = { hk.isNotEmpty() && hk !in hostGood && (hostBad[hk]?.get() ?: 0) >= hostStrikes }
+                    if (skipHost()) {
+                        skippedN.incrementAndGet()
+                        onProbe(c, HOST_SKIPPED)
+                        return@launch
+                    }
                     val ms = probeGate.withPermit {
                         if (stop.get()) return@launch
+                        if (skipHost()) return@withPermit HOST_SKIPPED
                         probedN.incrementAndGet()
-                        probe(config, url)
+                        val t0 = System.nanoTime()
+                        val r = try { probe(config, url) } finally { probeMsSum.addAndGet((System.nanoTime() - t0) / 1_000_000) }
+                        // итог по адресу записываем, пока держим место: следующая проба этого же адреса уже увидит его
+                        if (hk.isNotEmpty()) {
+                            if (r >= 0) hostGood.add(hk) else hostBad.getOrPut(hk) { AtomicInteger() }.incrementAndGet()
+                        }
+                        r
                     }
+                    if (ms == HOST_SKIPPED) skippedN.incrementAndGet()
                     onProbe(c, ms)
                     if (ms >= 0) {
                         found += Found(c, ms)
@@ -181,6 +227,9 @@ class ServerSearch(
         triedTcp = tcpOk.get() + tcpFail.get()
         tcpFailed = tcpFail.get()
         probed = probedN.get()
+        hostSkipped = skippedN.get()
+        tcpMsTotal = tcpMsSum.get()
+        probeMsTotal = probeMsSum.get()
         return found.sortedBy { it.ms }.take(want)
     }
 }

@@ -10,7 +10,7 @@ object BackgroundBudgetGate {
             val limit = AppSettings(context).mobileBudgetMb
             val used = EnergyMeter.of(java.io.File(context.filesDir, "energy.tsv")).mobileBytes(java.time.LocalDate.now().toString())
             val over = BackgroundBudget.exhausted(used, limit)
-            if (over) Storage(context).log("Лимит фоновых проверок по мобильной сети ($limit МБ в сутки) исчерпан: пропускаю")
+            if (over && BudgetLogThrottle.shouldLog(System.currentTimeMillis())) Storage(context).log("Лимит фоновых проверок по мобильной сети ($limit МБ в сутки) исчерпан: пропускаю (повторы в журнал не пишу 30 минут)")
             over
         } catch (_: Throwable) {
             false

@@ -65,8 +65,8 @@ object SpeedRunner {
             LocalSocks.get(port, auth, url).use { r ->
                 if (r.code in 400..499) Soft.accepts(r.code, r.head(4096)) else Soft.accepts(r.code)
             }
-        } catch (_: Throwable) {
-            false
+        } catch (e: Throwable) {
+            TlsOutcome.certProblem(e) // сертификат не принят: сервер до сайта дотянулся (банки, Microsoft), это не «закрыто»
         } finally {
             controller.stop()
         }

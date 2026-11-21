@@ -215,6 +215,7 @@ class PhoenixVpnService : VpnService() {
     /** С какого момента у закреплённого вручную сервера не проходит общая проверка (0 — проходит). */
     @Volatile private var pinFailSince = 0L
     private var failoverBackoffMs = FAILOVER_BACKOFF_START_MS
+    private val autoSwitchTimes = ArrayList<Long>()
     private var lastDetectAt = 0L
     private val lastSwitchAt = HashMap<String, Long>()
     /** Кэш [hasSwitchTargets]: иначе опрос переднего плана читает targets.tsv дважды за круг, в том числе при выключенном экране. Сбрасывается через [PlanBus]. */
@@ -1022,7 +1023,7 @@ class PhoenixVpnService : VpnService() {
                     changes = withContext(Dispatchers.IO) { DirectProbe.run(this@PhoenixVpnService, storage, onlyDue = true) }
                 }
                 // в этой сети часть приложений теперь идёт через VPN (напрямую закрыты): серверы для них подбираем сейчас, а не при следующей перепроверке
-                if (changes > 0) { storage.log("TARGETS: список обхода в новой сети изменился — запускаю подбор серверов для целей"); TargetsWorker.enqueue(applicationContext) }
+                if (changes > 0) { storage.log("TARGETS: список обхода в новой сети изменился — запускаю подбор серверов для целей через ${TARGETS_AFTER_REBUILD_SEC} с (после пересборки туннеля)"); TargetsWorker.enqueue(applicationContext, TARGETS_AFTER_REBUILD_SEC) }
             } catch (e: Exception) { storage.log("BYPASS: ошибка проверки в новой сети: ${e.message}") }
         }
         // старые сокеты ядра остались на ушедшей сети и висят 10–15 секунд: если связи нет, пересоздаём их тем же сервером, не меняя сервер
@@ -1072,9 +1073,9 @@ class PhoenixVpnService : VpnService() {
 
     /** Туннель после смены сервера: связь есть два раза подряд (один удачный ответ может быть случайным). */
     private suspend fun tunnelWorks(): Boolean {
-        delay(1_200)
+        delay(900)
         if (!healthy()) return false
-        delay(1_000)
+        delay(800)
         return healthy()
     }
 
@@ -1155,6 +1156,8 @@ class PhoenixVpnService : VpnService() {
         if (healthy()) {
             if (failures > 0 || VpnState.status.value.note.isNotEmpty()) {
                 if (failures > 0) storage.log("HEALTH: связь через [$mainTitle] восстановилась (неудач было $failures), сеть ${NetInfo.label(this)}")
+                // перерыв, открытый неудачным поиском сервера, кончился: считаем до возврата связи, а не до следующей смены (журнал 20.11: «1200 с», хотя связь возвращалась)
+                closeOutage(DowntimeStats.LOSS)
                 failures = 0
                 if (VpnState.status.value.phase == VpnPhase.CONNECTED && isNoLinkNote(VpnState.status.value.note)) setConnected(foreignNote)
             }
@@ -1257,6 +1260,12 @@ class PhoenixVpnService : VpnService() {
             storage.log("HEALTH: режим только что сменился — даю серверу устояться, перебор отложен")
             return
         }
+        // сеть только что прыгала (Wi-Fi ↔ мобильная каждые несколько минут): сбой связи — вина сети, а не сервера; не вешаем его на сервер и не меняем
+        if (NetFlap.busy(System.currentTimeMillis())) {
+            failures = 0
+            storage.log("HEALTH: сеть недавно меняла тип несколько раз подряд — не виню сервер [$mainTitle] и не перебираю, проверю снова позже")
+            return
+        }
         recordHist(mainLink, false) // сервер перестал работать именно в этой сети
         Quarantine.add(ConfigIdentity.key(mainLink), networkAlive = networkUsable()) // 10 минут не выбираем его снова; третий провал за сутки — на сутки
         if (System.currentTimeMillis() < nextFailoverAt) {
@@ -1312,7 +1321,7 @@ class PhoenixVpnService : VpnService() {
         } else arranged
         appFit = out.filter { c ->
             val t = AppFit.tier(c, primary, others, exits[CheckStore.keyOf(c.link)]?.cc, blocked, vetoed)
-            t <= 1 || (t == 2 && (svc == null || ServiceMatch.groupOf(c, checks, svc) <= 1))
+            t <= 1 || (t == 2 && svc != null && ServiceMatch.groupOf(c, checks, svc) <= 1) // без проверяемого сервиса «подходящими» не считаем все непроверенные серверы (было 1521 из 1677)
         }.map { it.identity }.toSet()
         val demoted = out.count { AppFit.tier(it, primary, others, exits[CheckStore.keyOf(it.link)]?.cc, blocked, vetoed) in 3..4 }
         val vetoedCount = out.count { AppFit.tier(it, primary, others, exits[CheckStore.keyOf(it.link)]?.cc, blocked, vetoed) == 5 }
@@ -1441,7 +1450,7 @@ class PhoenixVpnService : VpnService() {
     private fun openOutage() {
         val now = System.currentTimeMillis()
         // прежний перерыв так и не закрылся (сервер не нашёлся или сети не было): считаем заново, иначе он приплюсуется к следующему (журнал 07.11: «перерыв 2331 с»)
-        if (outageAt == 0L || now - outageAt > DowntimeStats.MAX_SEC * 1000L) outageAt = now
+        if (outageAt == 0L || now - outageAt > DowntimeStats.MAX_SEC * 1000L) outageAt = OutageStart.pick(now, failSince) // от первой неудачи проверки, а не от начала смены
     }
 
     private fun closeOutage(kind: String) {
@@ -1471,27 +1480,35 @@ class PhoenixVpnService : VpnService() {
     private suspend fun prefilterPicks(picks: List<Pick>): List<Pick>? {
         if (picks.isEmpty()) return emptyList()
         return try {
-            withContext(Dispatchers.IO) {
-                val gate = Semaphore(MODE_PREFILTER_PARALLEL)
-                coroutineScope {
-                    picks.map { p ->
-                        async {
-                            gate.withPermit {
-                                val parsed = LinkParser.parse(p.link)
-                                var hosts: Map<String, String> = emptyMap()
-                                if (parsed?.host != null && parsed.port != null) {
-                                    val ip = if (parsed.protocol == "hysteria2") ServerHosts.resolveOnly(parsed.host) else ServerHosts.reach(parsed.host, parsed.port, SEARCH_TCP_TIMEOUT_MS)
-                                    if (ip == null) return@withPermit null
-                                    hosts = ServerHosts.hostsFor(parsed.host, ip)
-                                }
-                                val cfg = try { XrayConfig.probeConfig(p.link, hosts) } catch (_: UnsupportedLinkException) { return@withPermit null }
-                                val ms = ProbeShare.measure(cfg, CheckServices.BASELINE_URL) { XrayCore.measureDelay(this@PhoenixVpnService, cfg, CheckServices.BASELINE_URL, urgent = true) }
-                                if (ms >= 0) p else null
+            // отвечают по-разному: ждём первого рабочего и короткую паузу для остальных, не всех до конца (журнал 20.11: 34 с ожидания, потом всё равно разрыв)
+            val found = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+            val firstFound = kotlinx.coroutines.CompletableDeferred<Unit>()
+            val gate = Semaphore(MODE_PREFILTER_PARALLEL)
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            try {
+                val jobs = picks.map { p ->
+                    scope.launch {
+                        gate.withPermit {
+                            val parsed = LinkParser.parse(p.link)
+                            var hosts: Map<String, String> = emptyMap()
+                            if (parsed?.host != null && parsed.port != null) {
+                                val ip = if (parsed.protocol == "hysteria2") ServerHosts.resolveOnly(parsed.host) else ServerHosts.reach(parsed.host, parsed.port, SEARCH_TCP_TIMEOUT_MS)
+                                if (ip == null) return@withPermit
+                                hosts = ServerHosts.hostsFor(parsed.host, ip)
                             }
+                            val cfg = try { XrayConfig.probeConfig(p.link, hosts) } catch (_: UnsupportedLinkException) { return@withPermit }
+                            val ms = ProbeShare.measure(cfg, CheckServices.BASELINE_URL) { XrayCore.measureDelay(this@PhoenixVpnService, cfg, CheckServices.BASELINE_URL, urgent = true) }
+                            if (ms >= 0) { found[p.link] = true; firstFound.complete(Unit) }
                         }
-                    }.awaitAll().filterNotNull()
+                    }
                 }
+                scope.launch { jobs.forEach { it.join() }; firstFound.complete(Unit) }
+                kotlinx.coroutines.withTimeoutOrNull(MODE_PREFILTER_MAX_MS) { firstFound.await() }
+                if (found.isNotEmpty()) delay(MODE_PREFILTER_GRACE_MS)
+            } finally {
+                scope.cancel() // остальные пробы не ждём
             }
+            picks.filter { found.containsKey(it.link) }
         } catch (e: Throwable) {
             storage.log("MODE: предпроверка быстрых вариантов не удалась (${e.message}) — иду по одному")
             null
@@ -1593,11 +1610,14 @@ class PhoenixVpnService : VpnService() {
         if (svc != null) store.modify(recordOdds = false) { cur ->
             cur[key]?.let { old -> mapOf(key to old.copy(services = old.services + (svc.id to CheckServices.FAILED))) } ?: emptyMap()
         }
-        // цель не должна держать этот сервер среди своих
+        // цель того же сайта не должна держать этот сервер среди своих; чужие цели не трогаем, список берём свежий из файла, а не переданный снимок
         val id = ConfigIdentity.key(link)
-        for (t in targets) if (t.servers.any { it != Target.DIRECT && ConfigIdentity.key(it) == id }) {
+        val fresh = TargetStore(storage.targetsFile).load()
+        val hit = TargetSite.affected(fresh, link, url)
+        for (t in hit) {
             TargetStore(storage.targetsFile).updateServers(t.id, t.servers.filter { it == Target.DIRECT || ConfigIdentity.key(it) != id }, t.verifiedAt)
         }
+        if (hit.isNotEmpty()) storage.log("VETO: сервер убран у целей этого сайта: ${hit.joinToString { it.label }}")
     }
 
     /**
@@ -1809,6 +1829,16 @@ class PhoenixVpnService : VpnService() {
                 closeOutage(DowntimeStats.FAILOVER)
                 failures = 0
                 failoverBackoffMs = FAILOVER_BACKOFF_START_MS
+                if (!forced) {
+                    val nowSw = System.currentTimeMillis()
+                    autoSwitchTimes.removeAll { nowSw - it > SwitchStorm.WINDOW_MS }
+                    autoSwitchTimes.add(nowSw)
+                    val hold = SwitchStorm.holdMs(autoSwitchTimes, nowSw)
+                    if (hold > 0L) {
+                        nextFailoverAt = nowSw + hold
+                        storage.log("FAILOVER: за 10 минут уже ${autoSwitchTimes.size} автосмен — следующую не раньше чем через ${hold / 1000} с, чтобы не рвать связь пачками")
+                    }
+                }
                 homeLink = null // прежний основной сервер не работает — возвращаться на него не нужно
                 switchedPkg = ""
                 setConnected(SwitchReason.note(if (forced) "сервер сменён" else "нашёл рабочий сервер за ${(System.currentTimeMillis() - started) / 1000} с", switchReason))
@@ -1826,13 +1856,17 @@ class PhoenixVpnService : VpnService() {
         }
         // поиск — гонка: побеждает самый быстрый ответивший. Серверы, где открытый сейчас сервис уже открывался, проверяем первым отдельным этапом
         val readyForApp = ReadyFirst.pick(ordered, fit)
+        val offlineAtBefore = ModeDetector.offlineAt
         var found: List<Found> = emptyList()
         if (readyForApp.isNotEmpty()) {
             storage.log((if (forced) "SWITCH" else "FAILOVER") + ": под открытое приложение есть ${readyForApp.size} серверов, где сервис уже открывался — проверяю сначала их")
             found = withContext(Dispatchers.IO) { searchFor(readyForApp, want = 2, budgetMs = FAILOVER_BUDGET_MS / 2, sink = sink) }
             if (found.isEmpty()) storage.log((if (forced) "SWITCH" else "FAILOVER") + ": из них никто не отвечает — ищу среди остальных")
         }
-        if (found.isEmpty()) found = withContext(Dispatchers.IO) { searchFor(ordered, want = 2, budgetMs = FAILOVER_BUDGET_MS, sink = sink) }
+        // первый этап закончился на «похоже, нет интернета»: второй этап по тем же серверам даст то же самое, ждать ещё до 2 минут незачем
+        val offlineAfterStage = readyForApp.isNotEmpty() && ModeDetector.offlineAt != offlineAtBefore && FailoverGate.offlineRecently(ModeDetector.offlineAt, System.currentTimeMillis())
+        if (offlineAfterStage) storage.log((if (forced) "SWITCH" else "FAILOVER") + ": похоже, интернета нет — остальных серверов сейчас не перебираю")
+        if (found.isEmpty() && !offlineAfterStage) found = withContext(Dispatchers.IO) { searchFor(ordered, want = 2, budgetMs = FAILOVER_BUDGET_MS, sink = sink) }
         sink.flush()
         energy("search", sink.count)
         // никто из остальных не отвечает: серверы из карантина получают второй шанс первыми
@@ -1936,7 +1970,8 @@ class PhoenixVpnService : VpnService() {
             if (!search.suspectedOffline && gov.finish(net, System.currentTimeMillis())) storage.log("SEARCH: сеть $net выдержала несколько проверок — снимаю ограничение на один уровень")
             gov.save()
             if (search.suspectedOffline) {
-                if (gov.outage(net, System.currentTimeMillis())) storage.log("SEARCH: сеть $net потеряла интернет во время проверок — в следующий раз параллельных проверок будет меньше")
+                // поиск при обрыве начался из-за сбоя связи: сбой был раньше него, и виноватым в обрыве он быть не может (передаём время первой неудачи)
+                if (gov.outage(net, System.currentTimeMillis(), failSince.takeIf { it > 0L } ?: -1L)) storage.log("SEARCH: сеть $net потеряла интернет во время проверок — в следующий раз параллельных проверок будет меньше")
                 gov.save()
                 ModeDetector.offlineAt = System.currentTimeMillis()
                 storage.log("SEARCH: ${ServerSearch.OFFLINE_SUSPECT} серверов подряд не открыли TCP — похоже, у телефона нет интернета; поиск остановлен, повторю при появлении сети")
@@ -2010,8 +2045,8 @@ class PhoenixVpnService : VpnService() {
             storage.log("VPN: режим «${mode.title}», работает [${pick.title}] (попытка ${i + 1}, ${(System.currentTimeMillis() - started) / 1000} с)")
             rememberGood(pick.link)
             closeOutage(DowntimeStats.MODE)
-            // связь есть — теперь можно тратить силы на остальное: цели и перепроверка нового режима
-            TargetsWorker.enqueue(this)
+            // связь есть — теперь можно тратить силы на остальное: цели и перепроверка нового режима (цели чуть позже: сейчас возможна пересборка обхода)
+            TargetsWorker.enqueue(this, TARGETS_AFTER_REBUILD_SEC)
             Recheck.enqueueIfDue(this, mode)
             return false
         }
@@ -2593,6 +2628,8 @@ class PhoenixVpnService : VpnService() {
         private const val IDLE_PERIOD_MS = 60_000L
         private const val MODE_QUICK_TRIES = 4
         private const val MODE_PREFILTER_PARALLEL = 4
+        private const val MODE_PREFILTER_GRACE_MS = 1_500L
+        private const val MODE_PREFILTER_MAX_MS = 15_000L
         private const val ROUTE_WATCH_FIRST_MS = 90_000L
         private const val ROUTE_WATCH_PERIOD_MS = 8 * 60_000L
         private const val AWAY_BEFORE_RETURN_MS = 60_000L
@@ -2604,6 +2641,7 @@ class PhoenixVpnService : VpnService() {
         private const val SPEED_PERIOD_MS = 60_000L
         private const val ACTIVE_BYTES = 150L * 1024
         private const val FAILOVER_BACKOFF_START_MS = 30_000L
+        private const val TARGETS_AFTER_REBUILD_SEC = 45L
         private const val FAILOVER_BACKOFF_MAX_MS = 5 * 60_000L
         private const val FAILOVER_BUDGET_MS = 120_000L
         private const val SLOW_SEARCH_BUDGET_MS = 45_000L

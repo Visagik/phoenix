@@ -89,6 +89,11 @@ class ServerSearch(
         private set
     @Volatile var probeMsTotal = 0L
         private set
+    /** Время и число проб, давших ответ (живые): отдельно от мёртвых, чтобы видеть, во что обходится таймаут. */
+    @Volatile var probeOkMsTotal = 0L
+        private set
+    @Volatile var probeOkCount = 0
+        private set
 
     /** Сколько раз поиск притормаживал из-за перегрузки шлюза (для журнала). */
     @Volatile var throttled = 0
@@ -137,9 +142,11 @@ class ServerSearch(
         val hostBad = java.util.concurrent.ConcurrentHashMap<String, AtomicInteger>()
         val hostGood = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
         val skippedN = AtomicInteger()
-        val hostKeyOf = { c: Candidate -> ConfigIdentity.address(c.link) }
+        val hostKeyOf = { c: Candidate -> ServerFingerprint.transportKey(c.link) }
         val tcpMsSum = java.util.concurrent.atomic.AtomicLong()
         val probeMsSum = java.util.concurrent.atomic.AtomicLong()
+        val probeOkMsSum = java.util.concurrent.atomic.AtomicLong()
+        val probeOkN = AtomicInteger()
 
         for (c in ordered) {
             scope.launch {
@@ -161,7 +168,8 @@ class ServerSearch(
                         if (ip == null) {
                             onProbe(c, TCP_FAIL)
                             failedHosts.add("${parsed.host}:${parsed.port}")
-                            if (tcpOk.get() == 0 && tcpFail.incrementAndGet() >= offlineSuspect && failedHosts.size >= minOf(OFFLINE_MIN_HOSTS, offlineSuspect)) {
+                            val failN = tcpFail.incrementAndGet() // считаем всегда: раньше после первого открытого порта провалы не учитывались («не открылись 0» при ~1500 отброшенных, журнал 20.11)
+                            if (tcpOk.get() == 0 && failN >= offlineSuspect && failedHosts.size >= minOf(OFFLINE_MIN_HOSTS, offlineSuspect)) {
                                 suspectedOffline = true
                                 stop.set(true)
                                 done.complete(Unit)
@@ -190,6 +198,7 @@ class ServerSearch(
                         probedN.incrementAndGet()
                         val t0 = System.nanoTime()
                         val r = try { probe(config, url) } finally { probeMsSum.addAndGet((System.nanoTime() - t0) / 1_000_000) }
+                        if (r >= 0) { probeOkN.incrementAndGet(); probeOkMsSum.addAndGet((System.nanoTime() - t0) / 1_000_000) }
                         // итог по адресу записываем, пока держим место: следующая проба этого же адреса уже увидит его
                         if (hk.isNotEmpty()) {
                             if (r >= 0) hostGood.add(hk) else hostBad.getOrPut(hk) { AtomicInteger() }.incrementAndGet()
@@ -230,6 +239,8 @@ class ServerSearch(
         hostSkipped = skippedN.get()
         tcpMsTotal = tcpMsSum.get()
         probeMsTotal = probeMsSum.get()
+        probeOkMsTotal = probeOkMsSum.get()
+        probeOkCount = probeOkN.get()
         return found.sortedBy { it.ms }.take(want)
     }
 }

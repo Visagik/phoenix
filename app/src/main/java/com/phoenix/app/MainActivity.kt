@@ -889,7 +889,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val first = t.servers.firstOrNull()
             val name = if (t.isDirect) tr("напрямую, мимо VPN") else first?.let { LinkParser.parse(it)?.title?.let { s -> urlDecode(s) } }.orEmpty().ifBlank { tr("нет") }
             val res = first?.let { checks[CheckStore.keyOf(it)] }
-            MatrixRow(t.label, name, svc.map { s -> res?.status(s.id) ?: ServiceStatus.UNKNOWN })
+            MatrixRow(t.label, name, svc.map { s -> res?.status(s) ?: ServiceStatus.UNKNOWN })
         }
         return svc to rows
     }

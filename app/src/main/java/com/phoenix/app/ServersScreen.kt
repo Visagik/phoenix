@@ -70,7 +70,7 @@ private fun toEntry(r: ConfigRow, c: CheckResult?, sel: List<CheckService>): Ser
     var unk = 0
     if (live && c != null) {
         for (s in sel) {
-            val ms = c.services[s.id]
+            val ms = c.ms(s)
             when {
                 ms == null -> unk++
                 ms >= 0 -> ok++

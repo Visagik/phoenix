@@ -726,3 +726,4 @@ AdGuard (с блокировкой рекламы)	AdGuard (reklam engelleme)
 конфиги другого режима	başka moddan yapılandırmalar
 Не проверяю: {} (недавно мёртвые, в этой сети подряд не работали)	Kontrol edilmeyen: {} (yakın zamanda ölü, bu ağda hep başarısız)
 Цели {}/{}: найдено {}, без сервера {}, мимо VPN {}, на паузе {} · проверено серверов {}	Hedefler {}/{}: bulunan {}, sunucusuz {}, VPN dışı {}, duraklatılan {} · kontrol edilen sunucu {}
+Сервисы берутся из ваших целей: цель добавили — появилась колонка, убрали — исчезла. Добавлять отдельные сервисы не нужно.	Hizmetler hedeflerinizden gelir: hedef eklenince sütun görünür, kaldırılınca kaybolur. Ayrıca hizmet eklemeniz gerekmez.

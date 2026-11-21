@@ -40,6 +40,7 @@ object AutoServices {
         val checker = ServiceChecker(
             probe = { cfg, url -> ProbeShare.measure(cfg, url) { XrayCore.measureDelay(context, cfg, url) } },
             parallel = CheckLimits.parallel(context),
+            inner = CheckLimits.inner(context),
             reach = { h, p -> ServerHosts.reach(h, p) },
             soft = { link, url -> SpeedRunner.reaches(context, link, url) },
             exit = { link -> exitOf(context, storage, link) },
@@ -66,13 +67,13 @@ object AutoServices {
         }
         if (exitDone > 0) storage.log("EXIT: настоящая страна выхода определена у $exitDone конфигов")
         storage.log(
-            "SVC: сервисы ${services.joinToString(",") { it.id }} проверены у ${results.size} конфигов (рабочих ${alive.size}) " +
+            "SVC: сервисы ${services.joinToString(",") { it.short }} проверены у ${results.size} конфигов (рабочих ${alive.size}) " +
                 "за ${(System.currentTimeMillis() - started) / 1000} с"
         )
         for ((key, r) in alive.entries.take(10)) {
             storage.log("SVC: [${names[key] ?: key}] ${ServicePlan.summary(r, services)}")
         }
-        val broken = services.filter { s -> alive.isNotEmpty() && alive.values.none { CheckServices.opened(it.services[s.id]) } }
+        val broken = services.filter { s -> alive.isNotEmpty() && alive.values.none { CheckServices.opened(it.ms(s)) } }
         if (broken.isNotEmpty()) {
             storage.log("SVC: ни через один рабочий конфиг не открылось: ${broken.joinToString { it.title }} (возможно, сервис закрыт в этой сети или адрес неверный)")
         }

@@ -113,7 +113,9 @@ class DowntimeStats(private val file: File) {
         const val KEEP_DAYS = 14
         const val MODE = "MODE"
         const val FAILOVER = "FAILOVER"
-        fun kindTitle(kind: String) = when (kind) { MODE -> "смена режима"; FAILOVER -> "смена сервера"; else -> kind }
+        /** Связь пропала сама (поиск не нашёл другой сервер), потом вернулась на прежнем. */
+        const val LOSS = "LOSS"
+        fun kindTitle(kind: String) = when (kind) { MODE -> "смена режима"; FAILOVER -> "смена сервера"; LOSS -> "сбой связи"; else -> kind }
         private val cache = java.util.concurrent.ConcurrentHashMap<String, DowntimeStats>()
         fun of(file: File): DowntimeStats = cache.getOrPut(file.absolutePath) { DowntimeStats(file) }
     }
@@ -159,10 +161,13 @@ class RepeatMute(private val quietMs: Long = 30 * 60_000L) {
  */
 object ReadyFirst {
     /** Серверы очереди, подходящие открытому приложению; пусто, если такого этапа не нужно (нет приложения, подходят все или никто). */
-    fun pick(ordered: List<Candidate>, fit: Set<String>?): List<Candidate> {
+    /** Первый этап — десятки серверов, а не почти вся очередь (журнал 20.11: «есть 1521 серверов» из 1677 → до 180 с вместо 120). */
+    const val STAGE_LIMIT = 40
+
+    fun pick(ordered: List<Candidate>, fit: Set<String>?, limit: Int = STAGE_LIMIT): List<Candidate> {
         if (fit.isNullOrEmpty()) return emptyList()
         val ready = ordered.filter { it.identity in fit }
-        return if (ready.isEmpty() || ready.size >= ordered.size) emptyList() else ready
+        return if (ready.isEmpty() || ready.size >= ordered.size) emptyList() else ready.take(limit)
     }
 }
 
@@ -199,4 +204,75 @@ object ColdStart {
     /** Задержка запуска «догона» при старте процесса; ручной запуск и будильник не откладываются. */
     fun catchUpDelaySec(trigger: String, lastSuccessAt: Long): Long =
         if (trigger == "catch-up" && isFirstRun(lastSuccessAt)) FIRST_DELAY_SEC else 0L
+}
+
+/**
+ * С какого момента считать перерыв связи. Раньше счёт шёл от начала смены сервера/режима, а связь пропадала раньше:
+ * 17 с до смены сервера (08:20:57 → 08:21:14) и около 47 с при смене режима (сбой 07:06:27, смена 07:07:14; счётчик показал 43 с вместо ~92).
+ * Берём время первой неудачи проверки связи, если она была недавно и не относится к давнему эпизоду.
+ */
+object OutageStart {
+    const val WINDOW_MS = 3 * 60_000L
+    fun pick(now: Long, failSince: Long): Long = if (failSince > 0L && now - failSince in 0..WINDOW_MS) failSince else now
+}
+
+/**
+ * Защита от «шторма смен»: если автосмены идут одна за другой (в журнале ~30 в сутки, пачками), следующую откладываем —
+ * часто виновата сеть, а не серверы, и каждая смена рвёт связь.
+ */
+object SwitchStorm {
+    const val WINDOW_MS = 10 * 60_000L
+    const val FREE_SWITCHES = 3
+    const val HOLD_STEP_MS = 20_000L
+    const val HOLD_MAX_MS = 90_000L
+
+    /** Пауза до следующей автосмены по времени прошлых смен (включая только что сделанную). */
+    fun holdMs(switchTimes: List<Long>, now: Long): Long {
+        val n = switchTimes.count { now - it in 0..WINDOW_MS }
+        if (n <= FREE_SWITCHES) return 0L
+        return ((n - FREE_SWITCHES) * HOLD_STEP_MS).coerceAtMost(HOLD_MAX_MS)
+    }
+}
+
+/**
+ * Ошибка сертификата — это «сервер до сайта дотянулся, но сертификат не принят» (банки, Microsoft и подобные меняют/проверяют сертификаты),
+ * а не «сайт закрыт». Обрыв рукопожатия без сертификата сюда не входит.
+ */
+object TlsOutcome {
+    fun certProblem(e: Throwable?): Boolean {
+        var t = e
+        var depth = 0
+        while (t != null && depth < 8) {
+            if (t is java.security.cert.CertificateException || t is javax.net.ssl.SSLPeerUnverifiedException || t is java.security.cert.CertPathValidatorException) return true
+            if (t.javaClass.name.endsWith("CertificateException") || t.javaClass.name.endsWith("CertPathValidatorException")) return true
+            t = t.cause
+            depth++
+        }
+        return false
+    }
+}
+
+/**
+ * Решение «2 из 3» для проверки страницы сайта по региону: страница через один и тот же сервер отвечает по-разному от запроса к запросу
+ * (журнал 21.11: NotebookLM и Gemini через GB то «✓», то «✗»). Нужны два одинаковых ответа; третье чтение только при расхождении.
+ * @param read true — «не поддерживается в стране», false — обычная страница, null — не удалось узнать (голосом не считается)
+ * @return решение или null, если двух одинаковых ответов не набралось
+ */
+object RegionVote {
+    fun decide(maxReads: Int, read: () -> Boolean?): Boolean? {
+        var yes = 0
+        var no = 0
+        var reads = 0
+        while (reads < maxReads) {
+            when (read()) {
+                true -> yes++
+                false -> no++
+                null -> {}
+            }
+            reads++
+            if (yes >= 2) return true
+            if (no >= 2) return false
+        }
+        return if (maxReads == 1) (if (yes == 1) true else if (no == 1) false else null) else null
+    }
 }

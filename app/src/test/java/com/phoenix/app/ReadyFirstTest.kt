@@ -22,4 +22,13 @@ class ReadyFirstTest {
         assertTrue(ReadyFirst.pick(q, setOf("x")).isEmpty())
         assertTrue(ReadyFirst.pick(q, setOf("a", "b")).isEmpty())
     }
+
+    @Test
+    fun firstStageIsLimitedToDozens() {
+        val q = (1..200).map { cand("s$it") }
+        val fit = (1..150).map { "s$it" }.toSet()
+        val ready = ReadyFirst.pick(q, fit)
+        assertEquals(ReadyFirst.STAGE_LIMIT, ready.size)
+        assertEquals("s1", ready.first().identity)
+    }
 }

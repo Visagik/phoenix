@@ -476,7 +476,7 @@ class TargetVerifier(
         // сайт мог ответить заглушкой «недоступно в регионе» с кодом 200: проверяем страну выхода
         if (GeoGate.applies(url) && GeoGate.blocks(url, exit(link))) return fail("страна выхода закрыта для сайта")
         if (veto(link, url)) return fail("вы отметили, что сайт здесь не открывается")
-        if (GeoGate.applies(url) && region(link, url) == true) return fail("страница сайта: недоступно в стране выхода")
+        if (GeoGate.applies(url) && RegionVote.decide(3) { region(link, url) } == true) return fail("страница сайта: недоступно в стране выхода")
         return true
     }
 }
@@ -636,5 +636,22 @@ object ListHint {
         white.containsMatchIn(name) && !black.containsMatchIn(name) -> Mode.WHITELIST
         black.containsMatchIn(name) && !white.containsMatchIn(name) -> Mode.BLACKLIST
         else -> null
+    }
+}
+
+/**
+ * Какие цели затрагивает пометка «сервис на этом сервере не открывается»: только те, чей адрес проверки — тот же сайт.
+ * Раньше сервер вычёркивался у всех целей, где он есть: «Не работает» в NotebookLM убирало общий сервер у Telegram и Discord (находка аудита C2/T7).
+ */
+object TargetSite {
+    fun sameSite(t: Target, url: String): Boolean {
+        val a = ServiceVeto.hostOf(t.checkUrl)
+        val b = ServiceVeto.hostOf(url)
+        return a.isNotEmpty() && b.isNotEmpty() && ServiceVeto.sameSite(a, b)
+    }
+
+    fun affected(targets: List<Target>, link: String, url: String): List<Target> {
+        val id = ConfigIdentity.key(link)
+        return targets.filter { t -> sameSite(t, url) && t.servers.any { it != Target.DIRECT && ConfigIdentity.key(it) == id } }
     }
 }

@@ -31,6 +31,17 @@ object ServerFingerprint {
         return "${p.protocol}|$cred|${p.port ?: 0}|$key"
     }
 
+    /**
+     * Ключ отсева по адресу при перепроверке: адрес + транспортная часть (SNI/Host, путь, тип, безопасность), без учётных данных.
+     * За общим CDN-адресом (один IP, десятки серверов) конфиги с разным SNI/путём считаются разными, и три провала одного не выбрасывают остальные.
+     */
+    fun transportKey(link: String): String {
+        val p = LinkParser.parse(link) ?: return link
+        val q = query(p.urlPart)
+        val t = listOf(q["sni"] ?: q["host"], q["path"], q["type"], q["security"]).joinToString("|") { it.orEmpty() }
+        return "${p.address}|$t"
+    }
+
     /** Группы ссылок с одним отпечатком, но разными адресами (host:port) — «вероятные повторы». Остальные группы не возвращаются. */
     fun likelyRepeats(links: List<String>): List<List<String>> {
         val byFp = LinkedHashMap<String, MutableList<ParsedLink>>()

@@ -78,7 +78,7 @@ class Release3937Test {
         val nt = CheckService("NT", "NotebookLM", "https://notebooklm.google.com/")
         val once = ServiceChecker(probe, parallel = 1, exit = { "NL" }, region = { _, _ -> asked++; false })
         runBlocking { once.check(listOf(link), listOf(gemini, nt), "2026-10-29") }
-        assertEquals(2, asked) // страница Gemini и страница NotebookLM, каждая один раз
+        assertEquals(4, asked) // страница Gemini и страница NotebookLM: по два одинаковых чтения на каждую (решение «2 из 3»)
     }
 
     @Test fun serviceCheckerHonoursVeto() {

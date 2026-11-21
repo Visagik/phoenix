@@ -24,6 +24,23 @@ data class SourceStat(val url: String, val total: Int, val alive: Int, val dead:
  * Конфиг опознаётся тем же коротким ключом, что и в файле проверок (хеш личности: протокол + имя).
  */
 object SourceStats {
+    /** Короткое имя источника для журнала: хост и первая часть пути (владелец на GitHub); ключи подписок и длинные токены в журнал не попадают. */
+    fun shortName(url: String): String {
+        val noScheme = url.substringAfter("://", url)
+        val host = noScheme.substringBefore('/').substringBefore('?').substringAfterLast('@')
+        val first = noScheme.substringAfter('/', "").substringBefore('/').substringBefore('?')
+        val tokenLike = first.length > 20 || (first.length > 12 && first.any { it.isDigit() } && first.any { it.isLetter() })
+        return if (first.isEmpty() || tokenLike) host else "$host/$first"
+    }
+
+    /** Строка для журнала: источники по убыванию числа живых («host/owner 19% (12/63)»), без проверенных — «?». */
+    fun summaryLine(stats: List<SourceStat>, limit: Int = 8): String {
+        val shown = stats.sortedWith(compareByDescending<SourceStat> { it.alive }.thenByDescending { it.percent }).take(limit)
+        return shown.joinToString(" · ") { st ->
+            shortName(st.url) + " " + (if (st.checked == 0) "?" else "${st.percent}% (${st.alive}/${st.checked})")
+        }
+    }
+
     /** Короткий ключ по личности конфига; совпадает с CheckStore.keyOf(ссылка). */
     fun idOfIdentity(identity: String): String =
         MessageDigest.getInstance("SHA-1").digest(identity.toByteArray()).joinToString("") { "%02x".format(it) }.take(12)
@@ -182,6 +199,7 @@ object AutoPriority {
         storage.sourceAutoPriorityFile.writeTextAtomic(SourcePriority.encode(levels))
         val high = levels.count { it.value > 0 }
         storage.log("PRIO: авто-приоритеты источников: высокий $high, низкий ${levels.size - high} из ${stats.size} (лучший источник живых ${stats.maxOfOrNull { it.percent } ?: -1}%)")
+        if (stats.isNotEmpty()) storage.log("PRIO: живых по источникам (лучшие ${minOf(8, stats.size)} из ${stats.size}): " + SourceStats.summaryLine(stats))
         return levels.size
     }
 }

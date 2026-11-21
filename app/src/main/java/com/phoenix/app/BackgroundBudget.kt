@@ -24,3 +24,15 @@ object WifiOnlyPolicy {
     fun relaxed(wifiOnly: Boolean, manual: Boolean, lastSuccessAt: Long, now: Long): Boolean =
         wifiOnly && !manual && lastSuccessAt > 0 && now - lastSuccessAt >= STALE_DAYS * 86_400_000L
 }
+
+/** Строка про исчерпанный лимит писалась каждую минуту (журнал 20.11: десятки одинаковых строк); теперь не чаще раза в 30 минут. */
+object BudgetLogThrottle {
+    const val PERIOD_MS = 30 * 60_000L
+    @Volatile private var last = 0L
+    @Synchronized fun shouldLog(now: Long): Boolean {
+        if (last != 0L && now - last < PERIOD_MS) return false
+        last = now
+        return true
+    }
+    @Synchronized fun reset() { last = 0L }
+}

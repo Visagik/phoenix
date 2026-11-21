@@ -113,12 +113,16 @@ fun ServerSwitchHost() {
                                 if (showWhy) Text(o.why, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             if (o.apps.isNotEmpty()) {
-                                Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                                    o.apps.forEach { a ->
-                                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(a.code, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            Text(a.mark + (a.percent?.let { " $it%" } ?: ""), style = MaterialTheme.typography.bodySmall)
+                                // все колонки, по семь в ряду
+                                o.apps.chunked(TargetMatrixLimits.PER_ROW).forEach { rowApps ->
+                                    Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                        rowApps.forEach { a ->
+                                            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text(a.code, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Text(a.mark + (a.percent?.let { " $it%" } ?: ""), style = MaterialTheme.typography.bodySmall)
+                                            }
                                         }
+                                        repeat(TargetMatrixLimits.PER_ROW - rowApps.size) { Spacer(Modifier.weight(1f)) }
                                     }
                                 }
                             }

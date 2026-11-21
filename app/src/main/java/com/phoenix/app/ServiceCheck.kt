@@ -11,7 +11,15 @@ import java.io.File
 import java.security.MessageDigest
 
 /** Сервис, доступность которого проверяется через конфиг. */
-data class CheckService(val id: String, val title: String, val url: String)
+data class CheckService(
+    val id: String,
+    val title: String,
+    val url: String,
+    /** Короткая подпись для колонки (YT, YS…); у сервисов не из целей совпадает с кодом. */
+    val short: String = id,
+    /** Код встроенного сервиса с тем же адресом: старые результаты проверок лежат под ним. */
+    val legacyId: String = "",
+)
 
 /** Итог проверки сервиса через сервер: открыт, частично, закрыт, ещё не проверялся. */
 enum class ServiceStatus { OPEN, PARTIAL, CLOSED, UNKNOWN }
@@ -62,6 +70,20 @@ data class CheckResult(
 ) {
     val dead: Boolean get() = baselineMs < 0
 
+    /** Результат по сервису: свой, а если нет — старый, записанный под кодом встроенного сервиса с тем же адресом. */
+    fun ms(s: CheckService): Long? = services[s.id] ?: s.legacyId.takeIf { it.isNotEmpty() }?.let { services[it] }
+
+    fun status(s: CheckService): ServiceStatus = status(ms(s))
+
+    private fun status(ms: Long?): ServiceStatus {
+        ms ?: return ServiceStatus.UNKNOWN
+        return when {
+            ms >= 0 -> ServiceStatus.OPEN
+            ms == CheckServices.PARTIAL -> ServiceStatus.PARTIAL
+            else -> ServiceStatus.CLOSED
+        }
+    }
+
     /** Состояние одного сервиса для таблицы «цель × сервис». */
     fun status(serviceId: String): ServiceStatus {
         val ms = services[serviceId] ?: return ServiceStatus.UNKNOWN
@@ -88,7 +110,7 @@ data class CheckResult(
 
     /** Подпись с названиями: «Claude ✓ · Qwen ≈ · YouTube ✗» — понятнее кодов; «?» — ещё не проверялся. */
     fun labelNamed(selected: List<CheckService>, odds: ((String) -> Int?)? = null): String = selected.joinToString(" · ") { s ->
-        val ms = services[s.id]
+        val ms = ms(s)
         s.title + " " + (odds?.invoke(s.id)?.let { "$it% " } ?: "") + when {
             ms == null -> "?"
             ms >= 0 -> "✓"
@@ -101,8 +123,8 @@ data class CheckResult(
         CheckServices.UNSUPPORTED -> "не поддерживается"
         CheckServices.FAILED -> "не отвечает"
         else -> selected.joinToString(" ") { s ->
-            val ms = services[s.id]
-            s.id + when {
+            val ms = ms(s)
+            s.short + when {
                 ms == null -> "?"
                 ms >= 0 -> "✓"
                 ms == CheckServices.PARTIAL -> "≈"
@@ -311,15 +333,19 @@ class CheckSelection(
     private val file: File,
     private val custom: () -> List<CheckService> = { emptyList() },
     private val hidden: () -> Set<String> = { emptySet() },
+    /** Если задан, сервисы строятся из целей (колонка = цель), встроенные и свои не используются. */
+    private val targets: (() -> List<Target>)? = null,
 ) {
     /** Все сервисы, которые показываются в списке. */
     fun all(): List<CheckService> {
+        targets?.let { return TargetServices.from(it()) }
         val gone = hidden()
         return CheckServices.ALL.filter { it.id !in gone } + custom()
     }
 
     fun selected(): List<CheckService> {
         val all = all()
+        if (targets != null) return all
         if (!file.exists()) return all
         val ids = file.readLines().map { it.trim() }.toSet()
         return all.filter { it.id in ids }
@@ -426,6 +452,8 @@ object ServicePlan {
 class ServiceChecker(
     private val probe: (config: String, url: String) -> Long,
     private val parallel: Int = 6,
+    /** Сколько сервисов одного конфига проверять одновременно (1 — по одному, как раньше). */
+    private val inner: Int = 1,
     /** (хост, порт) → IP сервера или null, если сервер не отвечает; по умолчанию без предпроверки */
     private val reach: (String, Int) -> String? = { h, _ -> h },
     /**
@@ -441,6 +469,8 @@ class ServiceChecker(
     private val veto: ((link: String, url: String) -> Boolean)? = null,
     /** Просьба остановиться (кнопка «Остановить и сохранить»): новые серверы не берём, уже готовые результаты остаются. */
     private val stop: () -> Boolean = { false },
+    /** Опытная запись в журнал (не влияет на итог): например, ответ дата-центра Telegram рядом с ответом страницы. */
+    private val note: ((String) -> Unit)? = null,
 ) {
     /**
      * Конфиги одного сервера (общий хост, разные протоколы) проверяются по очереди, начиная с самого приоритетного,
@@ -479,6 +509,8 @@ class ServiceChecker(
     }
 
     private val DEAD_PROBES = 3
+    private val REGION_READS = 3
+    private val TG_DC_URL = "http://149.154.167.50/"
 
     internal fun checkOne(link: String, services: List<CheckService>, date: String): CheckResult {
         val host = ConfigIdentity.address(link)
@@ -495,18 +527,18 @@ class ServiceChecker(
             return CheckResult(date, CheckServices.UNSUPPORTED, emptyMap(), host = host)
         }
         var base = probe(config, CheckServices.BASELINE_URL)
-        val results = LinkedHashMap<String, Long>()
+        val results: MutableMap<String, Long> = java.util.Collections.synchronizedMap(LinkedHashMap<String, Long>())
         val country by lazy { exit?.invoke(link) }
         // Gemini отвечает 200 и из закрытых стран, а NotebookLM честно перенаправляет на «unsupported»: он служит проверкой того, как Google видит этот сервер
         // проверка страницы может не удаться (таймаут, перегрузка параллельных проверок): повторяем один раз, а если и тогда
         // ответа нет — сервис не считаем уверенно открытым (журнал 15.11: Turkey и Ukraine в проверке «✓», а NotebookLM через них закрыт)
         // результат один раз на адрес (NotebookLM — и оракул, и свой сервис: второй запуск ядра не нужен); повтор только у живого
         // конфига: у мёртвого лишняя попытка — это лишние 16 с на сервер без пользы
-        val regionCache = HashMap<String, Boolean?>()
+        val regionCache: MutableMap<String, Boolean?> = java.util.Collections.synchronizedMap(HashMap<String, Boolean?>())
         fun regionTry(url: String): Boolean? {
             val f = region ?: return false
             if (regionCache.containsKey(url)) return regionCache[url]
-            val v = f(link, url) ?: (if (base >= 0) f(link, url) else null)
+            val v = RegionVote.decide(if (base >= 0) REGION_READS else 1) { f(link, url) }
             regionCache[url] = v
             return v
         }
@@ -527,6 +559,12 @@ class ServiceChecker(
             // ни «закрыто», ни «открыто» страница не сказала — отвечает, но уверенно открытым не считаем (≈, после подтверждённых ✓)
             val unsure = pageChecked && !pageClosed && (own == null || oracle == null)
             val vetoed = r != CheckServices.FAILED && veto?.invoke(link, s.url) == true
+            // опыт T3: страница web.telegram.org может быть «✓», а сам Telegram (MTProto по IP) не работает; сравниваем с прямым ответом DC (только журнал)
+            if (note != null && s.url.contains("telegram") && r != CheckServices.FAILED) {
+                val dc = try { probe(config, TG_DC_URL) } catch (_: Throwable) { CheckServices.FAILED }
+                val dcSoft = dc < 0 && soft?.invoke(link, TG_DC_URL) == true
+                note.invoke("TG-DC: [$host] страница ${if (r >= 0) "$r мс" else "отвечает"}, дата-центр ${if (dc >= 0) "$dc мс" else if (dcSoft) "отвечает (не 200/204)" else "не отвечает"}")
+            }
             results[s.id] = when {
                 geoClosed || pageClosed || vetoed -> CheckServices.FAILED
                 unsure && r >= 0 -> CheckServices.PARTIAL
@@ -546,10 +584,107 @@ class ServiceChecker(
                 results.values.any { it == CheckServices.PARTIAL } -> 0L
                 else -> return CheckResult(date, CheckServices.FAILED, emptyMap(), host = host)
             }
-            for (s in services) if (s.id !in results) one(s)
-            return CheckResult(date, base, results, host = host)
+            runAll(services.filter { it.id !in results }, ::one)
+            return CheckResult(date, base, LinkedHashMap(results), host = host)
         }
-        for (s in services) one(s)
-        return CheckResult(date, base, results, host = host)
+        runAll(services, ::one)
+        return CheckResult(date, base, LinkedHashMap(results), host = host)
     }
+
+    /** Сервисы одного конфига: по одному или по [inner] одновременно (каждая проба — отдельное короткое ядро, 12 сервисов подряд занимали ~14 с на сервер). */
+    private fun runAll(list: List<CheckService>, one: (CheckService) -> Unit) {
+        if (inner <= 1 || list.size <= 1) { for (s in list) one(s); return }
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(minOf(inner, list.size))
+        try {
+            list.map { s -> pool.submit { one(s) } }.forEach { try { it.get() } catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e } }
+        } finally {
+            pool.shutdown()
+        }
+    }
+}
+
+/** Сервисы, построенные из целей: колонка = цель, адрес проверки — адрес цели, подпись — сокращение названия. */
+object TargetServices {
+    fun from(targets: List<Target>): List<CheckService> {
+        val uniq = targets.filter { it.checkUrl.isNotBlank() }.distinctBy { it.checkUrl }
+        val shorts = TargetAbbrev.codes(uniq.map { it.label })
+        return uniq.mapIndexed { i, t ->
+            CheckService(t.id, t.label, t.checkUrl, shorts[i], CheckServices.ALL.firstOrNull { it.url == t.checkUrl }?.id.orEmpty())
+        }
+    }
+}
+
+/**
+ * Короткая подпись названия цели: две и больше части (по пробелам и заглавным буквам) — первые буквы первых двух (YouTube → YT),
+ * одна часть — первые две буквы (Steam → ST). Совпали — у совпавших три буквы, потом цифра.
+ */
+object TargetAbbrev {
+    fun of(label: String): String {
+        val clean = label.filter { it.isLetterOrDigit() || it == ' ' }.trim()
+        if (clean.isEmpty()) return "?"
+        val parts = ArrayList<String>()
+        for (word in clean.split(' ').filter { it.isNotEmpty() }) {
+            var cur = StringBuilder()
+            for ((i, ch) in word.withIndex()) {
+                val boundary = i > 0 && ch.isUpperCase() && !word[i - 1].isUpperCase()
+                if (boundary && cur.isNotEmpty()) { parts += cur.toString(); cur = StringBuilder() }
+                cur.append(ch)
+            }
+            if (cur.isNotEmpty()) parts += cur.toString()
+        }
+        ALIASES[clean.replace(" ", "").lowercase()]?.let { return it }
+        val code = if (parts.size >= 2) parts[0].take(1) + parts[1].take(1) else firstAndConsonant(clean.replace(" ", ""))
+        return code.uppercase()
+    }
+
+    /** Привычные коды известных сервисов: узнаются сразу (TG, DC, WA…). */
+    private val ALIASES = mapOf(
+        // мессенджеры и соцсети
+        "telegram" to "TG", "telegramx" to "TG", "discord" to "DC", "whatsapp" to "WA", "instagram" to "IG", "facebook" to "FB",
+        "twitter" to "TW", "x" to "X", "tiktok" to "TT", "snapchat" to "SC", "pinterest" to "PI", "reddit" to "RD", "linkedin" to "LI",
+        "viber" to "VB", "signal" to "SG", "skype" to "SK", "zoom" to "ZM", "twitch" to "TV", "threads" to "TH", "vk" to "VK", "вконтакте" to "VK",
+        // видео и музыка
+        "youtube" to "YT", "youtubemusic" to "YM", "spotify" to "SP", "netflix" to "NF", "soundcloud" to "SC2", "kinopoisk" to "KP", "кинопоиск" to "KP",
+        // нейросети
+        "claude" to "CL", "chatgpt" to "GPT", "gpt" to "GPT", "openai" to "OA", "gemini" to "GM", "copilot" to "CP", "grok" to "GK", "deepseek" to "DS",
+        "qwen" to "QW", "kimi" to "KM", "mistral" to "MS", "perplexity" to "PX", "midjourney" to "MJ", "notebooklm" to "NL", "notebook" to "NB",
+        "anthropic" to "AN", "metaai" to "MA", "suno" to "SN", "sora" to "SR",
+        // Google и Microsoft
+        "google" to "GO", "gmail" to "GML", "googlemaps" to "MP", "maps" to "MP", "googledrive" to "GD", "drive" to "GD", "googlephotos" to "PH",
+        "outlook" to "OL", "teams" to "MT", "onedrive" to "OD", "chrome" to "CR", "edge" to "ED", "firefox" to "FF", "opera" to "OP",
+        // игры, магазины, прочее
+        "steam" to "ST", "epicgames" to "EG", "roblox" to "RB", "minecraft" to "MC", "battlenet" to "BN", "amazon" to "AZ", "aliexpress" to "AE",
+        "github" to "GH", "wikipedia" to "WK", "dropbox" to "DB", "notion" to "NO", "figma" to "FG", "canva" to "CV", "obsidian" to "OB",
+        "яндекс" to "YA", "yandex" to "YA", "сбер" to "SB", "sber" to "SB", "тинькофф" to "TB", "tinkoff" to "TB", "ozon" to "OZ", "озон" to "OZ",
+    )
+
+    private val VOWELS = "aeiouyаеёиоуыэюя"
+
+    /** Первая буква и следующая согласная: Starlink → ST, Gmail → GM; нет согласной — вторая буква. */
+    private fun firstAndConsonant(word: String): String {
+        if (word.length <= 2) return word
+        val rest = word.drop(1)
+        val c = rest.firstOrNull { it.isLetter() && it.lowercaseChar() !in VOWELS } ?: rest[0]
+        return word[0].toString() + c
+    }
+
+    private fun long(label: String): String {
+        val clean = label.filter { it.isLetterOrDigit() }
+        return clean.take(3).uppercase().ifEmpty { "?" }
+    }
+
+    fun codes(labels: List<String>): List<String> {
+        val base = labels.map { of(it) }
+        val step2 = base.mapIndexed { i, c -> if (base.count { it == c } > 1) long(labels[i]) else c }
+        val seen = HashMap<String, Int>()
+        return step2.mapIndexed { i, c ->
+            if (step2.count { it == c } > 1) { val n = (seen[c] ?: 0) + 1; seen[c] = n; c + n } else c
+        }
+    }
+}
+
+/** Сколько колонок целей показывается на главном экране: два ряда по семь. Всё остальное — в окне «Сменить сервер». */
+object TargetMatrixLimits {
+    const val PER_ROW = 7
+    const val MAX = 14
 }

@@ -724,3 +724,4 @@ AdGuard (с блокировкой рекламы)	AdGuard (bloquea anuncios)
 конфиги другого режима	configuraciones de otro modo
 Не проверяю: {} (недавно мёртвые, в этой сети подряд не работали)	No se comprueban: {} (muertos recientes, fallan seguido en esta red)
 Цели {}/{}: найдено {}, без сервера {}, мимо VPN {}, на паузе {} · проверено серверов {}	Objetivos {}/{}: encontrados {}, sin servidor {}, sin VPN {}, en pausa {} · servidores comprobados {}
+Сервисы берутся из ваших целей: цель добавили — появилась колонка, убрали — исчезла. Добавлять отдельные сервисы не нужно.	Los servicios salen de tus objetivos: añades un objetivo y aparece una columna, lo quitas y desaparece. No hace falta añadir servicios aparte.

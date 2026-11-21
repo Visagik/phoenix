@@ -38,7 +38,7 @@ object ServerChoice {
     )
 
     fun cells(check: CheckResult, selected: List<CheckService>, vetoed: (CheckService) -> Boolean = { false }, odds: ((String) -> Int?)?): List<AppCell> = selected.map { s ->
-        val ms = check.services[s.id]
+        val ms = check.ms(s)
         val mark = when {
             vetoed(s) -> "✗" // вы отметили «Не работает» для этого сайта на этом сервере: старый замер не в счёт
             ms == null -> "?"
@@ -46,7 +46,7 @@ object ServerChoice {
             ms == CheckServices.PARTIAL -> "≈"
             else -> "✗"
         }
-        AppCell(s.id, s.title, mark, odds?.invoke(s.id))
+        AppCell(s.short, s.title, mark, odds?.invoke(s.id))
     }
 
     fun country(cc: String): String = if (cc.isBlank()) "страна неизвестна" else NAMES[cc.uppercase()] ?: cc.uppercase()

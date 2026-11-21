@@ -86,7 +86,7 @@ class Storage(context: Context, val mode: Mode = Mode.read(context.applicationCo
     fun customServices() = CustomServices(customServicesFile)
 
     /** Выбор сервисов для проверки: встроенные плюс свои. */
-    fun checkSelection() = CheckSelection(checkSelectionFile, { customServices().load() }, { hiddenServices().load() })
+    fun checkSelection() = CheckSelection(checkSelectionFile, { customServices().load() }, { hiddenServices().load() }, { TargetStore(targetsFile).load() })
     /** Адрес общего списка источников для режима чёрных списков (задаёт пользователь, может быть пустым). */
     val listUrlFile = File(base, "list_url.txt")
     /** Последний удачно скачанный общий список источников — запасной, если GitHub недоступен. */

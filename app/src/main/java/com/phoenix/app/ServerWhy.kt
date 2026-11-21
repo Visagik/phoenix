@@ -30,7 +30,7 @@ object ServerWhy {
         if (c.protoBucket == 0) pros.add("такой тип конфига в этой сети выручал") else if (c.protoBucket >= 2) cons.add("такой тип конфига в этой сети подводил")
         if (check != null && !check.dead) {
             for (s in services) {
-                val ms = check.services[s.id] ?: continue
+                val ms = check.ms(s) ?: continue
                 when {
                     ms >= 0 -> pros.add("${s.title}: открывается")
                     ms == CheckServices.PARTIAL -> pros.add("${s.title}: отвечает не полностью")

@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
@@ -216,28 +217,20 @@ fun ServicesPage(vm: MainViewModel) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            tr("Сервисы берутся из ваших целей: цель добавили — появилась колонка, убрали — исчезла. Добавлять отдельные сервисы не нужно."),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.padding(top = 4.dp),
         ) {
             allServices.forEach { s ->
-                FilterChip(
-                    selected = selected.any { it.id == s.id },
-                    onClick = { vm.toggleService(s.id) },
-                    label = { Text(if (custom.any { it.id == s.id }) s.title else s.id, maxLines = 1) },
-                    trailingIcon = {
-                        var askRemove by remember(s.id) { mutableStateOf(false) }
-                        Text(
-                            "✕",
-                            modifier = Modifier.clickable { askRemove = true }.padding(horizontal = 4.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        if (askRemove) ConfirmDialog(tr("Убрать сервис из проверки?"), tr("Сервис «{}» исчезнет из списка проверки.", s.title.ifBlank { s.id }), onYes = { vm.removeService(s.id) }, onDismiss = { askRemove = false })
-                    },
-                )
+                AssistChip(onClick = {}, label = { Text(s.short + " · " + s.title, maxLines = 1) })
             }
-            OutlinedButton(onClick = { showAddService = true }) { Text(tr("+ Свой сервис"), maxLines = 1) }
         }
         Text(
             tr("✓ открылся · ≈ отвечает, но не полностью (защита сайта; для Claude и Qwen это обычно норма) · ✗ не открылся · ? не проверялся"),

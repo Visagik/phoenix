@@ -99,12 +99,16 @@ fun TargetMatrix(services: List<CheckService>, rows: List<MatrixRow>) {
     }
     androidx.compose.foundation.layout.BoxWithConstraints {
     // ширина столбца подстраивается: на узком экране или при многих сервисах точки сжимаются, а название цели не меньше ~110 dp
-    val colW = ((maxWidth - 110.dp) / services.size.coerceAtLeast(1)).coerceIn(18.dp, 32.dp)
+    // на главном экране не больше двух рядов по семь колонок: остальное — только в окне «Сменить сервер»
+    val shown = services.take(TargetMatrixLimits.MAX)
+    val colW = ((maxWidth - 110.dp) / shown.size.coerceAtMost(TargetMatrixLimits.PER_ROW).coerceAtLeast(1)).coerceIn(18.dp, 32.dp)
     androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+        shown.chunked(TargetMatrixLimits.PER_ROW).forEachIndexed { ci, chunk ->
+        val off = ci * TargetMatrixLimits.PER_ROW
         androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.weight(1f))
-            services.forEach { s ->
-                Text(s.id, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant,
+            chunk.forEach { s ->
+                Text(s.short, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1, modifier = androidx.compose.ui.Modifier.width(colW))
             }
         }
@@ -114,12 +118,13 @@ fun TargetMatrix(services: List<CheckService>, rows: List<MatrixRow>) {
                     Text(r.label, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     Text(r.server, style = androidx.compose.material3.MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
-                r.statuses.forEach { st ->
+                r.statuses.drop(off).take(chunk.size).forEach { st ->
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.width(colW), contentAlignment = androidx.compose.ui.Alignment.Center) {
                         StatusDot(st, dot(st), 12.dp)
                     }
                 }
             }
+        }
         }
         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp)) {
             listOf(
@@ -148,25 +153,27 @@ fun ServiceStrip(services: List<CheckService>, result: CheckResult?) {
     val scheme = androidx.compose.material3.MaterialTheme.colorScheme
     val dark = appDark()
     val fresh = result != null && !result.dead
-    androidx.compose.foundation.layout.Row(
-        androidx.compose.ui.Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(14.dp, androidx.compose.ui.Alignment.CenterHorizontally),
-    ) {
-        services.forEach { s ->
-            val st = if (fresh) result!!.status(s.id) else ServiceStatus.UNKNOWN
-            val (mark, color, word) = when (st) {
-                ServiceStatus.OPEN -> Triple("✓", PhoenixTheme.ok(dark), tr("открыт"))
-                ServiceStatus.PARTIAL -> Triple("≈", PhoenixTheme.amber(dark), tr("частично"))
-                ServiceStatus.CLOSED -> Triple("✗", scheme.error, tr("закрыт"))
-                ServiceStatus.UNKNOWN -> Triple("·", scheme.onSurfaceVariant, tr("не проверен"))
+    // не больше двух рядов по семь; остальные цели видны только в окне «Сменить сервер»
+    androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, modifier = androidx.compose.ui.Modifier.fillMaxWidth()) {
+        services.take(TargetMatrixLimits.MAX).chunked(TargetMatrixLimits.PER_ROW).forEach { chunk ->
+            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(14.dp, androidx.compose.ui.Alignment.CenterHorizontally)) {
+                chunk.forEach { s ->
+                    val st = if (fresh) result!!.status(s) else ServiceStatus.UNKNOWN
+                    val (mark, color, word) = when (st) {
+                        ServiceStatus.OPEN -> Triple("✓", PhoenixTheme.ok(dark), tr("открыт"))
+                        ServiceStatus.PARTIAL -> Triple("≈", PhoenixTheme.amber(dark), tr("частично"))
+                        ServiceStatus.CLOSED -> Triple("✗", scheme.error, tr("закрыт"))
+                        ServiceStatus.UNKNOWN -> Triple("·", scheme.onSurfaceVariant, tr("не проверен"))
+                    }
+                    Text(
+                        s.short + " " + mark,
+                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                        color = color,
+                        maxLines = 1,
+                        modifier = androidx.compose.ui.Modifier.androidxSemantics(s.title + ": " + word),
+                    )
+                }
             }
-            Text(
-                s.id + " " + mark,
-                style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                color = color,
-                maxLines = 1,
-                modifier = androidx.compose.ui.Modifier.androidxSemantics(s.title + ": " + word),
-            )
         }
     }
 }

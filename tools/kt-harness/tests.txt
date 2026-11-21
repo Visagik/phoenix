@@ -104,3 +104,15 @@ NotebookSiteTest.kt
 StopRequestTest.kt
 ReadyFirstTest.kt
 NotifyRefreshTest.kt
+BudgetLogThrottleTest.kt
+DowntimeLossTest.kt
+Release3968SearchTest.kt
+GovernorRelaxTest.kt
+OutageStartTest.kt
+TargetSiteTest.kt
+SwitchStormTest.kt
+TlsOutcomeTest.kt
+TargetServicesTest.kt
+ServiceCheckerInnerTest.kt
+RegionVoteTest.kt
+SourceSummaryTest.kt

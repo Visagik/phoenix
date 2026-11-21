@@ -38,6 +38,12 @@ object CheckLimits {
         return if (am != null && am.isLowRamDevice) 3 else 6
     }
 
+    /** Сервисов одного конфига одновременно: в мобильной сети и на слабых телефонах — по одному. */
+    fun inner(context: Context): Int {
+        val am = context.getSystemService(android.app.ActivityManager::class.java)
+        return if ((am != null && am.isLowRamDevice) || NetInfo.label(context).startsWith("mobile")) 1 else 3
+    }
+
     /** Для поиска рабочего сервера, когда пользователь ждёт: больше параллельных проверок (в v2rayNG по умолчанию 16). */
     fun searchParallel(context: Context): Int {
         val am = context.getSystemService(android.app.ActivityManager::class.java)
@@ -122,7 +128,9 @@ object TargetsRunner {
         // 0. поиск живых среди всех: из ~1300 конфигов отвечают десятки, а «лучшие по рейтингу» могут оказаться мёртвыми.
         //    Если свежих живых мало — быстрый поиск (TCP, затем задержка) по всей очереди, результат запоминается.
         val known = Ranking.candidates(rows, checkStore.load(), history = hview(), mode = storage.mode, priority = storage.priorityView(), svcIds = storage.selectedServiceIds())
-        if (known.count { it.alive } < DISCOVER_MIN_ALIVE) {
+        // на мобильной сети после исчерпания суточного лимита поиск по сотням серверов не запускаем (журнал 20.11: лимит исчерпан в 12:49, а поиск 585 серверов шёл в 15:48)
+        val budgetOut = BackgroundBudgetGate.exhausted(context)
+        if (known.count { it.alive } < DISCOVER_MIN_ALIVE && !budgetOut) {
             val sink = SearchSink(storage, context)
             val gov = GovernedLimits.get(storage)
             val govNet = NetInfo.label(context)
@@ -154,7 +162,7 @@ object TargetsRunner {
         val topHosts = ranked.map { it.host.ifEmpty { it.link } }.distinct().take(CHECK_TOP).toSet()
         val top = ranked.filter { it.host.ifEmpty { it.link } in topHosts }
         val services = storage.checkSelection().selected()
-        val checked = ServiceChecker(probe, parallel = GovernedLimits.get(storage).probe(ctx, CheckLimits.parallel(context)), reach = { h, p -> ServerHosts.reach(h, p) }, soft = { l, u -> SpeedRunner.reaches(context, l, u) }, exit = { l -> AutoServices.exitOf(context, storage, l) }, region = { l, u -> SpeedRunner.regionBlocked(context, l, u) }, veto = { l, u -> ServiceVeto(storage.vetoFile).active(l, u) }).check(top.map { it.link }, services, date) { key, res ->
+        val checked = ServiceChecker(probe, parallel = GovernedLimits.get(storage).probe(ctx, CheckLimits.parallel(context)), reach = { h, p -> ServerHosts.reach(h, p) }, soft = { l, u -> SpeedRunner.reaches(context, l, u) }, exit = { l -> AutoServices.exitOf(context, storage, l) }, region = { l, u -> SpeedRunner.regionBlocked(context, l, u) }, veto = { l, u -> ServiceVeto(storage.vetoFile).active(l, u) }, inner = CheckLimits.inner(context), note = { storage.log(it) }).check(top.map { it.link }, services, date) { key, res ->
             if (!stale()) checkStore.putAll(mapOf(key to res)) // при смене режима ядро перезапускается: «closed pipe» — не вердикт серверу
         }
         try { EnergyMeter.of(java.io.File(context.filesDir, "energy.tsv")).add("targets", top.size * services.size.coerceAtLeast(1), java.time.LocalDate.now().toString(), System.currentTimeMillis()) } catch (_: Throwable) { }
@@ -212,8 +220,8 @@ object TargetsRunner {
             val wide = Ranking.rank(Ranking.candidates(rows, checksNow, history = hview(), mode = storage.mode, priority = storage.priorityView(), svcIds = storage.selectedServiceIds())).take(TARGET_WIDE_POOL)
             val missMap = HashMap<String, Long>(try { MissBackoff.parse(if (storage.missFile.exists()) storage.missFile.readText() else "") } catch (_: Throwable) { emptyMap() })
             val nowMs = System.currentTimeMillis()
-            var deepLeft = TARGET_DEEP_MAX
-            var fullLeft = 1
+            var deepLeft = if (budgetOut) 0 else TARGET_DEEP_MAX // глубокий и последний поиск — тоже только пока есть суточный лимит мобильного трафика
+            var fullLeft = if (budgetOut) 0 else 1
             val nameOf = rows.associate { it.raw to it.displayName }
             val concrete = { l: List<Candidate> -> ServerKind.concreteFirst(l) { c -> nameOf[c.link].orEmpty() } }
             // приложения, которые в этой сети идут мимо VPN (открываются напрямую), сервера не требуют: подбор — там, где они закрыты (мобильная сеть)
@@ -359,9 +367,11 @@ class TargetsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             .build()
 
         /** Разовая перепроверка (после ночного сбора, по кнопке). */
-        fun enqueue(context: Context) {
+        /** [delaySec] — подождать, пока закончится пересборка туннеля: подбор, запущенный в тот же миг, снимала система (журнал 20.11: «прервано системой (причина 7)» через 3–7 с после «пересоздаю туннель»). */
+        fun enqueue(context: Context, delaySec: Long = 0L) {
             val builder = OneTimeWorkRequestBuilder<TargetsWorker>().setConstraints(constraints())
             if (NetFlap.busy(System.currentTimeMillis())) builder.setInitialDelay(3, TimeUnit.MINUTES) // сеть меняется часто — не начинать сейчас
+            else if (delaySec > 0) builder.setInitialDelay(delaySec, TimeUnit.SECONDS)
             WorkManager.getInstance(context).enqueueUniqueWork(ONCE, ExistingWorkPolicy.KEEP, builder.build())
         }
 

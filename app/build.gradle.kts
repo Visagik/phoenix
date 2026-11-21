@@ -16,8 +16,8 @@ android {
         targetSdk = 35
         // Релизная версия. Для проверки самообновления можно собрать «старую» версию, не меняя исходники:
         // ./gradlew assembleDebug -PphoenixVersionName=3.9.65 -PphoenixVersionCode=79
-        versionCode = (project.findProperty("phoenixVersionCode") as String?)?.toIntOrNull() ?: 80
-        versionName = "3.9.66"
+        versionCode = (project.findProperty("phoenixVersionCode") as String?)?.toIntOrNull() ?: 81
+        versionName = "3.9.67"
         (project.findProperty("phoenixVersionName") as String?)?.let { versionName = it }
 
         ndk {

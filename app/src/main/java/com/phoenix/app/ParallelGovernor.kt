@@ -9,7 +9,7 @@ import java.io.File
  * Файл: сеть, уровень, спокойных прогонов подряд, время последнего окончания тяжёлой проверки (мс).
  */
 class ParallelGovernor(private val file: File) {
-    private data class Entry(var level: Int, var clean: Int, var lastEnd: Long, var active: Int, var lastBegin: Long = 0L)
+    private data class Entry(var level: Int, var clean: Int, var lastEnd: Long, var active: Int, var lastBegin: Long = 0L, var raisedAt: Long = 0L)
 
     private val map: MutableMap<String, Entry> by lazy { read() }
 
@@ -19,7 +19,7 @@ class ParallelGovernor(private val file: File) {
             if (file.exists()) file.forEachLine { line ->
                 val p = line.split('\t')
                 if (p.size < 4) return@forEachLine
-                m[p[0]] = Entry(p[1].toIntOrNull()?.coerceIn(0, MAX_LEVEL) ?: 0, p[2].toIntOrNull() ?: 0, p[3].toLongOrNull() ?: 0L, 0)
+                m[p[0]] = Entry(p[1].toIntOrNull()?.coerceIn(0, MAX_LEVEL) ?: 0, p[2].toIntOrNull() ?: 0, p[3].toLongOrNull() ?: 0L, 0, 0L, p.getOrNull(4)?.toLongOrNull() ?: 0L)
             }
         } catch (_: Exception) {
         }
@@ -31,7 +31,7 @@ class ParallelGovernor(private val file: File) {
         try {
             file.parentFile?.mkdirs()
             val rows = map.entries.filter { it.value.level > 0 || it.value.clean > 0 }.toList().takeLast(MAX_NETS)
-            file.writeTextAtomic(rows.joinToString("") { (n, e) -> "${n.replace('\t', ' ')}\t${e.level}\t${e.clean}\t${e.lastEnd}\n" })
+            file.writeTextAtomic(rows.joinToString("") { (n, e) -> "${n.replace('\t', ' ')}\t${e.level}\t${e.clean}\t${e.lastEnd}\t${e.raisedAt}\n" })
         } catch (_: Exception) {
         }
     }
@@ -62,6 +62,11 @@ class ParallelGovernor(private val file: File) {
         val e = map.getOrPut(net) { Entry(0, 0, 0L, 0) }
         // прогон, который так и не завершился (задачу отменили), не должен считаться идущим вечно
         if (e.active > 0 && now - e.lastBegin > STALE_MS) e.active = 0
+        // уровень не держится вечно: один сбой утром не должен весь день вдвое резать срочный поиск (журнал 20.11: «уровень 1» с 08:56 до 12:39)
+        if (e.level > 0) {
+            if (e.raisedAt <= 0L) e.raisedAt = now
+            else if (now - e.raisedAt >= RELAX_MS) { e.level--; e.clean = 0; e.raisedAt = if (e.level > 0) now else 0L }
+        }
         e.active++
         e.lastBegin = now
     }
@@ -103,6 +108,7 @@ class ParallelGovernor(private val file: File) {
         e.lastEnd = 0L
         if (e.level >= MAX_LEVEL) return false
         e.level++
+        e.raisedAt = maxOf(now, e.lastBegin) // не раньше старта прогона, из-за которого уровень поднят
         return true
     }
 
@@ -119,6 +125,8 @@ class ParallelGovernor(private val file: File) {
         const val CLEAN_TO_LOWER = 5
         const val WINDOW_MS = 90_000L
         const val STALE_MS = 40 * 60_000L
+        /** Через столько без новых сбоев уровень сети снижается на один сам, даже без тяжёлых прогонов. */
+        const val RELAX_MS = 2 * 60 * 60_000L
         const val MAX_NETS = 60
         val TCP_LEVELS = intArrayOf(48, 24, 12, 8)
     }

@@ -293,6 +293,10 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
     var updateApkSize: Long
         get() = prefs.getLong("update_apk_size", 0L)
         set(v) = prefs.edit().putLong("update_apk_size", v).apply()
+    /** Новая версия подписана другим ключом: поверх не встанет, нужно удалить приложение (см. [ReinstallPlan]). */
+    var updateReinstall: Boolean
+        get() = prefs.getBoolean("update_reinstall", false)
+        set(v) = prefs.edit().putBoolean("update_reinstall", v).apply()
     var updateNotified: String
         get() = prefs.getString("update_notified", "") ?: ""
         set(v) = prefs.edit().putString("update_notified", v).apply()
@@ -319,6 +323,11 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
     var focusMode: Boolean
         get() = prefs.getBoolean("focus_mode", false)
         set(v) = prefs.edit().putBoolean("focus_mode", v).apply()
+
+    /** Бегущая строка с фактами о приложении вверху главного экрана (см. [Facts]); переключатель в «Ещё → Фишки». */
+    var factsTicker: Boolean
+        get() = prefs.getBoolean("facts_ticker", false)
+        set(v) = prefs.edit().putBoolean("facts_ticker", v).apply()
 
     /** Анимации главного экрана (свечение круга); системное «Убрать анимацию» их выключает независимо от этого переключателя. */
     var animations: Boolean
@@ -362,6 +371,11 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
     var onboardingSeen: Int
         get() = prefs.getInt("onboarding_seen", 0)
         set(v) = prefs.edit().putInt("onboarding_seen", v).apply()
+
+    /** Версия, для которой пользователь уже видел окно «Что нового» (см. [WhatsNew]); пусто — не видел. */
+    var whatsNewSeen: String
+        get() = prefs.getString("whats_new_seen", "") ?: ""
+        set(v) = prefs.edit().putString("whats_new_seen", v).apply()
 
     /** Пользователь сам отметил, что включил автозапуск (система не даёт это проверить). */
     var autostartConfirmed: Boolean

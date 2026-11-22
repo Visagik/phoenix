@@ -510,7 +510,6 @@ class ServiceChecker(
 
     private val DEAD_PROBES = 3
     private val REGION_READS = 3
-    private val TG_DC_URL = "http://149.154.167.50/"
 
     internal fun checkOne(link: String, services: List<CheckService>, date: String): CheckResult {
         val host = ConfigIdentity.address(link)
@@ -559,12 +558,6 @@ class ServiceChecker(
             // ни «закрыто», ни «открыто» страница не сказала — отвечает, но уверенно открытым не считаем (≈, после подтверждённых ✓)
             val unsure = pageChecked && !pageClosed && (own == null || oracle == null)
             val vetoed = r != CheckServices.FAILED && veto?.invoke(link, s.url) == true
-            // опыт T3: страница web.telegram.org может быть «✓», а сам Telegram (MTProto по IP) не работает; сравниваем с прямым ответом DC (только журнал)
-            if (note != null && s.url.contains("telegram") && r != CheckServices.FAILED) {
-                val dc = try { probe(config, TG_DC_URL) } catch (_: Throwable) { CheckServices.FAILED }
-                val dcSoft = dc < 0 && soft?.invoke(link, TG_DC_URL) == true
-                note.invoke("TG-DC: [$host] страница ${if (r >= 0) "$r мс" else "отвечает"}, дата-центр ${if (dc >= 0) "$dc мс" else if (dcSoft) "отвечает (не 200/204)" else "не отвечает"}")
-            }
             results[s.id] = when {
                 geoClosed || pageClosed || vetoed -> CheckServices.FAILED
                 unsure && r >= 0 -> CheckServices.PARTIAL

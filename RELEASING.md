@@ -31,12 +31,13 @@
 Пока `tools/core.lock` и секреты CI не заполнены, workflow `release` на теге остановится на проверках (красный ✗ — это ожидаемо, релиз он не создаст).
 ```
 ./gradlew assembleDebug
-cp app/build/outputs/apk/debug/app-debug.apk phoenix-3.9.66-debug.apk
-sha256sum phoenix-3.9.66-debug.apk
-git add -A && git commit -m "Phoenix 3.9.66" && git push
-gh release create v3.9.66 phoenix-3.9.66-debug.apk --title "Phoenix 3.9.66" --notes-file RELEASE_NOTES_3.9.66.md
+cp app/build/outputs/apk/debug/app-debug.apk phoenix-3.9.67-debug.apk
+sha256sum phoenix-3.9.67-debug.apk
+git add -A && git commit -m "Phoenix 3.9.67" && git push
+gh release create v3.9.67 phoenix-3.9.67-debug.apk --title "Phoenix 3.9.67" --notes-file RELEASE_NOTES_3.9.67.md
 ```
 Подпись должна совпасть с установленной сборкой (debug-ключ этой машины), иначе обновление поверх не встанет.
+В описание релиза добавьте строку `Подпись: <SHA256 сертификата>` (`keytool -list -v -keystore ~/.android/debug.keystore -storepass android | grep SHA256`): по ней приложение заранее поймёт, что поверх не встанет, и предложит копию и переустановку.
 
 ## Как проверить самообновление
 1. Собрать «старую» версию: `./gradlew assembleDebug -PphoenixVersionName=3.9.65 -PphoenixVersionCode=79` и установить на телефон.

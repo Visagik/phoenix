@@ -85,6 +85,8 @@ object Scheduler {
     /** Если сегодняшнего сбора нет, а время давно прошло — запустить сейчас (при первой возможности). */
     fun catchUpIfNeeded(context: Context, trigger: String) {
         val s = AppSettings(context)
+        // первый запуск: пока человек проходит обучение, сбор сам не начинается (на последней карточке сбор запускает кнопка «Собрать»)
+        if (s.onboardingSeen == 0 && !Mode.entries.any { try { Storage(context, it).latestEnriched() != null } catch (_: Throwable) { false } }) return
         val need = if (s.scheduleKind == ScheduleKind.INTERVAL) {
             Schedule.intervalCatchUp(s.lastSuccessAt, s.lastAttemptAt, System.currentTimeMillis(), s.intervalHours)
         } else {

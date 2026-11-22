@@ -45,6 +45,39 @@ object NetInfo {
         } else null
         return NetLabel.of(k.name, op)
     }
+
+    /**
+     * Отпечаток Wi-Fi (см. WifiId): читается из свойств сети, без разрешений; кеш на время жизни сети, чтобы не дёргать систему лишний раз
+     * (вызывается при смене сети и при замерах, а не по таймеру).
+     */
+    @Volatile private var wifiCache: Triple<android.net.Network?, String, Long>? = null
+
+    @Suppress("DEPRECATION")
+    fun wifiId(context: Context): String {
+        return try {
+            val cm = context.getSystemService(ConnectivityManager::class.java) ?: return ""
+            val net = cm.allNetworks.firstOrNull { n ->
+                cm.getNetworkCapabilities(n)?.let { c ->
+                    c.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) && !c.hasTransport(NetworkCapabilities.TRANSPORT_VPN) &&
+                        c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                } == true
+            } ?: return ""
+            val cached = wifiCache
+            if (cached != null && cached.first == net && System.currentTimeMillis() - cached.third < 10 * 60_000L) return cached.second
+            val lp = cm.getLinkProperties(net) ?: return ""
+            val gw = lp.routes.firstOrNull { it.isDefaultRoute && it.gateway != null }?.gateway?.hostAddress
+            val dns = lp.dnsServers.mapNotNull { it.hostAddress }
+            val subnets = lp.linkAddresses.filter { it.address is java.net.Inet4Address }.map { WifiId.subnet(it.address.address, it.prefixLength) }
+            val id = WifiId.of(gw, dns, lp.domains, subnets)
+            wifiCache = Triple(net, id, System.currentTimeMillis())
+            id
+        } catch (_: Throwable) {
+            ""
+        }
+    }
+
+    /** Место сети для подсказки режима и для обнаружения перехода между двумя Wi-Fi: «wifi#a1b2c3», «mobile:мтс». */
+    fun place(context: Context): String = WifiId.place(label(context), if (kind(context) == Kind.WIFI) wifiId(context) else "")
 }
 
 /** Опыт текущей сети для ранжирования конфигов режима. */

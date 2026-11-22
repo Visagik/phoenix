@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
@@ -82,6 +83,7 @@ fun onboardingEnv(context: Context): Onboarding.Env {
         autostartRelevant = vendor == OemGuide.Vendor.XIAOMI || vendor == OemGuide.Vendor.HUAWEI || vendor == OemGuide.Vendor.OPPO || vendor == OemGuide.Vendor.VIVO,
         autostartConfirmed = AppSettings(context).autostartConfirmed,
         hasServers = hasServers,
+        usageGranted = try { ForegroundWatcher.hasAccess(context) } catch (_: Throwable) { true },
     )
 }
 
@@ -90,7 +92,7 @@ fun onboardingEnv(context: Context): Onboarding.Env {
  * всегда есть «Продолжить» (на Xiaomi окно может вернуть без результата). Статистику использования и спецвозможности здесь не просим.
  */
 @Composable
-fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: () -> Unit) {
+fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: () -> Unit, onOpenTargets: () -> Unit = {}, onOpenTips: () -> Unit = {}) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     var index by rememberSaveable { mutableStateOf(0) }
@@ -120,7 +122,7 @@ fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: ()
     val step = steps[i]
     val last = i == steps.lastIndex
     val satisfied = Onboarding.satisfied(step, env)
-    val done = step == Onboarding.Step.WELCOME || satisfied || step in acted
+    val done = step == Onboarding.Step.WELCOME || step == Onboarding.Step.TIPS || satisfied || step in acted
 
     fun next() {
         if (step == Onboarding.Step.AUTOSTART && step in acted) AppSettings(context).autostartConfirmed = true
@@ -135,8 +137,9 @@ fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: ()
             Onboarding.Step.BACKGROUND -> Background.requestIgnoreBatteryOptimization(context)
             Onboarding.Step.ALARMS -> Background.requestExactAlarm(context)
             Onboarding.Step.AUTOSTART -> Background.openAutostart(context)
+            Onboarding.Step.USAGE -> ForegroundWatcher.openAccessSettings(context)
             Onboarding.Step.SERVERS -> vm.runNow()
-            Onboarding.Step.WELCOME -> {}
+            Onboarding.Step.WELCOME, Onboarding.Step.TIPS -> {}
         }
     }
 
@@ -147,21 +150,25 @@ fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: ()
         Onboarding.Step.BACKGROUND -> tr("Работа в фоне")
         Onboarding.Step.ALARMS -> tr("Точные будильники")
         Onboarding.Step.AUTOSTART -> tr("Автозапуск")
+        Onboarding.Step.USAGE -> tr("Данные об использовании")
         Onboarding.Step.SERVERS -> tr("Первые серверы")
+        Onboarding.Step.TIPS -> tr("Напоследок")
     }
     val body = when (step) {
-        Onboarding.Step.WELCOME -> listOf(
-            tr("Сам находит рабочий сервер"),
+        Onboarding.Step.WELCOME -> tr("Phoenix — полностью автономное приложение. Оно само:") + "\n\n" + listOf(
+            tr("Находит рабочий сервер"),
             tr("Проверяет, открываются ли нужные сервисы"),
-            tr("Отдельный сервер для отдельного приложения"),
-            tr("Российские сайты — напрямую"),
-        ).joinToString("\n") { "•  $it" }
+            tr("Подбирает свой сервер для каждого приложения"),
+            tr("Открывает российские сайты напрямую"),
+        ).joinToString("\n") { "•  $it" } + "\n\n" + tr("Чтобы всё это работало, приложению нужно быть включённым 24/7. Сейчас за минуту дадим нужные разрешения.")
         Onboarding.Step.VPN -> tr("Без этого Android не даст включить защиту.")
         Onboarding.Step.NOTIFICATIONS -> tr("Видно, что VPN работает, и его можно выключить из шторки.")
         Onboarding.Step.BACKGROUND -> tr("Иначе телефон выключит VPN и ночной сбор.")
         Onboarding.Step.ALARMS -> tr("Сбор в выбранное время, а не когда удобно системе.")
         Onboarding.Step.AUTOSTART -> tr("Разрешите автозапуск для Phoenix в настройках телефона и вернитесь сюда.")
+        Onboarding.Step.USAGE -> tr("Нужен, чтобы Phoenix видел, какое приложение открыто, и включал для него свой сервер. Найдите Phoenix в списке и разрешите доступ.")
         Onboarding.Step.SERVERS -> tr("Соберём список серверов — это займёт несколько минут.")
+        Onboarding.Step.TIPS -> tr("Свой сервер для приложений: привяжите отдельный сервер к Telegram, ChatGPT и другим сервисам — они начнут работать намного быстрее.") + "\n\n" + tr("Фишки: плитки в шторке, виджет, ярлыки и многое другое, о чём в настройках не узнать. Они в «Ещё», вкладка «Фишки».") + "\n\n" + tr("И обязательно пройдитесь по настройкам: их много, и именно они подстроят Phoenix под вас.")
     }
     val ifSkipped = when (step) {
         Onboarding.Step.WELCOME -> ""
@@ -170,7 +177,9 @@ fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: ()
         Onboarding.Step.BACKGROUND -> tr("Если пропустить: возможны обрывы в фоне.")
         Onboarding.Step.ALARMS -> tr("Если пропустить: время сбора сдвигается.")
         Onboarding.Step.AUTOSTART -> tr("Если пропустить: VPN может пропадать после очистки памяти.")
+        Onboarding.Step.USAGE -> tr("Если пропустить: отдельные серверы под приложения не будут включаться при их открытии.")
         Onboarding.Step.SERVERS -> tr("Если пропустить: серверы можно собрать позже, меню ⋮ на главной.")
+        Onboarding.Step.TIPS -> ""
     }
     val icon = when (step) {
         Onboarding.Step.WELCOME -> Icons.Filled.Home
@@ -179,10 +188,12 @@ fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: ()
         Onboarding.Step.BACKGROUND -> Icons.Filled.Settings
         Onboarding.Step.ALARMS -> Icons.Filled.Refresh
         Onboarding.Step.AUTOSTART -> Icons.Filled.Warning
+        Onboarding.Step.USAGE -> Icons.Filled.Check
         Onboarding.Step.SERVERS -> Icons.Filled.Search
+        Onboarding.Step.TIPS -> Icons.Filled.Build
     }
     val actionLabel = when (step) {
-        Onboarding.Step.AUTOSTART -> tr("Открыть настройки")
+        Onboarding.Step.AUTOSTART, Onboarding.Step.USAGE -> tr("Открыть настройки")
         Onboarding.Step.SERVERS -> tr("Собрать")
         else -> tr("Разрешить")
     }
@@ -201,7 +212,7 @@ fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: ()
                 Spacer(Modifier.height(24.dp))
                 Text(title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(12.dp))
-                Text(body, style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant, textAlign = if (step == Onboarding.Step.WELCOME) TextAlign.Start else TextAlign.Center)
+                Text(body, style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant, textAlign = if (step == Onboarding.Step.WELCOME || step == Onboarding.Step.TIPS) TextAlign.Start else TextAlign.Center)
                 if (satisfied && step != Onboarding.Step.WELCOME) {
                     Spacer(Modifier.height(12.dp))
                     Text(tr("Уже готово"), style = MaterialTheme.typography.titleMedium, color = PhoenixTheme.ok(appDark()))
@@ -213,13 +224,19 @@ fun OnboardingScreen(steps: List<Onboarding.Step>, vm: MainViewModel, onDone: ()
                 }
             }
             if (!done && ifSkipped.isNotEmpty()) Text(ifSkipped, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp))
-            if (step != Onboarding.Step.WELCOME && !satisfied) {
+            if (step == Onboarding.Step.TIPS) {
+                FilledTonalButton(onClick = { onOpenTargets() }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(tr("Настроить свой сервер")) }
+                Spacer(Modifier.height(8.dp))
+                FilledTonalButton(onClick = { onOpenTips() }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(tr("Открыть «Фишки»")) }
+                Spacer(Modifier.height(8.dp))
+            }
+            if (step != Onboarding.Step.WELCOME && step != Onboarding.Step.TIPS && !satisfied) {
                 FilledTonalButton(onClick = { act() }, enabled = !(step == Onboarding.Step.SERVERS && running), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(actionLabel) }
                 Spacer(Modifier.height(8.dp))
             }
             if (done) {
                 Button(onClick = { next() }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                    Text(if (step == Onboarding.Step.WELCOME) tr("Начать") else if (last) tr("Готово") else tr("Продолжить"))
+                    Text(if (step == Onboarding.Step.WELCOME) tr("Настроим") else if (last) tr("Готово") else tr("Продолжить"))
                 }
             } else {
                 TextButton(onClick = { next() }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(tr("Пропустить")) }

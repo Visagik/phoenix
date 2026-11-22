@@ -70,16 +70,22 @@ object UpdateChecker {
         if (out.reached) settings.updateCheckedAt = System.currentTimeMillis()
         val rel = out.release
         if (rel != null) {
+            val prevTag = settings.updateTag
             settings.updateTag = rel.tag
             settings.updateUrl = rel.url
             settings.updateApkUrl = rel.apkUrl
             settings.updateApkSha = rel.apkSha256
             settings.updateApkSize = rel.apkSize
             val local = currentVersion(context)
-            if (notify && UpdateCheck.shouldNotify(rel.tag, local, settings.updateNotified)) {
-                if (showNotification(context, rel)) settings.updateNotified = rel.tag
+            // до показа уведомления выясняем, встанет ли обновление поверх; без отпечатка в описании сохраняем прежний вывод по той же версии
+            settings.updateReinstall = UpdateCheck.isNewer(rel.tag, local) && when {
+                rel.signingSha256.isNotEmpty() -> ReinstallPlan.neededByRelease(AppSigning.ownCerts(context), rel.signingSha256)
+                else -> prevTag == rel.tag && settings.updateReinstall
             }
-            try { Storage(context).log("UPDATE: последняя версия ${rel.tag}, установлена $local" + if (UpdateCheck.isNewer(rel.tag, local)) " — доступно обновление" else "") } catch (_: Throwable) { }
+            if (notify && UpdateCheck.shouldNotify(rel.tag, local, settings.updateNotified)) {
+                if (showNotification(context, rel, settings.updateReinstall)) settings.updateNotified = rel.tag
+            }
+            try { Storage(context).log("UPDATE: последняя версия ${rel.tag}, установлена $local" + if (UpdateCheck.isNewer(rel.tag, local)) " — доступно обновление" + (if (settings.updateReinstall) ", потребует удаления приложения (другой ключ подписи)" else "") else "") } catch (_: Throwable) { }
         } else {
             try { Storage(context).log(if (out.reached) "UPDATE: ответ GitHub не похож на релиз" else "UPDATE: GitHub не ответил") } catch (_: Throwable) { }
         }
@@ -89,7 +95,7 @@ object UpdateChecker {
     /** Давно не проверяли (больше суток) — проверить при открытии приложения. */
     fun due(context: Context): Boolean = System.currentTimeMillis() - AppSettings(context).updateCheckedAt > DAY_MS
 
-    private fun showNotification(context: Context, rel: ReleaseInfo): Boolean = try {
+    private fun showNotification(context: Context, rel: ReleaseInfo, reinstall: Boolean = false): Boolean = try {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, tr("Phoenix: обновления"), NotificationManager.IMPORTANCE_DEFAULT))
         val open = PendingIntent.getActivity(
@@ -98,8 +104,8 @@ object UpdateChecker {
         )
         val n = android.app.Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle(tr("Phoenix: доступно обновление {}", rel.tag))
-            .setContentText(tr("Нажмите, чтобы открыть страницу загрузки"))
+            .setContentTitle(if (reinstall) tr("Phoenix: обновление {} потребует переустановки", rel.tag) else tr("Phoenix: доступно обновление {}", rel.tag))
+            .setContentText(if (reinstall) tr("Другой ключ подписи: сначала сохраните резервную копию, приложение придётся удалить") else tr("Нажмите, чтобы открыть страницу загрузки"))
             .setContentIntent(open)
             .setAutoCancel(true)
             .build()

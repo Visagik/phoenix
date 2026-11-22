@@ -276,3 +276,81 @@ object RegionVote {
         return if (maxReads == 1) (if (yes == 1) true else if (no == 1) false else null) else null
     }
 }
+
+
+/**
+ * Когда сбой проверки связи считать виной сервера. Журналы 20–21.11: около 30 % падений восстанавливались сами, а смена сервера
+ * шла через секунды после предупреждения системы «сеть пропадёт» (простой 50 с).
+ */
+object HealthGate {
+    /** После смены сети или предупреждения системы сбой связи не вешаем на сервер и не перебираем. */
+    const val SETTLE_MS = 60_000L
+    /** «Недавно» для определения типа блокировок: раньше второй неудачи оно нужно только сразу после смены сети. */
+    const val RECENT_MS = 120_000L
+    /** Сервер, упавший раньше этого после выбора, получает долгий карантин. */
+    const val EARLY_FALL_MS = 120_000L
+
+    fun settling(now: Long, shakeAt: Long): Boolean = shakeAt > 0L && now - shakeAt in 0 until SETTLE_MS
+    fun recent(now: Long, shakeAt: Long): Boolean = shakeAt > 0L && now - shakeAt in 0 until RECENT_MS
+    /** Сколько неудач подряд нужно: на мобильной сети провалы короче, ждём третью. */
+    fun failuresNeeded(mobile: Boolean): Int = if (mobile) 3 else 2
+    /** На какой неудаче запускать определение режима (15 прямых запросов): сразу после смены сети — на первой, иначе на второй. */
+    fun detectAt(netRecent: Boolean): Int = if (netRecent) 1 else 2
+    fun earlyFall(now: Long, chosenAt: Long): Boolean = chosenAt > 0L && now - chosenAt in 0 until EARLY_FALL_MS
+}
+
+
+/**
+ * Общий потолок времени одной смены сервера. Этапы (сначала подходящие под приложение, весь список, серверы из карантина) раньше
+ * имели каждый свой бюджет и в сумме давали до 220 с поиска, а при неудачах с растущими паузами — простои по 187 и 506 с (журнал Samsung 21.11).
+ */
+object FailoverBudget {
+    const val MOBILE_MS = 60_000L
+    const val WIFI_MS = 120_000L
+    const val FORCED_MS = 150_000L
+    /** Этап короче этого не запускаем: поиск не успеет ничего проверить. */
+    const val MIN_STAGE_MS = 5_000L
+
+    fun totalMs(forced: Boolean, mobile: Boolean): Long = if (forced) FORCED_MS else if (mobile) MOBILE_MS else WIFI_MS
+
+    /** Бюджет этапа: желаемый, но не больше оставшегося общего; 0 — этап пропускаем. */
+    fun stageMs(now: Long, started: Long, totalMs: Long, wantMs: Long): Long {
+        val left = totalMs - (now - started)
+        val ms = minOf(wantMs, left)
+        return if (ms < MIN_STAGE_MS) 0L else ms
+    }
+}
+
+
+/**
+ * Контрольный адрес для проверки списка обхода. В проход по «пора проверить» попадают в основном закрытые напрямую сервисы
+ * (доверенные пропускаются), поэтому «не открылось ничего» было обычным итогом и принималось за отсутствие сети: на Xiaomi 44 раза за сутки,
+ * с повторами через 8 и 20 с на каждую смену сети. Теперь отсутствие сети подтверждает не открывшийся и доверенный сервис.
+ */
+object DirectControl {
+    /** До [n] доверенных сервисов, которых нет в проверяемых сейчас. */
+    fun pick(allIds: List<String>, dueIds: Set<String>, trustedIds: Set<String>, n: Int = 2): List<String> =
+        allIds.filter { it in trustedIds && it !in dueIds }.take(n)
+
+    /** true — сети нет: не открылось ничего и контрольных адресов нет или они тоже не открылись. */
+    fun noNetwork(anyOpened: Boolean, controlsTried: Boolean, controlOpened: Boolean): Boolean =
+        !anyOpened && !(controlsTried && controlOpened)
+}
+
+
+/**
+ * Параллельность проверок в зависимости от занятой памяти процесса. Журнал Samsung 21.11: при перепроверке вместе с поиском PSS доходил до 332 МБ,
+ * а в 12:22 процесс убила система («не хватило памяти», 243 МБ). Каждая проба временным ядром — отдельный экземпляр Go.
+ */
+object MemGuard {
+    const val HIGH_MB = 200
+    const val CRITICAL_MB = 260
+
+    /** Сколько проверок одновременно можно держать при [pssMb] занятой памяти; [base] — обычное значение. */
+    fun scale(base: Int, pssMb: Int): Int = when {
+        pssMb <= 0 -> base // не удалось измерить
+        pssMb >= CRITICAL_MB -> maxOf(1, base / 4)
+        pssMb >= HIGH_MB -> maxOf(2, base / 2).coerceAtMost(base)
+        else -> base
+    }
+}

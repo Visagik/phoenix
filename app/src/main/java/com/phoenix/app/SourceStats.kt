@@ -199,7 +199,7 @@ object AutoPriority {
         storage.sourceAutoPriorityFile.writeTextAtomic(SourcePriority.encode(levels))
         val high = levels.count { it.value > 0 }
         storage.log("PRIO: авто-приоритеты источников: высокий $high, низкий ${levels.size - high} из ${stats.size} (лучший источник живых ${stats.maxOfOrNull { it.percent } ?: -1}%)")
-        if (stats.isNotEmpty()) storage.log("PRIO: живых по источникам (лучшие ${minOf(8, stats.size)} из ${stats.size}): " + SourceStats.summaryLine(stats))
+        if (stats.isNotEmpty()) storage.log("PRIO: живых по источникам (все ${stats.size}): " + SourceStats.summaryLine(stats, limit = stats.size))
         return levels.size
     }
 }

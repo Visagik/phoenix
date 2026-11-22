@@ -52,6 +52,16 @@ object BlockDetector {
         }
     }
 
+    /**
+     * Замер, которому нельзя верить: российские сайты не открылись ни один. Ни в белых, ни в чёрных списках так не бывает, это либо
+     * настоящее отсутствие сети, либо сбой самого замера (журнал 21.11: «нет сети» и «не ясно · 1–2 из 11, 0 из 4» при рабочем Wi-Fi,
+     * 5 раз из 12). Такой замер перед выводом повторяют.
+     */
+    fun suspect(p: ProbeCounts): Boolean = p.ruTotal > 0 && p.ruOk == 0
+
+    /** Из двух замеров берём тот, где открылось больше: сбой только уменьшает число открывшихся, а не увеличивает. */
+    fun better(a: ProbeCounts, b: ProbeCounts): ProbeCounts = if (b.foreignOk + b.ruOk > a.foreignOk + a.ruOk) b else a
+
     fun title(t: BlockType): String = when (t) {
         BlockType.WHITELIST -> "белые списки"
         BlockType.BLACKLIST -> "чёрные списки"

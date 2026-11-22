@@ -6,7 +6,7 @@ package com.phoenix.app
  */
 object Onboarding {
     /** Номер последней версии набора шагов; при добавлении шага увеличить и задать ему since = новое число. */
-    const val VERSION = 1
+    const val VERSION = 2
 
     enum class Step(val since: Int) {
         WELCOME(1),
@@ -15,7 +15,11 @@ object Onboarding {
         BACKGROUND(1),
         ALARMS(1),
         AUTOSTART(1),
+        /** «Доступ к данным об использовании»: без него не работает переключение сервера при открытии приложения. */
+        USAGE(2),
         SERVERS(1),
+        /** Финальная карточка: «свой сервер для приложений» и раздел «Фишки». Для тех, кто прошёл версию 1, это единственный новый шаг. */
+        TIPS(2),
     }
 
     data class Env(
@@ -28,6 +32,7 @@ object Onboarding {
         val autostartRelevant: Boolean,
         val autostartConfirmed: Boolean,
         val hasServers: Boolean,
+        val usageGranted: Boolean = true,
     )
 
     /** Шаг уже не нужен: право выдано, шаг не относится к этому телефону или серверы уже есть. «Приветствие» не выполняется никогда. */
@@ -38,7 +43,9 @@ object Onboarding {
         Step.BACKGROUND -> env.batteryOk
         Step.ALARMS -> !env.exactRelevant || env.exactOk
         Step.AUTOSTART -> !env.autostartRelevant || env.autostartConfirmed
+        Step.USAGE -> env.usageGranted
         Step.SERVERS -> env.hasServers
+        Step.TIPS -> false
     }
 
     /**

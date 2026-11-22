@@ -107,3 +107,9 @@ DnsProvider.kt
 ActivityText.kt
 RecheckSkip.kt
 StopRequest.kt
+ModeHint.kt
+WifiId.kt
+WhatsNew.kt
+ModeGate.kt
+Facts.kt
+SourceBench.kt

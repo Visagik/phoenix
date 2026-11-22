@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
@@ -371,12 +372,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Состояние проверки обновлений для плашки и страницы «Обновления». */
-    data class UpdateUi(val tag: String = "", val url: String = "", val checkedAt: Long = 0L, val busy: Boolean = false, val failed: Boolean = false) {
+    data class UpdateUi(val tag: String = "", val url: String = "", val checkedAt: Long = 0L, val busy: Boolean = false, val failed: Boolean = false, val reinstall: Boolean = false) {
         fun newer(current: String) = UpdateCheck.isNewer(tag, current)
     }
 
     private fun updateFromSettings(busy: Boolean = false, failed: Boolean = false) =
-        AppSettings(getApplication()).let { UpdateUi(it.updateTag, it.updateUrl, it.updateCheckedAt, busy, failed) }
+        AppSettings(getApplication()).let { UpdateUi(it.updateTag, it.updateUrl, it.updateCheckedAt, busy, failed, it.updateReinstall) }
 
     private val _update = MutableStateFlow(updateFromSettings())
     val update: StateFlow<UpdateUi> = _update.asStateFlow()
@@ -401,6 +402,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     init {
         // отмена или ошибка в окне системного установщика приходит через приёмник — возвращаем кнопку «Скачать и установить»
         viewModelScope.launch { UpdateInstaller.external.collect { _install.value = it } }
+        // тип блокировок определяем сразу при запуске приложения, а не после включения VPN: до этого всё шло в режиме «по умолчанию»
+        viewModelScope.launch { kotlinx.coroutines.delay(2_000); try { ModeFirst.ensure(app) } catch (_: Throwable) {} }
     }
 
     /** «Скачать и установить» по выбору пользователя: скачивание и проверка идут в фоне, окно подтверждения покажет сама система. */
@@ -408,6 +411,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         val st = _install.value.stage
         if (st == InstallProgress.Stage.DOWNLOADING || st == InstallProgress.Stage.VERIFYING || st == InstallProgress.Stage.INSTALLING) return
+        // при смене ключа приложение придётся удалить — без сохранённой копии не скачиваем
+        if (settings.updateReinstall && _reinstallBackup.value.let { it.isEmpty() || it == "-" }) return
         Thread { UpdateInstaller.downloadAndInstall(app) { _install.value = it } }.start()
     }
 
@@ -481,6 +486,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 tr("Не удалось сохранить: {}", e.message)
             }
+        }
+    }
+
+    private val _reinstallBackup = MutableStateFlow("")
+    /** Имя файла копии, сохранённой в Загрузки перед удалением приложения; «-» — не удалось; пусто — ещё не делали. */
+    val reinstallBackup: StateFlow<String> = _reinstallBackup.asStateFlow()
+
+    /** Копия в Загрузки/Phoenix: внутренняя память пропадёт вместе с приложением, а эта останется. */
+    fun saveBackupBeforeReinstall() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val name = "phoenix-backup-" + java.text.SimpleDateFormat("yyyyMMdd-HHmm", java.util.Locale.US).format(java.util.Date()) + ".txt"
+            val ok = try { Exporter.saveToDownloads(app, name, Backup.export(app.filesDir, settings.exportMap(), java.time.OffsetDateTime.now().toString())) } catch (_: Exception) { false }
+            _reinstallBackup.value = if (ok) name else "-"
         }
     }
 
@@ -602,8 +621,21 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _speedOnMetered = MutableStateFlow(settings.speedOnMetered)
     val speedOnMetered: StateFlow<Boolean> = _speedOnMetered.asStateFlow()
 
-    private val _detectText = MutableStateFlow(settings.lastDetect)
+    private val _detectText = MutableStateFlow(detectLabel())
     val detectText: StateFlow<String> = _detectText.asStateFlow()
+
+    /** Последнее определение вместе со временем: «21:15 · чёрные списки …». Время нужно, чтобы старый результат не выглядел свежим. */
+    private fun detectLabel(): String {
+        val t = settings.lastDetect
+        if (t.isBlank()) return ""
+        val at = settings.lastDetectAt
+        if (at <= 0L) return t
+        val hhmm = java.time.Instant.ofEpochMilli(at).atZone(java.time.ZoneId.systemDefault()).toLocalTime().let { "%02d:%02d".format(it.hour, it.minute) }
+        return "$hhmm · $t"
+    }
+
+    /** Определение чаще всего запускает служба (смена сети, проверка связи), а не кнопка: экран перечитывает результат из настроек. */
+    fun refreshDetect() { _detectText.value = detectLabel() }
 
     private val _targets = MutableStateFlow<List<Target>>(emptyList())
     val targets: StateFlow<List<Target>> = _targets.asStateFlow()
@@ -641,8 +673,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         _busy.value = tr("Определяю тип блокировок…")
         viewModelScope.launch(Dispatchers.IO) {
-            val out = ModeDetector.run(app, ignoreHold = true)
-            _detectText.value = out.text
+            ModeDetector.run(app, ignoreHold = true)
+            refreshDetect()
             val newMode = Mode.read(app.filesDir)
             if (newMode != storage.mode) {
                 storage = Storage(app)
@@ -1252,7 +1284,9 @@ private enum class Page(val title: String, val hint: String) {
     SOURCES("Источники", "ссылки для белых и чёрных списков, чёрный список, аудит"),
     BACKUP("Экспорт и импорт", "резервная копия настроек, целей, обхода, источников и журнала"),
     UPDATE("Обновления", "проверка новой версии раз в сутки, кнопка «Проверить сейчас»"),
-    INTRO("Первые шаги", "повторить настройку: разрешения и первые серверы"),
+    INTRO("Обучение", "пройти заново: разрешения, серверы, подсказки"),
+    WHATSNEW("Что нового", "список изменений по версиям"),
+    TIPS("Фишки", "плитки в шторке, ярлыки, виджет, «Поделиться» и другие возможности"),
     COUNTRIES("Страны и серверы", "предпочитаемые и исключённые страны, скрытые серверы"),
     DIAG("Диагностика", "сводка «что сейчас», журнал с фильтрами и поиском, отчёт сбора"),
 }
@@ -1292,7 +1326,30 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
     val updateNow by vm.update.collectAsStateWithLifecycle()
     val currentVersion = remember { UpdateChecker.currentVersion(context) }
     val attention = remember(resumeTick, updateNow) { Attention.items(onboardingEnv(context), updateNow.newer(currentVersion)) }
-    val introSteps = remember(onboarding, introForce) { if (onboarding) Onboarding.steps(appSettings.onboardingSeen, onboardingEnv(context), introForce) else emptyList() }
+    // обучение открыло подстраницу («свой сервер», «Фишки»): «назад» возвращает на последнюю карточку, а не в главное меню
+    var introReturn by rememberSaveable { mutableStateOf(false) }
+    var introTail by rememberSaveable { mutableStateOf(false) }
+    val introSteps = remember(onboarding, introForce, introTail) {
+        if (!onboarding) emptyList()
+        else if (introTail) listOf(Onboarding.Step.TIPS)
+        else Onboarding.steps(appSettings.onboardingSeen, onboardingEnv(context), introForce)
+    }
+    fun closeSubpage() {
+        page = null
+        if (introReturn) { introReturn = false; introTail = true; inSettings = false; onboarding = true }
+    }
+    // «Что нового»: после обновления один раз; на новой установке вместо него обучение (версия просто отмечается как виденная)
+    val freshInstall = remember { Onboarding.steps(appSettings.onboardingSeen, onboardingEnv(context)).contains(Onboarding.Step.WELCOME) }
+    var whatsNewOpen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(onboarding) {
+        if (freshInstall) appSettings.whatsNewSeen = currentVersion
+        else if (!onboarding && WhatsNew.shouldShow(appSettings.whatsNewSeen, currentVersion, false)) whatsNewOpen = true
+    }
+    if (whatsNewOpen && !onboarding) WhatsNewDialog(
+        currentVersion,
+        onClose = { appSettings.whatsNewSeen = currentVersion; whatsNewOpen = false },
+        onAll = { appSettings.whatsNewSeen = currentVersion; whatsNewOpen = false; inServers = false; inSettings = true; page = Page.WHATSNEW },
+    )
 
     // уведомление об обновлении открывает страницу «Обновления»
     val wantUpdate by SwitchRequest.openUpdate.collectAsStateWithLifecycle()
@@ -1354,7 +1411,7 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
         else -> 2
     }
     BackHandler(enabled = inSettings || inServers) {
-        if (inServers) inServers = false else if (page != null) page = null else inSettings = false
+        if (inServers) inServers = false else if (page != null) closeSubpage() else inSettings = false
     }
 
     fun goTab(t: Int) {
@@ -1380,14 +1437,19 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
         wasRechecking = recheckRunning
     }
 
-    if (onboarding) OnboardingScreen(introSteps, vm) { onboarding = false; introForce = false } else Scaffold(
+    if (onboarding) OnboardingScreen(
+        introSteps, vm,
+        onDone = { onboarding = false; introForce = false; introTail = false },
+        onOpenTargets = { onboarding = false; introReturn = true; inServers = false; inSettings = true; page = Page.TARGETS },
+        onOpenTips = { onboarding = false; introReturn = true; inServers = false; inSettings = true; page = Page.TIPS },
+    ) else Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = { Text(if (inServers) tr("Серверы") else if (!inSettings) "Phoenix" else if (page == Page.TARGETS || page == Page.BYPASS) tr("Приложения и сайты") else page?.title?.let { tr(it) } ?: tr("Ещё")) },
                 navigationIcon = {
                     // «назад» нужен только внутри подстраницы «Ещё»; разделы переключаются нижней панелью
-                    if (inSettings && page != null) IconButton(onClick = { page = null }) {
+                    if (inSettings && page != null) IconButton(onClick = { closeSubpage() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Назад"))
                     }
                 },
@@ -1464,6 +1526,8 @@ fun MainScreen(vm: MainViewModel = viewModel()) {
                 Page.UPDATE -> UpdatePage(vm)
                 Page.DIAG -> DiagPage(vm)
                 Page.INTRO -> {}
+                Page.TIPS -> TipsPage(onOpenTargets = { page = Page.TARGETS }, onOpenSources = { page = Page.SOURCES })
+                Page.WHATSNEW -> WhatsNewPage()
                 Page.SERVICES -> ServicesPage(vm)
                 Page.COUNTRIES -> CountriesPage(vm)
             }
@@ -1478,7 +1542,8 @@ private fun SettingsMenu(modeTitle: String, version: String, targetsCount: Int, 
         "Подключение" to listOf(Page.MODE, Page.CONNECTION, Page.FIRMWARE),
         "Приложения и сайты" to listOf(Page.BYPASS, Page.TARGETS),
         "Серверы" to listOf(Page.COLLECT, Page.SOURCES, Page.SERVICES, Page.COUNTRIES),
-        "Помощь и данные" to listOf(Page.DIAG, Page.BACKUP, Page.UPDATE, Page.INTRO),
+        "Фишки и обучение" to listOf(Page.TIPS, Page.WHATSNEW, Page.INTRO),
+        "Помощь и данные" to listOf(Page.DIAG, Page.BACKUP, Page.UPDATE),
     )
     fun icon(p: Page) = when (p) {
         Page.MODE -> Icons.Filled.Lock
@@ -1494,6 +1559,8 @@ private fun SettingsMenu(modeTitle: String, version: String, targetsCount: Int, 
         Page.BACKUP -> Icons.AutoMirrored.Filled.Send
         Page.UPDATE -> Icons.Filled.CheckCircle
         Page.INTRO -> Icons.Filled.Home
+        Page.TIPS -> Icons.Filled.Info
+        Page.WHATSNEW -> Icons.Filled.Star
         else -> Icons.Filled.Menu
     }
     fun value(p: Page): String = when (p) {
@@ -1503,6 +1570,7 @@ private fun SettingsMenu(modeTitle: String, version: String, targetsCount: Int, 
         Page.TARGETS -> if (targetsCount > 0) tr("целей: {}", targetsCount) else ""
         Page.SOURCES -> if (mineCount > 0) tr("своих: {}", mineCount) else ""
         Page.COLLECT -> schedule
+        Page.WHATSNEW -> WhatsNew.ENTRIES.firstOrNull()?.version ?: ""
         Page.COUNTRIES -> (PoolPolicy.prefer.size + PoolPolicy.avoid.size + PoolPolicy.hidden.size).let { if (it > 0) tr("правил: {}", it) else "" }
         else -> ""
     }
@@ -1749,6 +1817,8 @@ fun VpnCard(vm: MainViewModel, mode: Mode, onConnect: () -> Unit) {
     }
     val work by vm.busy.collectAsStateWithLifecycle()
 
+    val tickerOn = remember { AppSettings(context).factsTicker }
+    if (tickerOn) FactTicker()
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(32.dp))
         Box(contentAlignment = Alignment.Center) {
@@ -2460,6 +2530,7 @@ private fun UpdateBanner(vm: MainViewModel, onMore: () -> Unit) {
     Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(tr("Доступна новая версия {}", u.tag), style = MaterialTheme.typography.titleMedium)
+            if (u.reinstall) Text(tr("Потребуется переустановка: сначала сохраните резервную копию"), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { openUrl(context, u.url.ifEmpty { UpdateCheck.PAGE_URL }) }) { Text(tr("Открыть страницу загрузки")) }
                 TextButton(onClick = onMore) { Text(tr("Обновления")) }
@@ -2498,7 +2569,7 @@ private fun UpdatePage(vm: MainViewModel) {
             Button(enabled = !u.busy, onClick = { vm.checkUpdate(force = true) }) { Text(tr("Проверить сейчас")) }
             if (u.newer(current)) OutlinedButton(onClick = { openUrl(context, u.url.ifEmpty { UpdateCheck.PAGE_URL }) }) { Text(tr("Открыть страницу загрузки")) }
         }
-        if (u.newer(current)) InstallControls(vm)
+        if (u.newer(current)) InstallControls(vm, u.reinstall)
         Text(
             tr("Приложение раз в сутки смотрит страницу релизов на GitHub; при выходе новой версии придёт отдельное уведомление. Установить её можно кнопкой «Скачать и установить» или вручную: скачайте APK на странице релиза."),
             style = MaterialTheme.typography.bodySmall,
@@ -2510,14 +2581,26 @@ private fun UpdatePage(vm: MainViewModel) {
 
 /** Кнопка «Скачать и установить» с ходом загрузки; появляется, только если в релизе есть файл APK. */
 @Composable
-private fun InstallControls(vm: MainViewModel) {
+private fun InstallControls(vm: MainViewModel, reinstall: Boolean) {
     val context = LocalContext.current
     val p by vm.install.collectAsStateWithLifecycle()
     val hasApk = remember { AppSettings(context).updateApkUrl.isNotEmpty() }
     if (!hasApk) return
+    val backup by vm.reinstallBackup.collectAsStateWithLifecycle()
+    val needs = reinstall || p.stage == InstallProgress.Stage.REINSTALL_READY
+    val backupOk = backup.isNotEmpty() && backup != "-"
     val busy = p.stage == InstallProgress.Stage.DOWNLOADING || p.stage == InstallProgress.Stage.VERIFYING || p.stage == InstallProgress.Stage.INSTALLING
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Button(enabled = !busy, onClick = { vm.installUpdate() }) { Text(tr("Скачать и установить")) }
+        if (needs) {
+            Text(
+                tr("Это обновление нельзя поставить поверх: оно подписано другим ключом, а Android не разрешает сменить ключ без удаления приложения. При удалении пропадут настройки и данные, поэтому сначала сохраните копию в Загрузки — она останется на телефоне."),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            OutlinedButton(onClick = { vm.saveBackupBeforeReinstall() }) { Text(tr("1. Сохранить копию в Загрузки")) }
+            if (backup == "-") Text(tr("Не удалось сохранить копию"), color = MaterialTheme.colorScheme.error)
+            if (backupOk) Text(tr("Копия сохранена: Загрузки/Phoenix/{}", backup), style = MaterialTheme.typography.bodyMedium)
+        }
+        Button(enabled = !busy && (!needs || backupOk), onClick = { vm.installUpdate() }) { Text(if (needs) tr("2. Скачать обновление") else tr("Скачать и установить")) }
         when (p.stage) {
             InstallProgress.Stage.DOWNLOADING -> Text(tr("Скачиваю… {}%", p.percent), style = MaterialTheme.typography.bodyMedium)
             InstallProgress.Stage.VERIFYING -> Text(tr("Проверяю файл…"), style = MaterialTheme.typography.bodyMedium)
@@ -2527,6 +2610,13 @@ private fun InstallControls(vm: MainViewModel) {
                 OutlinedButton(onClick = { UpdateInstaller.openPermissionSettings(context) }) { Text(tr("Открыть разрешение")) }
             }
             InstallProgress.Stage.FAILED -> Text(tr("Не удалось: {}", p.error), color = MaterialTheme.colorScheme.error)
+            InstallProgress.Stage.REINSTALL_READY -> {
+                Text(
+                    tr("Файл сохранён: Загрузки/Phoenix/{}. Теперь удалите Phoenix, затем откройте этот файл (приложение «Файлы» или «Загрузки») и установите его. После запуска: Настройки → Резервная копия → Импорт из файла, выберите сохранённую копию.", p.file),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Button(onClick = { UpdateInstaller.requestUninstall(context) }) { Text(tr("3. Удалить Phoenix")) }
+            }
             InstallProgress.Stage.IDLE -> {}
         }
     }

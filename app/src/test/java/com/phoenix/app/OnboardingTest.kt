@@ -8,12 +8,12 @@ import org.junit.Test
 class OnboardingTest {
     private fun env(
         vpn: Boolean = false, notifRel: Boolean = true, notif: Boolean = false, battery: Boolean = false,
-        exactRel: Boolean = true, exact: Boolean = false, autoRel: Boolean = false, auto: Boolean = false, servers: Boolean = false,
-    ) = Onboarding.Env(vpn, notifRel, notif, battery, exactRel, exact, autoRel, auto, servers)
+        exactRel: Boolean = true, exact: Boolean = false, autoRel: Boolean = false, auto: Boolean = false, servers: Boolean = false, usage: Boolean = true,
+    ) = Onboarding.Env(vpn, notifRel, notif, battery, exactRel, exact, autoRel, auto, servers, usage)
 
     @Test fun freshPhoneGetsEverythingExceptAutostartOnPlainAndroid() {
         assertEquals(
-            listOf(Step.WELCOME, Step.VPN, Step.NOTIFICATIONS, Step.BACKGROUND, Step.ALARMS, Step.SERVERS),
+            listOf(Step.WELCOME, Step.VPN, Step.NOTIFICATIONS, Step.BACKGROUND, Step.ALARMS, Step.SERVERS, Step.TIPS),
             Onboarding.steps(0, env()),
         )
     }
@@ -25,7 +25,7 @@ class OnboardingTest {
 
     @Test fun grantedRightsAreSkipped() {
         val s = Onboarding.steps(0, env(vpn = true, notif = true, battery = true, exact = true))
-        assertEquals(listOf(Step.WELCOME, Step.SERVERS), s)
+        assertEquals(listOf(Step.WELCOME, Step.SERVERS, Step.TIPS), s)
     }
 
     @Test fun oldAndroidSkipsNotificationsAndAlarms() {
@@ -47,10 +47,32 @@ class OnboardingTest {
 
     @Test fun forcedRunIgnoresSavedVersionButStillSkipsGranted() {
         val s = Onboarding.steps(Onboarding.VERSION, env(vpn = true, notif = true, battery = true, exact = true, servers = true), force = true)
-        assertEquals(listOf(Step.WELCOME), s)
+        assertEquals(listOf(Step.WELCOME, Step.TIPS), s)
     }
 
     @Test fun welcomeIsNeverSatisfied() {
         assertTrue(!Onboarding.satisfied(Step.WELCOME, env(vpn = true, notif = true, battery = true, exact = true, servers = true)))
+    }
+
+    @Test fun userWhoPassedVersionOneSeesOnlyTips() {
+        assertEquals(listOf(Step.TIPS), Onboarding.steps(1, env()))
+        assertEquals(listOf(Step.TIPS), Onboarding.steps(1, env(vpn = true, notif = true, battery = true, exact = true, servers = true)))
+    }
+
+    @Test fun tipsAreNeverSatisfiedAndLast() {
+        assertTrue(!Onboarding.satisfied(Step.TIPS, env(vpn = true, notif = true, battery = true, exact = true, servers = true)))
+        assertEquals(Step.TIPS, Onboarding.steps(0, env()).last())
+    }
+
+    @Test fun usageAccessStepComesBeforeServersAndIsSkippedWhenGranted() {
+        assertEquals(
+            listOf(Step.WELCOME, Step.VPN, Step.NOTIFICATIONS, Step.BACKGROUND, Step.ALARMS, Step.USAGE, Step.SERVERS, Step.TIPS),
+            Onboarding.steps(0, env(usage = false)),
+        )
+        assertTrue(Step.USAGE !in Onboarding.steps(0, env(usage = true)))
+    }
+
+    @Test fun userWhoPassedVersionOneSeesUsageAndTipsWhenAccessMissing() {
+        assertEquals(listOf(Step.USAGE, Step.TIPS), Onboarding.steps(1, env(vpn = true, notif = true, battery = true, exact = true, servers = true, usage = false)))
     }
 }

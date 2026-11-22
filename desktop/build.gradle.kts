@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.phoenix"
-version = "3.9.66"
+version = "3.9.67"
 
 // Общая логика Phoenix (сбор, проверки, конфиги Xray) лежит в Android-модуле. Берём из него только «чистые» файлы без Android-классов:
 // тот же список, который проверяет тестовый стенд tools/kt-harness. Копии лежат в build/ и в git не попадают.
@@ -42,7 +42,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Deb, TargetFormat.AppImage)
             packageName = "phoenix"
-            packageVersion = "3.9.66"
+            packageVersion = "3.9.67"
             description = "Phoenix: сбор и проверка VPN-конфигов"
             linux {
                 menuGroup = "Network"

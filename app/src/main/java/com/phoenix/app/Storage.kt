@@ -74,6 +74,7 @@ class Storage(context: Context, val mode: Mode = Mode.read(context.applicationCo
     }
     /** Накопленные «голоса» определения типа блокировок (лежит в корне — общий для режимов). */
     val voteFile = File(root, "detect_vote.txt")
+    val modeHintFile = File(root, "mode_hint.txt")
     val checkSelectionFile = File(base, "check_services.txt")
     /** Свои сервисы для проверки через конфиг (код, название, адрес). */
     val customServicesFile = File(base, "custom_services.tsv")

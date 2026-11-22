@@ -14,8 +14,9 @@ import java.net.URL
 import java.security.MessageDigest
 
 /** Как идёт скачивание и установка новой версии (по кнопке пользователя). */
-data class InstallProgress(val stage: Stage = Stage.IDLE, val percent: Int = 0, val error: String = "") {
-    enum class Stage { IDLE, DOWNLOADING, VERIFYING, INSTALLING, NEED_PERMISSION, FAILED }
+data class InstallProgress(val stage: Stage = Stage.IDLE, val percent: Int = 0, val error: String = "", val file: String = "") {
+    /** REINSTALL_READY — файл сохранён в Загрузки, но поверх не встанет: пользователю нужно удалить Phoenix и поставить его вручную. */
+    enum class Stage { IDLE, DOWNLOADING, VERIFYING, INSTALLING, NEED_PERMISSION, FAILED, REINSTALL_READY }
 }
 
 /**
@@ -68,11 +69,30 @@ object UpdateInstaller {
             val newCode = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong()
             val haveCode = if (Build.VERSION.SDK_INT >= 28) have.longVersionCode else @Suppress("DEPRECATION") have.versionCode.toLong()
             if (newCode <= haveCode) { file.delete(); return fail("в скачанном файле версия не новее установленной") }
+            // ключ подписи скачанного файла — надёжнее строки в описании релиза: если он другой, Android откажет, поэтому не пытаемся ставить
+            if (ReinstallPlan.neededByFile(AppSigning.ownCerts(context), AppSigning.fileCerts(context, file.absolutePath))) {
+                settings.updateReinstall = true
+                val name = ReinstallPlan.apkFileName(settings.updateTag)
+                val saved = Exporter.saveFileToDownloads(context, name, "application/vnd.android.package-archive", file)
+                file.delete()
+                if (!saved) return fail("не удалось сохранить файл в Загрузки")
+                try { Storage(context).log("UPDATE: новая версия подписана другим ключом — поверх не встанет, файл сохранён в Загрузки/Phoenix/$name, нужна переустановка") } catch (_: Throwable) { }
+                onProgress(InstallProgress(InstallProgress.Stage.REINSTALL_READY, 100, file = name))
+                return
+            }
             onProgress(InstallProgress(InstallProgress.Stage.INSTALLING))
             install(context, file)
         } catch (e: Exception) {
             file.delete()
             fail("не удалось скачать: " + (e.message ?: e.javaClass.simpleName).take(120))
+        }
+    }
+
+    /** Системное окно удаления Phoenix (после него пользователь ставит сохранённый файл). */
+    fun requestUninstall(context: Context) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:" + context.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: Exception) {
         }
     }
 

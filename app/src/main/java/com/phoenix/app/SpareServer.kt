@@ -9,20 +9,21 @@ object SpareServer {
     private var link = ""
     private var identity = ""
     private var net = ""
+    private var mode = ""
     private var at = 0L
 
     @Synchronized
-    fun remember(link: String, identity: String, net: String, now: Long) {
+    fun remember(link: String, identity: String, net: String, now: Long, mode: String = "") {
         // сервер, который через туннель не дал связи минуту назад (карантин), не годится и в запас — иначе следующий
         // сбой снова пробует именно его первым
         if (Quarantine.active(identity, now)) return
-        this.link = link; this.identity = identity; this.net = net; this.at = now
+        this.link = link; this.identity = identity; this.net = net; this.mode = mode; this.at = now
     }
 
-    /** Ссылка запасного, если он из этой же сети, свежий, не совпадает с [excludeIdentity] и не в карантине; иначе null. */
+    /** Ссылка запасного, если он из этой же сети и этого режима (серверы белых и чёрных списков разные), свежий, не совпадает с [excludeIdentity] и не в карантине; иначе null. */
     @Synchronized
-    fun take(net: String, now: Long, excludeIdentity: String): String? {
-        if (link.isEmpty() || this.net != net || now - at > MAX_AGE_MS || now < at || identity == excludeIdentity) return null
+    fun take(net: String, now: Long, excludeIdentity: String, mode: String = ""): String? {
+        if (link.isEmpty() || this.net != net || this.mode != mode || now - at > MAX_AGE_MS || now < at || identity == excludeIdentity) return null
         if (Quarantine.active(identity, now)) { forget(); return null }
         val l = link
         forget()
@@ -30,5 +31,5 @@ object SpareServer {
     }
 
     @Synchronized
-    fun forget() { link = ""; identity = ""; net = ""; at = 0L }
+    fun forget() { link = ""; identity = ""; net = ""; mode = ""; at = 0L }
 }

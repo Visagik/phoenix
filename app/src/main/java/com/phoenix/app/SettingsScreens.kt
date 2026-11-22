@@ -111,6 +111,8 @@ fun ModePage(vm: MainViewModel) {
     val mode by vm.mode.collectAsStateWithLifecycle()
     val auto by vm.autoMode.collectAsStateWithLifecycle()
     val detect by vm.detectText.collectAsStateWithLifecycle()
+    // результат определения обновляет служба в фоне: пока экран открыт, перечитываем его (чтение настроек, почти бесплатно)
+    LaunchedEffect(Unit) { while (true) { vm.refreshDetect(); delay(5_000) } }
     val busy by vm.busy.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {

@@ -11,6 +11,8 @@ package com.phoenix.app
  */
 object Quarantine {
     const val MINUTES = 10L
+    /** Сервер, упавший почти сразу после выбора (журнал 21.11: через 8–71 с), не берём час. */
+    const val EARLY_MINUTES = 60L
     const val LONG_HOURS = 24L
     const val STRIKES_FOR_LONG = 3
     const val STRIKE_WINDOW_HOURS = 24L
@@ -33,7 +35,7 @@ object Quarantine {
         }
     }
 
-    fun add(identity: String, now: Long = System.currentTimeMillis(), networkAlive: Boolean = true) {
+    fun add(identity: String, now: Long = System.currentTimeMillis(), networkAlive: Boolean = true, earlyFall: Boolean = false) {
         if (identity.isEmpty() || !networkAlive || identity.contains('\t') || identity.contains('\n')) return
         synchronized(lock) {
             val list = strikes.getOrPut(identity) { ArrayList() }
@@ -43,7 +45,7 @@ object Quarantine {
                 until[identity] = now + LONG_HOURS * 3_600_000L
                 long.add(identity)
             } else {
-                until[identity] = now + MINUTES * 60_000L
+                until[identity] = now + (if (earlyFall) EARLY_MINUTES else MINUTES) * 60_000L
                 long.remove(identity)
             }
             save(now)
@@ -71,6 +73,32 @@ object Quarantine {
             long.remove(identity)
             if (had || q) save()
         }
+    }
+
+    /**
+     * Аннулирует провалы, записанные с момента [since]: проверка шла в режиме, взятом по догадке, а блокировка оказалась другой
+     * (или сеть сменилась), и эти серверы ни в чём не виноваты. Прежние провалы остаются. Возвращает, у скольких серверов что-то снято.
+     */
+    fun annulSince(since: Long, now: Long = System.currentTimeMillis()): Int {
+        if (since <= 0L) return 0
+        var n = 0
+        synchronized(lock) {
+            for ((id, list) in strikes.entries.toList()) {
+                val before = list.size
+                list.removeAll { it >= since }
+                if (list.size == before) continue
+                n++
+                if (list.isEmpty()) {
+                    strikes.remove(id); until.remove(id); long.remove(id)
+                } else {
+                    if (list.size < STRIKES_FOR_LONG) long.remove(id)
+                    val t = list.max() + MINUTES * 60_000L
+                    if (!long.contains(id)) { if (t > now) until[id] = t else until.remove(id) }
+                }
+            }
+            if (n > 0) save(now)
+        }
+        return n
     }
 
     fun clear() = synchronized(lock) { until.clear(); long.clear(); strikes.clear(); save() }

@@ -1,0 +1,23 @@
+# Домены, которые open.sh может открыть (сам домен и его поддомены). По одному в строке.
+# Проверка выхода и связи
+www.cloudflare.com
+www.gstatic.com
+connectivitycheck.gstatic.com
+captive.apple.com
+www.msftconnecttest.com
+# Сервисы, ради которых работает Феникс
+telegram.org
+web.telegram.org
+chatgpt.com
+openai.com
+discord.com
+gemini.google.com
+notebooklm.google.com
+deepseek.com
+github.com
+wikipedia.org
+# Российские (идут напрямую)
+ya.ru
+yandex.ru
+vk.com
+gosuslugi.ru

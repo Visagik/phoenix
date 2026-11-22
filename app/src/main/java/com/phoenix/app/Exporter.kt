@@ -41,6 +41,33 @@ object Exporter {
         }
     }
 
+    /** Копирует файл в Загрузки/Phoenix/<fileName> (виден после удаления приложения). */
+    fun saveFileToDownloads(context: Context, fileName: String, mime: String, source: java.io.File): Boolean {
+        return try {
+            val resolver = context.contentResolver
+            val relPath = Environment.DIRECTORY_DOWNLOADS + "/Phoenix"
+            try {
+                resolver.delete(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                    "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
+                    arrayOf(fileName, "$relPath/"),
+                )
+            } catch (_: SecurityException) {
+            }
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relPath)
+            }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return false
+            val stream = resolver.openOutputStream(uri) ?: return false
+            stream.use { os -> source.inputStream().use { it.copyTo(os) } }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     /** Сохраняет в Загрузки/Phoenix/<fileName>. Старый файл с тем же именем заменяется. */
     fun saveToDownloads(context: Context, fileName: String, text: String): Boolean {
         return try {

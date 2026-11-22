@@ -26,3 +26,5 @@ __pycache__/
 # Сборки и временная распаковка обновлений: в репозиторий не попадают (APK — в GitHub Releases)
 *.apk
 phx-update/
+.phone/
+CLAUDE.md

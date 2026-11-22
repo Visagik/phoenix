@@ -116,3 +116,16 @@ TargetServicesTest.kt
 ServiceCheckerInnerTest.kt
 RegionVoteTest.kt
 SourceSummaryTest.kt
+ReinstallPlanTest.kt
+HealthGateTest.kt
+DirectControlTest.kt
+SpareServerTest.kt
+ModeHintTest.kt
+QuarantineAnnulTest.kt
+WifiIdTest.kt
+DetectSuspectTest.kt
+WhatsNewTest.kt
+ModeGateTest.kt
+FactsTest.kt
+NetMismatchTest.kt
+SourceBenchTest.kt

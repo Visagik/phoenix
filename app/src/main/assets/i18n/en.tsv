@@ -725,3 +725,128 @@ AdGuard (с блокировкой рекламы)	AdGuard (blocks ads)
 Не проверяю: {} (недавно мёртвые, в этой сети подряд не работали)	Not checking: {} (recently dead, kept failing in this network)
 Цели {}/{}: найдено {}, без сервера {}, мимо VPN {}, на паузе {} · проверено серверов {}	Targets {}/{}: found {}, no server {}, bypass VPN {}, paused {} · servers checked {}
 Сервисы берутся из ваших целей: цель добавили — появилась колонка, убрали — исчезла. Добавлять отдельные сервисы не нужно.	Services come from your targets: add a target and a column appears, remove it and it disappears. You don't need to add services separately.
+Потребуется переустановка: сначала сохраните резервную копию	Reinstall required: save a backup first
+Phoenix: обновление {} потребует переустановки	Phoenix: update {} requires reinstalling
+Другой ключ подписи: сначала сохраните резервную копию, приложение придётся удалить	Different signing key: save a backup first, the app must be uninstalled
+Это обновление нельзя поставить поверх: оно подписано другим ключом, а Android не разрешает сменить ключ без удаления приложения. При удалении пропадут настройки и данные, поэтому сначала сохраните копию в Загрузки — она останется на телефоне.	This update can't be installed over the current app: it is signed with a different key, and Android doesn't allow changing the key without uninstalling. Settings and data will be lost on uninstall, so first save a backup to Downloads — it stays on the phone.
+1. Сохранить копию в Загрузки	1. Save backup to Downloads
+Не удалось сохранить копию	Could not save the backup
+Копия сохранена: Загрузки/Phoenix/{}	Backup saved: Downloads/Phoenix/{}
+2. Скачать обновление	2. Download the update
+Файл сохранён: Загрузки/Phoenix/{}. Теперь удалите Phoenix, затем откройте этот файл (приложение «Файлы» или «Загрузки») и установите его. После запуска: Настройки → Резервная копия → Импорт из файла, выберите сохранённую копию.	File saved: Downloads/Phoenix/{}. Now uninstall Phoenix, then open this file (Files or Downloads app) and install it. After launch: Settings → Backup → Import from file, pick the saved backup.
+3. Удалить Phoenix	3. Uninstall Phoenix
+Phoenix — полностью автономное приложение. Оно само:	Phoenix is a fully autonomous app. It does this by itself:
+Чтобы всё это работало, приложению нужно быть включённым 24/7. Сейчас за минуту дадим нужные разрешения.	For all this to work, the app needs to stay on 24/7. In a minute we'll grant the permissions it needs.
+Настроим	Let's set up
+Напоследок	One last thing
+Свой сервер для приложений: привяжите отдельный сервер к Telegram, ChatGPT и другим сервисам — они начнут работать намного быстрее.	Own server for apps: tie a separate server to Telegram, ChatGPT and other services, and they will work much faster.
+Фишки: плитки в шторке, виджет, ярлыки и многое другое, о чём в настройках не узнать. Они в «Ещё», вкладка «Фишки».	Tips: quick-settings tiles, a widget, shortcuts and much more you won't learn from the settings. They are in “More”, the “Tips” tab.
+Настроить свой сервер	Set up own server
+Открыть «Фишки»	Open “Tips”
+Фишки	Tips
+плитки в шторке, ярлыки, виджет, «Поделиться» и другие возможности	quick-settings tiles, shortcuts, widget, “Share” and other features
+Привяжите отдельный сервер к Telegram, ChatGPT и другим: Phoenix проверяет и держит именно его.	Tie a separate server to Telegram, ChatGPT and others: Phoenix checks and keeps exactly that one.
+Открыть «Свой сервер»	Open “Own server”
+Кнопка «Не работает»	The “Not working” button
+На главной: если сервис не открывается, нажмите её, и Phoenix сам найдёт и поставит другой сервер.	On the main screen: if a service won't open, press it and Phoenix will find and switch to another server by itself.
+Плитки в шторке	Quick-settings tiles
+Три плитки: «Phoenix VPN» включает и выключает защиту, «Сменить сервер» ставит другой, «Не работает» запускает умную смену.	Three tiles: “Phoenix VPN” turns protection on and off, “Change server” picks another, “Not working” starts a smart switch.
+Добавить: {}	Add: {}
+Потяните шторку вниз → значок карандаша → перетащите плитки Phoenix в активные.	Pull the shade down → pencil icon → drag the Phoenix tiles to the active ones.
+Ярлыки на значке	Icon shortcuts
+Долгое нажатие на значок Phoenix: «Не работает», «Сменить сервер», «Отключить» — не открывая приложение.	Long-press the Phoenix icon: “Not working”, “Change server”, “Disconnect” — without opening the app.
+Виджет	Widget
+Виджет на рабочем столе показывает состояние и меняет сервер одним нажатием.	The home-screen widget shows the status and changes the server with one tap.
+Добавить виджет	Add widget
+«Поделиться» ссылкой	Share a link
+Откройте ссылку на подписку в любом приложении, нажмите «Поделиться» и выберите Phoenix: ссылка попадёт в ваши источники.	Open a subscription link in any app, tap “Share” and choose Phoenix: the link will go to your sources.
+Что нового в {}	What's new in {}
+Все версии	All versions
+Версия {}	Version {}
+Обучение	Tutorial
+пройти заново: разрешения, серверы, подсказки	go through it again: permissions, servers, tips
+Что нового	What's new
+список изменений по версиям	changes by version
+Фишки и обучение	Tips and tutorial
+Если обновление придёт с другой подписью, приложение само предупредит, сохранит копию и проведёт через переустановку.	If an update arrives signed with a different key, the app warns you, saves a copy and guides you through reinstalling.
+Меньше простоя при сбоях: смена сервера ограничена по времени, а после смены сети и «дёрганья» Wi-Fi сервер не винится зря.	Less downtime on failures: switching servers is time-limited, and after a network change or Wi-Fi hiccup the server is no longer blamed needlessly.
+Знакомые сети запоминаются: в известном Wi-Fi или у оператора режим блокировок берётся сразу, без ожидания замера.	Familiar networks are remembered: on a known Wi-Fi or carrier the blocking mode is applied at once, without waiting for a measurement.
+На слабых телефонах при нехватке памяти проверок идёт меньше, чтобы систему не убила приложение.	On weak phones low on memory, fewer checks run at once so the system doesn't kill the app.
+Новое обучение и раздел «Ещё → Фишки»: плитки, виджет, ярлыки, свой сервер для приложений.	New tutorial and «More → Tips»: tiles, widget, shortcuts, your own server for apps.
+«Режим блокировок» показывает свежий результат со временем, сеть пишется как «Wi-Fi».	«Blocking mode» shows a fresh result with its time, and the network is labelled «Wi-Fi».
+Кнопка «Остановить и сохранить» и подробности перепроверки на главной.	The «Stop and save» button and recheck details on the home screen.
+Перепроверка быстрее: мёртвые серверы не ждёт заново; есть настройка «Скорость перепроверки».	Faster rechecks: dead servers aren't waited on again; new «Recheck speed» setting.
+При смене сервера под открытое приложение сначала проверяются подходящие серверы.	When switching servers for an open app, suitable servers are checked first.
+Notebook больше не ставит ✓ на закрытых серверах, «Не работает» снимает галочку.	Notebook no longer shows ✓ on blocked servers, and «Not working» clears the tick.
+Убраны источники, из которых почти ничего не оживало.	Removed sources that almost never yielded working servers.
+Находит рабочий сервер	Finds a working server
+Подбирает свой сервер для каждого приложения	Picks a separate server for each app
+Открывает российские сайты напрямую	Opens Russian sites directly
+Данные об использовании	Usage access
+Нужен, чтобы Phoenix видел, какое приложение открыто, и включал для него свой сервер. Найдите Phoenix в списке и разрешите доступ.	Needed so Phoenix can see which app is open and switch to its own server. Find Phoenix in the list and allow access.
+Если пропустить: отдельные серверы под приложения не будут включаться при их открытии.	If skipped: per-app servers won't switch on when the app opens.
+И обязательно пройдитесь по настройкам: их много, и именно они подстроят Phoenix под вас.	And do go through the settings: there are many, and they tailor Phoenix to you.
+Значок в строке состояния	Status bar icon
+Вверху экрана, рядом с часами, Phoenix показывает значок: он меняется по ситуации, а в шторке меняется и цвет уведомления.	At the top of the screen, next to the clock, Phoenix shows an icon that changes with the situation; in the shade the notification colour changes too.
+Работает	Working
+Ищет сервер	Finding a server
+Нет связи	No connection
+Свои подписки	Your own subscriptions
+Добавьте свою ссылку на подписку или список серверов: она попадёт в сбор вместе со встроенными источниками.	Add your own subscription or server-list link: it joins the collection alongside the built-in sources.
+Открыть «Источники»	Open «Sources»
+Бегущая строка	Ticker
+Вверху главного экрана по одному показывается факт о работе Phoenix; длинный едет по кругу, нажатие — следующий факт.	At the top of the home screen one fact about how Phoenix works is shown; a long one scrolls around, tap for the next.
+Показывать на главном экране	Show on the home screen
+Если обновление подписано другим ключом, приложение сохранит копию настроек и скачает новую версию, а переустановить её нужно самому.	If an update is signed with a different key, the app saves a copy of your settings and downloads the new version; you then reinstall it yourself.
+Если сервер перестаёт отвечать, Phoenix сам находит другой и переключается.	If a server stops responding, Phoenix finds another one and switches on its own.
+Запасной сервер ищется гонкой: побеждает тот, кто ответил первым.	A backup server is found by a race: whichever answers first wins.
+На поиск запасного идёт до 16 проверок одновременно, на слабом телефоне до 5.	Up to 16 checks run at once when looking for a backup, up to 5 on a weak phone.
+Сервер, на котором оборвалась сессия, уходит в конец очереди на 10 минут, а упавший сразу после выбора — на час.	A server whose session dropped goes to the back of the queue for 10 minutes, and one that fails right after being chosen for an hour.
+Третий провал сервера за сутки отправляет его в карантин на 24 часа.	A server's third failure within a day sends it to quarantine for 24 hours.
+Если связи нет из-за самой сети, сервер не наказывается.	If there is no connection because of the network itself, the server is not punished.
+Если смены серверов идут пачкой, Phoenix делает паузу до 90 секунд: чаще виновата сеть.	If server switches come in a burst, Phoenix pauses for up to 90 seconds: the network is more often to blame.
+Туннель проверяется каждые 30 секунд, при спокойной работе реже.	The tunnel is checked every 30 seconds, less often when all is calm.
+С выключенным экраном проверки идут раз в 2 минуты, при нагреве телефона — раз в 3.	With the screen off, checks run every 2 minutes; when the phone is hot, every 3.
+Phoenix сам определяет, белые у вас списки или чёрные: открывает 15 сайтов и сравнивает.	Phoenix works out on its own whether your blocking is whitelist or blacklist: it opens 15 sites and compares.
+Замер блокировок идёт напрямую, мимо VPN, в 8 потоков и не дольше 14 секунд.	Blocking is measured directly, bypassing the VPN, in 8 threads and for no longer than 14 seconds.
+Режим меняется только после двух одинаковых определений подряд.	The mode changes only after two identical detections in a row.
+«Белые списки» подтверждаются дольше «чёрных»: ложное «белые» из-за сбоя Wi-Fi обходится дороже всего.	«Whitelist» takes longer to confirm than «blacklist»: a false «whitelist» from a Wi-Fi glitch costs the most.
+Режим, выбранный вручную, держится 30 минут или до смены сети.	A mode chosen by hand holds for 30 minutes or until the network changes.
+Тип блокировок проверяется каждые 5 минут, но только когда экран включён.	The blocking type is checked every 5 minutes, but only while the screen is on.
+Знакомую сеть Phoenix запоминает: после двух подтверждений режим берётся сразу.	Phoenix remembers a familiar network: after two confirmations the mode is applied at once.
+Wi-Fi узнаётся по отпечатку шлюза и DNS, без геопозиции; запоминается до 30 сетей.	Wi-Fi is recognized by the fingerprint of its gateway and DNS, without location; up to 30 networks are remembered.
+Для приложения можно закрепить свой сервер: при его открытии Phoenix переключается на него.	You can pin your own server to an app: Phoenix switches to it when the app opens.
+Какое приложение открыто, Phoenix проверяет каждые 4 секунды, а если целей нет — раз в минуту.	Phoenix checks which app is open every 4 seconds, or once a minute if there are no targets.
+Переключение при открытии приложения работает только с доступом к данным об использовании.	Switching on app open only works with access to usage data.
+Для каждой цели проверяется до 15 серверов, у трёх лучших ещё и скорость.	For each target up to 15 servers are checked, and the speed of the three best too.
+Если для цели не нашлось сервера, пул расширяется до 90 серверов.	If no server is found for a target, the pool widens to 90 servers.
+Кнопка «Не работает» запоминает связку «сервер + сайт» на несколько дней.	The «Not working» button remembers a «server + site» pair for several days.
+Ответ «не отвечает» для цели считается свежим два дня, потом сервер получает второй шанс.	A «not responding» result for a target counts as fresh for two days, then the server gets a second chance.
+Российские приложения Phoenix находит сам и пускает в обход VPN.	Phoenix finds Russian apps on its own and lets them bypass the VPN.
+Сбор берёт конфиги из десятков источников: по 6 загрузок одновременно, до 2 повторов.	Collection pulls configs from dozens of sources: 6 downloads at once, up to 2 retries.
+На одном адресе бывает много конфигов с разными ключами: в список попадает не больше трёх.	One address can have many configs with different keys: no more than three make it into the list.
+Источник, не ответивший 5 раз подряд, отключается и через 7 дней получает второй шанс.	A source that fails to answer 5 times in a row is switched off and gets a second chance after 7 days.
+Источники получают приоритет по доле живых серверов.	Sources are prioritized by their share of live servers.
+Перепроверка сначала отсеивает конфиги по TCP, потом мерит настоящую задержку через ядро.	Rechecking first filters configs by TCP, then measures real latency through the core.
+Полная перепроверка идёт не дольше 25 минут и не чаще раза в 30 минут.	A full recheck takes no longer than 25 minutes and runs no more often than every 30 minutes.
+Если на одном адресе три пробы подряд молчат, остальные конфиги этого адреса не пробуются.	If three probes in a row to one address stay silent, the other configs at that address are not tried.
+Тяжёлые задачи идут на зарядке; если телефон не заряжали сутки, их разрешают при заряде от 50%.	Heavy tasks run while charging; if the phone hasn't been charged for a day, they are allowed at 50% or more.
+«Скорость перепроверки» имеет три режима: щадящая, обычная и быстрая.	«Recheck speed» has three modes: gentle, normal and fast.
+За один прогон настоящая страна выхода определяется у 12 рабочих серверов.	In one run the real exit country is determined for 12 working servers.
+Фоновый трафик на мобильной сети ограничен: по умолчанию 100 МБ.	Background traffic on mobile data is limited: 100 MB by default.
+На мобильной сети параллельных TCP-проверок не больше 16: радиомодуль греется от частых соединений.	On mobile no more than 16 TCP checks run in parallel: the radio heats up from frequent connections.
+Если процесс занимает больше 200 МБ, проверок становится меньше; при 260 МБ — вчетверо меньше.	If the process takes over 200 MB, fewer checks run; at 260 MB, four times fewer.
+Phoenix запоминает часы, когда вы обычно пользуетесь телефоном, и тяжёлую работу старается не делать в них.	Phoenix remembers the hours you usually use the phone and tries not to do heavy work then.
+Если поиск проверил 200 серверов и ни один не ответил, он останавливается: дальше впустую.	If a search checked 200 servers and none answered, it stops: going on would be pointless.
+Журнал занимает не больше 5 МБ: старые строки отбрасываются.	The log takes up no more than 5 MB: old lines are discarded.
+Автокопия настроек делается раз в неделю, хранятся три последние.	Settings are backed up automatically once a week; the last three are kept.
+Новый DNS получает 30 секунд на проверку, иначе возвращается прежний.	A new DNS gets 30 seconds to be checked, otherwise the previous one returns.
+Значок в строке состояния меняет форму: работает, ищет сервер или нет связи.	The status-bar icon changes shape: working, searching for a server or no connection.
+Цвет уведомления: зелёный — работает, жёлтый — подключение или поиск, красный — связи нет.	Notification color: green — working, yellow — connecting or searching, red — no connection.
+Три плитки в шторке включают защиту, меняют сервер и жмут «Не работает» без входа в приложение.	Three quick-settings tiles turn protection on, change the server and press «Not working» without opening the app.
+В журнале ключи подписок и значения token, key, uuid скрыты — его безопасно отправить другому.	In the log, subscription keys and token, key, uuid values are hidden, so it is safe to send to someone.
+Адреса сайтов в журнале сокращаются до вида «m***.ru».	Site addresses in the log are shortened to the form «m***.ru».
+Автоматические изменения источников можно откатить одной кнопкой в течение суток.	Automatic changes to sources can be rolled back with one button within a day.
+Если обновление подписано другим ключом, Phoenix сохранит копию настроек и скачает новую версию, а ставить её дальше вам.	If an update is signed with a different key, Phoenix saves a copy of the settings and downloads the new version, and installing it is up to you.
+Тип блокировок определяется сразу после запуска, а Wi-Fi без интернета больше не переключает режим туда-сюда.	The blocking type is detected right at launch, and Wi-Fi without internet no longer flips the mode back and forth.
+Бегущая строка с фактами о Phoenix на главном экране: выключена, включается в «Ещё → Фишки».	A ticker with facts about Phoenix on the main screen: off by default, turn it on in More → Features.

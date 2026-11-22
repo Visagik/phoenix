@@ -62,8 +62,17 @@ object DirectProbe {
         }
         // нет вообще ничего (нет сети) — не делаем выводов
         if (ok.values.none { it }) {
-            storage.log("BYPASS: напрямую не открылось ничего (${ok.size} адресов) — похоже, сети нет, список обхода не меняю")
-            return NO_NETWORK
+            // проверяемые сейчас — в основном заблокированные; сеть есть, если открылся хотя бы один доверенный сервис
+            val controls = DirectControl.pick(
+                all.map { it.id }, entries.map { it.id }.toSet(),
+                all.filter { DirectLearn.trusted(DirectLearn.entry(old, net, it.id), now) }.map { it.id }.toSet(),
+            )
+            val controlOk = controls.isNotEmpty() && all.filter { it.id in controls }.any { reachable(it.url) }
+            if (DirectControl.noNetwork(false, controls.isNotEmpty(), controlOk)) {
+                storage.log("BYPASS: напрямую не открылось ничего (${ok.size} адресов${if (controls.isNotEmpty()) ", и контрольные ${controls.joinToString()}" else ""}) — похоже, сети нет, список обхода не меняю")
+                return NO_NETWORK
+            }
+            storage.log("BYPASS: проверяемые (${ok.size}) напрямую не открылись, но контрольный адрес открылся — сеть есть, они действительно закрыты")
         }
         // закрытое напрямую подтверждаем второй проверкой в этом же проходе: иначе вывод «через VPN» появлялся только со следующего прохода
         // (при смене сети на мобильную DeepSeek, Qwen и Steam часами шли напрямую и не открывались)

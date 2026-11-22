@@ -15,6 +15,9 @@ object MemInfo {
         "MEM: $tag — не удалось измерить (${e.javaClass.simpleName})"
     }
 
+    /** Занятая процессом память (PSS) в МБ; 0 — не удалось измерить. */
+    fun currentPssMb(): Int = try { (android.os.Debug.getPss() / 1024L).toInt() } catch (_: Throwable) { 0 }
+
     fun log(context: Context, tag: String) {
         try { Storage(context).log(line(tag)) } catch (_: Throwable) {}
     }

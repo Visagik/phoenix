@@ -725,3 +725,128 @@ AdGuard (с блокировкой рекламы)	AdGuard (reklam engelleme)
 Не проверяю: {} (недавно мёртвые, в этой сети подряд не работали)	Kontrol edilmeyen: {} (yakın zamanda ölü, bu ağda hep başarısız)
 Цели {}/{}: найдено {}, без сервера {}, мимо VPN {}, на паузе {} · проверено серверов {}	Hedefler {}/{}: bulunan {}, sunucusuz {}, VPN dışı {}, duraklatılan {} · kontrol edilen sunucu {}
 Сервисы берутся из ваших целей: цель добавили — появилась колонка, убрали — исчезла. Добавлять отдельные сервисы не нужно.	Hizmetler hedeflerinizden gelir: hedef eklenince sütun görünür, kaldırılınca kaybolur. Ayrıca hizmet eklemeniz gerekmez.
+Потребуется переустановка: сначала сохраните резервную копию	Yeniden kurulum gerekli: önce yedek alın
+Phoenix: обновление {} потребует переустановки	Phoenix: {} güncellemesi yeniden kurulum gerektirir
+Другой ключ подписи: сначала сохраните резервную копию, приложение придётся удалить	Farklı imza anahtarı: önce yedek alın, uygulamanın kaldırılması gerekir
+Это обновление нельзя поставить поверх: оно подписано другим ключом, а Android не разрешает сменить ключ без удаления приложения. При удалении пропадут настройки и данные, поэтому сначала сохраните копию в Загрузки — она останется на телефоне.	Bu güncelleme üzerine kurulamaz: farklı anahtarla imzalı ve Android anahtarı kaldırmadan değiştirmeye izin vermez. Kaldırınca ayarlar ve veriler silinir, bu yüzden önce İndirilenler'e yedek kaydedin — telefonda kalır.
+1. Сохранить копию в Загрузки	1. Yedeği İndirilenler'e kaydet
+Не удалось сохранить копию	Yedek kaydedilemedi
+Копия сохранена: Загрузки/Phoenix/{}	Yedek kaydedildi: İndirilenler/Phoenix/{}
+2. Скачать обновление	2. Güncellemeyi indir
+Файл сохранён: Загрузки/Phoenix/{}. Теперь удалите Phoenix, затем откройте этот файл (приложение «Файлы» или «Загрузки») и установите его. После запуска: Настройки → Резервная копия → Импорт из файла, выберите сохранённую копию.	Dosya kaydedildi: İndirilenler/Phoenix/{}. Şimdi Phoenix'i kaldırın, sonra bu dosyayı (Dosyalar veya İndirilenler) açıp kurun. Açtıktan sonra: Ayarlar → Yedek → Dosyadan içe aktar, kaydedilen yedeği seçin.
+3. Удалить Phoenix	3. Phoenix'i kaldır
+Phoenix — полностью автономное приложение. Оно само:	Phoenix tamamen otonom bir uygulamadır. Kendi başına şunları yapar:
+Чтобы всё это работало, приложению нужно быть включённым 24/7. Сейчас за минуту дадим нужные разрешения.	Bunların çalışması için uygulamanın 7/24 açık kalması gerekir. Bir dakika içinde gerekli izinleri vereceğiz.
+Настроим	Kuralım
+Напоследок	Son olarak
+Свой сервер для приложений: привяжите отдельный сервер к Telegram, ChatGPT и другим сервисам — они начнут работать намного быстрее.	Uygulamalar için kendi sunucu: Telegram, ChatGPT ve diğer hizmetlere ayrı bir sunucu bağlayın, çok daha hızlı çalışırlar.
+Фишки: плитки в шторке, виджет, ярлыки и многое другое, о чём в настройках не узнать. Они в «Ещё», вкладка «Фишки».	İpuçları: hızlı ayar kutucukları, widget, kısayollar ve ayarlardan öğrenemeyeceğiniz birçok şey. «Daha fazla» içinde, «İpuçları» sekmesinde.
+Настроить свой сервер	Kendi sunucunu ayarla
+Открыть «Фишки»	«İpuçları»nı aç
+Фишки	İpuçları
+плитки в шторке, ярлыки, виджет, «Поделиться» и другие возможности	hızlı ayar kutucukları, kısayollar, widget, «Paylaş» ve diğer özellikler
+Привяжите отдельный сервер к Telegram, ChatGPT и другим: Phoenix проверяет и держит именно его.	Telegram, ChatGPT ve diğerlerine ayrı bir sunucu bağlayın: Phoenix tam olarak onu kontrol eder ve tutar.
+Открыть «Свой сервер»	«Kendi sunucu»yu aç
+Кнопка «Не работает»	«Çalışmıyor» düğmesi
+На главной: если сервис не открывается, нажмите её, и Phoenix сам найдёт и поставит другой сервер.	Ana ekranda: bir hizmet açılmazsa ona basın, Phoenix başka bir sunucuyu kendisi bulup geçer.
+Плитки в шторке	Hızlı ayar kutucukları
+Три плитки: «Phoenix VPN» включает и выключает защиту, «Сменить сервер» ставит другой, «Не работает» запускает умную смену.	Üç kutucuk: «Phoenix VPN» korumayı açıp kapatır, «Sunucuyu değiştir» başkasını seçer, «Çalışmıyor» akıllı değişimi başlatır.
+Добавить: {}	Ekle: {}
+Потяните шторку вниз → значок карандаша → перетащите плитки Phoenix в активные.	Bildirim panelini aşağı çekin → kalem simgesi → Phoenix kutucuklarını etkin olanlara sürükleyin.
+Ярлыки на значке	Simge kısayolları
+Долгое нажатие на значок Phoenix: «Не работает», «Сменить сервер», «Отключить» — не открывая приложение.	Phoenix simgesine uzun basın: «Çalışmıyor», «Sunucuyu değiştir», «Bağlantıyı kes» — uygulamayı açmadan.
+Виджет	Widget
+Виджет на рабочем столе показывает состояние и меняет сервер одним нажатием.	Ana ekran widget'ı durumu gösterir ve sunucuyu tek dokunuşla değiştirir.
+Добавить виджет	Widget ekle
+«Поделиться» ссылкой	Bağlantı paylaşma
+Откройте ссылку на подписку в любом приложении, нажмите «Поделиться» и выберите Phoenix: ссылка попадёт в ваши источники.	Herhangi bir uygulamada abonelik bağlantısını açın, «Paylaş»a dokunup Phoenix'i seçin: bağlantı kaynaklarınıza eklenir.
+Что нового в {}	{} sürümündeki yenilikler
+Все версии	Tüm sürümler
+Версия {}	Sürüm {}
+Обучение	Eğitim
+пройти заново: разрешения, серверы, подсказки	yeniden geç: izinler, sunucular, ipuçları
+Что нового	Yenilikler
+список изменений по версиям	sürüme göre değişiklikler
+Фишки и обучение	İpuçları ve eğitim
+Если обновление придёт с другой подписью, приложение само предупредит, сохранит копию и проведёт через переустановку.	Güncelleme farklı imzayla gelirse uygulama uyarır, kopya saklar ve yeniden kurulumda yol gösterir.
+Меньше простоя при сбоях: смена сервера ограничена по времени, а после смены сети и «дёрганья» Wi-Fi сервер не винится зря.	Daha az kesinti: sunucu değişimi süreyle sınırlı; ağ değişimi veya Wi-Fi aksaması sonrası sunucu boşuna suçlanmaz.
+Знакомые сети запоминаются: в известном Wi-Fi или у оператора режим блокировок берётся сразу, без ожидания замера.	Tanıdık ağlar hatırlanır: bilinen Wi-Fi veya operatörde engel modu ölçümü beklemeden hemen uygulanır.
+На слабых телефонах при нехватке памяти проверок идёт меньше, чтобы систему не убила приложение.	Belleği az zayıf telefonlarda sistem uygulamayı kapatmasın diye daha az kontrol yapılır.
+Новое обучение и раздел «Ещё → Фишки»: плитки, виджет, ярлыки, свой сервер для приложений.	Yeni eğitim ve «Daha → İpuçları»: kutucuklar, widget, kısayollar, uygulamalar için kendi sunucunuz.
+«Режим блокировок» показывает свежий результат со временем, сеть пишется как «Wi-Fi».	«Engel modu» güncel sonucu saatiyle gösterir, ağ «Wi-Fi» olarak yazılır.
+Кнопка «Остановить и сохранить» и подробности перепроверки на главной.	Ana ekranda «Durdur ve kaydet» düğmesi ve yeniden kontrol ayrıntıları.
+Перепроверка быстрее: мёртвые серверы не ждёт заново; есть настройка «Скорость перепроверки».	Daha hızlı yeniden kontrol: ölü sunucular tekrar beklenmez; «Yeniden kontrol hızı» ayarı eklendi.
+При смене сервера под открытое приложение сначала проверяются подходящие серверы.	Açık uygulama için sunucu değişirken önce uygun sunucular denenir.
+Notebook больше не ставит ✓ на закрытых серверах, «Не работает» снимает галочку.	Notebook artık kapalı sunucularda ✓ koymaz, «Çalışmıyor» işareti kaldırır.
+Убраны источники, из которых почти ничего не оживало.	Neredeyse hiç çalışan sunucu vermeyen kaynaklar kaldırıldı.
+Находит рабочий сервер	Çalışan sunucuyu bulur
+Подбирает свой сервер для каждого приложения	Her uygulama için ayrı sunucu seçer
+Открывает российские сайты напрямую	Rus sitelerini doğrudan açar
+Данные об использовании	Kullanım verilerine erişim
+Нужен, чтобы Phoenix видел, какое приложение открыто, и включал для него свой сервер. Найдите Phoenix в списке и разрешите доступ.	Phoenix'in hangi uygulamanın açık olduğunu görüp ona özel sunucuyu seçmesi için gerekir. Listede Phoenix'i bulup erişime izin verin.
+Если пропустить: отдельные серверы под приложения не будут включаться при их открытии.	Atlarsanız: uygulamaya özel sunucular uygulama açılınca devreye girmez.
+И обязательно пройдитесь по настройкам: их много, и именно они подстроят Phoenix под вас.	Ayarlara da mutlaka göz atın: çok sayıdalar ve Phoenix'i size göre uyarlarlar.
+Значок в строке состояния	Durum çubuğu simgesi
+Вверху экрана, рядом с часами, Phoenix показывает значок: он меняется по ситуации, а в шторке меняется и цвет уведомления.	Ekranın üstünde, saatin yanında Phoenix bir simge gösterir; duruma göre değişir, bildirim panelinde bildirimin rengi de değişir.
+Работает	Çalışıyor
+Ищет сервер	Sunucu arıyor
+Нет связи	Bağlantı yok
+Свои подписки	Kendi abonelikleriniz
+Добавьте свою ссылку на подписку или список серверов: она попадёт в сбор вместе со встроенными источниками.	Kendi abonelik veya sunucu listesi bağlantınızı ekleyin: yerleşik kaynaklarla birlikte toplamaya katılır.
+Открыть «Источники»	«Kaynaklar»ı aç
+Бегущая строка	Kayan yazı
+Вверху главного экрана по одному показывается факт о работе Phoenix; длинный едет по кругу, нажатие — следующий факт.	Ana ekranın üstünde Phoenix'in çalışmasıyla ilgili bir bilgi gösterilir; uzunsa kayar, dokununca sonraki gelir.
+Показывать на главном экране	Ana ekranda göster
+Если обновление подписано другим ключом, приложение сохранит копию настроек и скачает новую версию, а переустановить её нужно самому.	Güncelleme farklı anahtarla imzalanmışsa uygulama ayarların kopyasını saklar ve yeni sürümü indirir; yeniden kurulumu siz yaparsınız.
+Если сервер перестаёт отвечать, Phoenix сам находит другой и переключается.	Sunucu yanıt vermeyi bırakırsa Phoenix kendisi başka bir tane bulup geçer.
+Запасной сервер ищется гонкой: побеждает тот, кто ответил первым.	Yedek sunucu bir yarışla bulunur: ilk yanıt veren kazanır.
+На поиск запасного идёт до 16 проверок одновременно, на слабом телефоне до 5.	Yedek ararken aynı anda 16'ya kadar kontrol yapılır, zayıf telefonda 5'e kadar.
+Сервер, на котором оборвалась сессия, уходит в конец очереди на 10 минут, а упавший сразу после выбора — на час.	Oturumu kopan sunucu 10 dakika sıranın sonuna gider, seçildikten hemen sonra çöken ise bir saat.
+Третий провал сервера за сутки отправляет его в карантин на 24 часа.	Bir sunucunun bir günde üçüncü hatası onu 24 saat karantinaya gönderir.
+Если связи нет из-за самой сети, сервер не наказывается.	Bağlantı yokluğu ağın kendisinden kaynaklanıyorsa sunucu cezalandırılmaz.
+Если смены серверов идут пачкой, Phoenix делает паузу до 90 секунд: чаще виновата сеть.	Sunucu değişimleri art arda gelirse Phoenix 90 saniyeye kadar bekler: çoğu zaman suçlu ağdır.
+Туннель проверяется каждые 30 секунд, при спокойной работе реже.	Tünel her 30 saniyede kontrol edilir, her şey sakinse daha seyrek.
+С выключенным экраном проверки идут раз в 2 минуты, при нагреве телефона — раз в 3.	Ekran kapalıyken kontroller 2 dakikada bir, telefon ısındığında 3 dakikada bir yapılır.
+Phoenix сам определяет, белые у вас списки или чёрные: открывает 15 сайтов и сравнивает.	Phoenix engellemenin beyaz liste mi kara liste mi olduğunu kendisi anlar: 15 siteyi açıp karşılaştırır.
+Замер блокировок идёт напрямую, мимо VPN, в 8 потоков и не дольше 14 секунд.	Engelleme ölçümü doğrudan, VPN'siz, 8 iş parçacığıyla ve en fazla 14 saniye sürer.
+Режим меняется только после двух одинаковых определений подряд.	Mod yalnızca arka arkaya iki aynı tespitten sonra değişir.
+«Белые списки» подтверждаются дольше «чёрных»: ложное «белые» из-за сбоя Wi-Fi обходится дороже всего.	«Beyaz liste» «kara liste»den daha uzun doğrulanır: Wi-Fi arızasından gelen yanlış «beyaz liste» en pahalıya mal olur.
+Режим, выбранный вручную, держится 30 минут или до смены сети.	Elle seçilen mod 30 dakika veya ağ değişene kadar korunur.
+Тип блокировок проверяется каждые 5 минут, но только когда экран включён.	Engelleme türü 5 dakikada bir kontrol edilir, ama yalnızca ekran açıkken.
+Знакомую сеть Phoenix запоминает: после двух подтверждений режим берётся сразу.	Phoenix tanıdık ağı hatırlar: iki doğrulamadan sonra mod hemen uygulanır.
+Wi-Fi узнаётся по отпечатку шлюза и DNS, без геопозиции; запоминается до 30 сетей.	Wi-Fi, konum kullanılmadan ağ geçidi ve DNS izinden tanınır; 30 ağa kadar hatırlanır.
+Для приложения можно закрепить свой сервер: при его открытии Phoenix переключается на него.	Bir uygulamaya kendi sunucunuzu sabitleyebilirsiniz: uygulama açılınca Phoenix ona geçer.
+Какое приложение открыто, Phoenix проверяет каждые 4 секунды, а если целей нет — раз в минуту.	Phoenix hangi uygulamanın açık olduğunu 4 saniyede bir, hedef yoksa dakikada bir kontrol eder.
+Переключение при открытии приложения работает только с доступом к данным об использовании.	Uygulama açılınca geçiş yalnızca kullanım verilerine erişimle çalışır.
+Для каждой цели проверяется до 15 серверов, у трёх лучших ещё и скорость.	Her hedef için 15 sunucuya kadar kontrol edilir, en iyi üçünün hızı da ölçülür.
+Если для цели не нашлось сервера, пул расширяется до 90 серверов.	Bir hedef için sunucu bulunamazsa havuz 90 sunucuya genişler.
+Кнопка «Не работает» запоминает связку «сервер + сайт» на несколько дней.	«Çalışmıyor» düğmesi «sunucu + site» çiftini birkaç gün hatırlar.
+Ответ «не отвечает» для цели считается свежим два дня, потом сервер получает второй шанс.	Bir hedef için «yanıt vermiyor» sonucu iki gün geçerli sayılır, sonra sunucuya ikinci şans verilir.
+Российские приложения Phoenix находит сам и пускает в обход VPN.	Phoenix Rus uygulamalarını kendisi bulur ve VPN'i atlamalarını sağlar.
+Сбор берёт конфиги из десятков источников: по 6 загрузок одновременно, до 2 повторов.	Toplama düzinelerce kaynaktan yapılandırma alır: aynı anda 6 indirme, en fazla 2 yeniden deneme.
+На одном адресе бывает много конфигов с разными ключами: в список попадает не больше трёх.	Aynı adreste farklı anahtarlı birçok yapılandırma olabilir: listeye en fazla üçü girer.
+Источник, не ответивший 5 раз подряд, отключается и через 7 дней получает второй шанс.	Art arda 5 kez yanıt vermeyen kaynak kapatılır ve 7 gün sonra ikinci şans alır.
+Источники получают приоритет по доле живых серверов.	Kaynaklar, canlı sunucu oranına göre önceliklendirilir.
+Перепроверка сначала отсеивает конфиги по TCP, потом мерит настоящую задержку через ядро.	Yeniden kontrol önce yapılandırmaları TCP ile eler, sonra çekirdek üzerinden gerçek gecikmeyi ölçer.
+Полная перепроверка идёт не дольше 25 минут и не чаще раза в 30 минут.	Tam yeniden kontrol en fazla 25 dakika sürer ve 30 dakikada birden sık çalışmaz.
+Если на одном адресе три пробы подряд молчат, остальные конфиги этого адреса не пробуются.	Bir adrese art arda üç yoklama yanıtsız kalırsa o adresteki diğer yapılandırmalar denenmez.
+Тяжёлые задачи идут на зарядке; если телефон не заряжали сутки, их разрешают при заряде от 50%.	Ağır işler şarjdayken yapılır; telefon bir gündür şarj edilmediyse %50 ve üzerinde izin verilir.
+«Скорость перепроверки» имеет три режима: щадящая, обычная и быстрая.	«Yeniden kontrol hızı» üç moda sahiptir: hafif, normal ve hızlı.
+За один прогон настоящая страна выхода определяется у 12 рабочих серверов.	Her turda 12 çalışan sunucunun gerçek çıkış ülkesi belirlenir.
+Фоновый трафик на мобильной сети ограничен: по умолчанию 100 МБ.	Mobil veride arka plan trafiği sınırlıdır: varsayılan 100 MB.
+На мобильной сети параллельных TCP-проверок не больше 16: радиомодуль греется от частых соединений.	Mobil ağda en fazla 16 paralel TCP kontrolü yapılır: sık bağlantılar telsiz modülünü ısıtır.
+Если процесс занимает больше 200 МБ, проверок становится меньше; при 260 МБ — вчетверо меньше.	İşlem 200 MB'ı aşarsa daha az kontrol yapılır; 260 MB'ta dört kat az.
+Phoenix запоминает часы, когда вы обычно пользуетесь телефоном, и тяжёлую работу старается не делать в них.	Phoenix telefonu genelde kullandığınız saatleri hatırlar ve o saatlerde ağır iş yapmamaya çalışır.
+Если поиск проверил 200 серверов и ни один не ответил, он останавливается: дальше впустую.	Arama 200 sunucuyu kontrol edip hiçbiri yanıt vermediyse durur: devamı boşuna olur.
+Журнал занимает не больше 5 МБ: старые строки отбрасываются.	Günlük en fazla 5 MB yer kaplar: eski satırlar atılır.
+Автокопия настроек делается раз в неделю, хранятся три последние.	Ayarların otomatik yedeği haftada bir alınır, son üçü saklanır.
+Новый DNS получает 30 секунд на проверку, иначе возвращается прежний.	Yeni DNS'in doğrulanması için 30 saniye vardır, aksi halde eskisine dönülür.
+Значок в строке состояния меняет форму: работает, ищет сервер или нет связи.	Durum çubuğu simgesi şekil değiştirir: çalışıyor, sunucu arıyor veya bağlantı yok.
+Цвет уведомления: зелёный — работает, жёлтый — подключение или поиск, красный — связи нет.	Bildirim rengi: yeşil — çalışıyor, sarı — bağlanıyor veya arıyor, kırmızı — bağlantı yok.
+Три плитки в шторке включают защиту, меняют сервер и жмут «Не работает» без входа в приложение.	Hızlı ayarlardaki üç karo, uygulamayı açmadan korumayı açar, sunucuyu değiştirir ve «Çalışmıyor»a basar.
+В журнале ключи подписок и значения token, key, uuid скрыты — его безопасно отправить другому.	Günlükte abonelik anahtarları ile token, key, uuid değerleri gizlenir: başkasına göndermek güvenlidir.
+Адреса сайтов в журнале сокращаются до вида «m***.ru».	Günlükteki site adresleri «m***.ru» biçiminde kısaltılır.
+Автоматические изменения источников можно откатить одной кнопкой в течение суток.	Kaynaklardaki otomatik değişiklikler bir gün içinde tek düğmeyle geri alınabilir.
+Если обновление подписано другим ключом, Phoenix сохранит копию настроек и скачает новую версию, а ставить её дальше вам.	Güncelleme farklı bir anahtarla imzalanmışsa Phoenix ayarların bir kopyasını saklar ve yeni sürümü indirir; kurmak size kalır.
+Тип блокировок определяется сразу после запуска, а Wi-Fi без интернета больше не переключает режим туда-сюда.	Engelleme türü başlangıçta hemen belirlenir ve internetsiz Wi-Fi artık modu ileri geri değiştirmez.
+Бегущая строка с фактами о Phoenix на главном экране: выключена, включается в «Ещё → Фишки».	Ana ekranda Phoenix hakkında bilgi şeridi: varsayılan olarak kapalı, Daha fazla → Püf noktaları'ndan açılır.

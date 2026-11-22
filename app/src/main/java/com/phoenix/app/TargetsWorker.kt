@@ -35,7 +35,7 @@ object PlanBus {
 object CheckLimits {
     fun parallel(context: Context): Int {
         val am = context.getSystemService(android.app.ActivityManager::class.java)
-        return if (am != null && am.isLowRamDevice) 3 else 6
+        return MemGuard.scale(if (am != null && am.isLowRamDevice) 3 else 6, MemInfo.currentPssMb())
     }
 
     /** Сервисов одного конфига одновременно: в мобильной сети и на слабых телефонах — по одному. */
@@ -47,7 +47,7 @@ object CheckLimits {
     /** Для поиска рабочего сервера, когда пользователь ждёт: больше параллельных проверок (в v2rayNG по умолчанию 16). */
     fun searchParallel(context: Context): Int {
         val am = context.getSystemService(android.app.ActivityManager::class.java)
-        return if (am != null && am.isLowRamDevice) 5 else 16
+        return MemGuard.scale(if (am != null && am.isLowRamDevice) 5 else 16, MemInfo.currentPssMb())
     }
 }
 

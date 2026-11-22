@@ -635,6 +635,7 @@ class PhoenixVpnService : VpnService() {
             controller = null
             startCore(link)
             mainLink = link
+            mainChosenAt = System.currentTimeMillis()
             disturbedAt = System.currentTimeMillis()
         } finally {
             coreGen++
@@ -730,7 +731,7 @@ class PhoenixVpnService : VpnService() {
 
     private fun startMonitors() {
         stopMonitors()
-        lastNetLabel = NetInfo.label(this)
+        lastNetLabel = NetInfo.place(this)
         val jobs = ArrayList<Job>()
 
         // 1) Проверка живости туннеля.
@@ -812,8 +813,18 @@ class PhoenixVpnService : VpnService() {
 
         // 5) Тип блокировок меняется (дом ↔ дорога, оператор включил белые списки): проверяем раз в 5 минут, пока экраном пользуются.
         jobs += scope.launch {
+            var first = true
             while (true) {
                 try {
+                    // сразу после подключения тип блокировок в этой сети ещё не известен (журнал 22.11: первое определение
+                    // через 62 с, всё это время режим «по умолчанию» — белый в чёрной сети): определяем сразу, а не через минуту
+                    if (first) {
+                        first = false
+                        if (settings.autoMode && ModeGate.needsDetect(true, ModeGate.knownNet, NetInfo.place(this@PhoenixVpnService), false)) {
+                            detectMode(force = true, decisive = true)
+                            continue
+                        }
+                    }
                     delay(60_000L)
                     val pm = getSystemService(PowerManager::class.java)
                     if (pm != null && !pm.isInteractive) continue
@@ -919,7 +930,7 @@ class PhoenixVpnService : VpnService() {
             private var first = true
             override fun onAvailable(network: Network) {
                 // первый вызов — обычно уже существующая сеть; но если служба стартовала без сети, это как раз её появление — тогда не пропускаем
-                if (first) { first = false; if (NetInfo.label(this@PhoenixVpnService) == lastNetLabel) return }
+                if (first) { first = false; if (NetInfo.place(this@PhoenixVpnService) == lastNetLabel) return }
                 scope.launch {
                     delay(1_000) // дать сети устояться
                     onNetworkChanged()
@@ -930,6 +941,7 @@ class PhoenixVpnService : VpnService() {
             // система предупреждает, что сеть скоро пропадёт: не считаем сбои маршрутов и не начинаем тяжёлое
             override fun onLosing(network: Network, maxMsToLive: Int) {
                 disturbedAt = System.currentTimeMillis()
+                netShakeAt = disturbedAt
                 storage.log("NET: система предупредила, что сеть пропадёт (через ~${maxMsToLive / 1000} с) — жду смены сети")
             }
 
@@ -975,11 +987,65 @@ class PhoenixVpnService : VpnService() {
     /** Когда в последний раз менялись сеть, режим или ядро: сразу после этого проверки целей дают ложные «не отвечает». */
     @Volatile private var disturbedAt = 0L
 
+    /** Когда сеть менялась или система предупредила о её потере (см. [HealthGate]); перезапуск ядра сюда не входит. */
+    @Volatile private var netShakeAt = 0L
+    /** Когда выбран текущий основной сервер. */
+    @Volatile private var mainChosenAt = 0L
+
     /** Последний запуск определения режима по смене сети: при двух сменах подряд (wifi → none → mobile) второй отменяет первый, а не бежит параллельно с ним. */
     @Volatile private var detectJob: Job? = null
 
+    /** Режим, взятый по подсказке сети до подтверждения определением (см. ModeHint). */
+    private val provisional = ProvisionalMode()
+
+    /**
+     * Смена сети: определение типа блокировок идёт долго, а серверы нужны сразу. Если в этой сети режим уже подтверждался,
+     * берём его сразу и ищем серверы в нём; определение подтвердит или поправит. Взятое по подсказке в прежней сети и не
+     * подтверждённое — возвращаем на место.
+     */
+    /** Проверка серверов шла в режиме, взятом по догадке, а она не подтвердилась: её итоги (карантин) не должны вредить серверам. */
+    private fun annulProvisional(since: Long, why: String) {
+        val n = Quarantine.annulSince(since)
+        failures = 0
+        if (n > 0) storage.log("MODE: $why — итоги проверки серверов по подсказке аннулированы (снят карантин у $n)")
+    }
+
+    @Volatile private var hintDoubtAt = 0L
+
+    /** Лучшие серверы режима по подсказке не работают: довод против догадки, тип блокировок перепроверяем сразу, а не по расписанию. */
+    private fun doubtHint(): Boolean {
+        if (!provisional.active || hintDoubtAt >= provisional.since) return false
+        hintDoubtAt = System.currentTimeMillis()
+        storage.log("MODE: серверы режима «${storage.mode.title}» по подсказке не работают — довод против догадки, перепроверяю тип блокировок сразу")
+        detectJob?.cancel()
+        detectJob = scope.launch { detectMode(force = true, decisive = true) }
+        return true
+    }
+
+    private fun applyModeHint(label: String) {
+        if (!settings.autoMode) return
+        val provSince = provisional.since
+        provisional.revertOnNetChange(label)?.let { back ->
+            annulProvisional(provSince, "сеть сменилась")
+            if (storage.mode != back) {
+                Mode.write(applicationContext.filesDir, back)
+                storage.log("MODE: сеть сменилась, подсказка не подтвердилась — режим возвращён на «${back.title}»")
+                PlanBus.notifyChanged()
+            }
+        }
+        if (NetInfo.kind(this) == NetInfo.Kind.NONE) return
+        val cur = storage.mode
+        val known = ModeHint.load(storage.modeHintFile)[label]
+        if (known != null && known.count >= ModeHint.NEED) ModeGate.knownNet = label // сеть знакомая: режим известен по памяти
+        val guess = ModeHint.guess(ModeHint.load(storage.modeHintFile), label, cur) ?: return
+        provisional.start(cur, label)
+        Mode.write(applicationContext.filesDir, guess)
+        storage.log("MODE: в сети $label раньше было «${guess.title}» — беру сразу, пока определение не подтвердит (не подтвердится — вернусь)")
+        PlanBus.notifyChanged()
+    }
+
     private suspend fun onNetworkChanged() {
-        val label = NetInfo.label(this)
+        val label = NetInfo.place(this) // для Wi-Fi с отпечатком: переход между двумя Wi-Fi тоже смена сети
         val changed = label != lastNetLabel
         if (changed) storage.log("NET: сеть сменилась: ${lastNetLabel.ifEmpty { "?" }} → $label")
         lastNetLabel = label
@@ -991,9 +1057,11 @@ class PhoenixVpnService : VpnService() {
         }
         if (changed) {
             disturbedAt = System.currentTimeMillis()
+            netShakeAt = disturbedAt
             routeFails.clear()
             // ручной выбор режима был сделан в прежней сети; вернувшись в сеть с тем же названием, он не должен заглушать определение (в логе — 13 минут без связи)
             if (settings.manualModeAt > 0L) { settings.manualModeAt = 0L; storage.log("MODE: сеть сменилась — ручной выбор режима больше не удерживается, определение снова решает само") }
+            applyModeHint(label)
         }
         // тип блокировок определяется сразу и параллельно с проверкой связи (раньше ждал её окончания — до 20 секунд),
         // а прежние голоса относились к другой сети: при смене сети хватает одного уверенного определения
@@ -1067,6 +1135,13 @@ class PhoenixVpnService : VpnService() {
             // «белые списки» из чёрных — самый дорогой ложный вывод (сбой Wi-Fi даёт «0 зарубежных»): подтверждаем дольше, настоящие белые списки не пропадают за минуту
             delay(if (target == Mode.WHITELIST && !decisive) WHITELIST_CONFIRM_MS else 3_000)
             outcome = withContext(Dispatchers.IO) { ModeDetector.run(this@PhoenixVpnService) }
+        }
+        // определение дало ясный тип: подсказка либо подтвердилась, либо поправлена самим определением — взятое по ней больше не «временное»
+        if (ModeDecider.modeOf(outcome.type) != null && provisional.active) {
+            val provSince = provisional.since
+            provisional.confirm()
+            if (outcome.switchedTo != null) annulProvisional(provSince, "блокировка оказалась другой")
+            storage.log("MODE: определение ${if (outcome.switchedTo != null) "поправило подсказку" else "подтвердило подсказку"} — режим «${storage.mode.title}»")
         }
         if (outcome.switchedTo != null) PlanBus.notifyChanged() // режим сменился — данные теперь из другой папки
     }
@@ -1199,14 +1274,14 @@ class PhoenixVpnService : VpnService() {
             }
             if (ok) { failures = 0; delay(1_500); return }
         }
-        if (failures == 1) {
+        if (failures == HealthGate.detectAt(HealthGate.recent(System.currentTimeMillis(), netShakeAt))) {
             // отменяем прежний запуск (например, из onNetworkChanged) и запускаем новый определённо forced: иначе при
             // совпадении по времени прежний уже успевает выставить lastDetectAt, и этот сразу выходит по DETECT_GAP_MS,
             // ничего не определив — а первая проверка связи после смены сети и есть самый частый такой случай (находка Фейбла №3.1)
             detectJob?.cancel()
             detectJob = scope.launch { detectMode(force = true) }
         } // связь пропала: возможно, сменился тип блокировок
-        if (failures < (if (force) 2 else 3)) {
+        if (failures < HealthGate.failuresNeeded(NetInfo.kind(this) == NetInfo.Kind.MOBILE)) {
             // Подтвердим быстрее: следующая проверка через несколько секунд.
             delay(4_000)
             checkHealth(force = true)
@@ -1225,7 +1300,7 @@ class PhoenixVpnService : VpnService() {
         // система считает сеть живой, но напрямую (мимо VPN) не открывается ничего — значит, интернета нет, а не сервер плох
         // (в логе: три поиска по 2 минуты с нулём рабочих, пока у телефона не было интернета)
         val offline = ModeDetector.offlineAt.let { FailoverGate.offlineRecently(it, System.currentTimeMillis()) } ||
-            withContext(Dispatchers.IO) { BlockDetector.classify(ModeDetector.measure(this@PhoenixVpnService)) == BlockType.OFFLINE }
+            withContext(Dispatchers.IO) { BlockDetector.classify(ModeDetector.measureConfirmed(this@PhoenixVpnService)) == BlockType.OFFLINE }
                 .also { if (it) ModeDetector.offlineAt = System.currentTimeMillis() }
         if (offline) {
             failures = 0
@@ -1241,6 +1316,11 @@ class PhoenixVpnService : VpnService() {
             return
         }
         val modeHeld = ModeHold.active(settings.manualModeAt, settings.manualModeNet, System.currentTimeMillis(), NetInfo.label(this))
+        // режим взят по подсказке и связи нет: серверы выбраны «лучшие», и если они не работают, это довод против догадки
+        if (provisional.active && failures >= HealthGate.failuresNeeded(NetInfo.kind(this) == NetInfo.Kind.MOBILE) && doubtHint()) {
+            failures = 0 // ждём ответа определения, серверы пока не перебираю
+            return
+        }
         if (settings.autoMode && !modeHeld && FailoverGate.modePending(storage.mode, ModeDetector.lastType, ModeDetector.lastTypeAt, System.currentTimeMillis())) {
             failures = 0
             storage.log("HEALTH: определение показывает «${BlockDetector.title(ModeDetector.lastType!!)}», а режим пока «${storage.mode.title}» — жду подтверждения смены режима, серверы не перебираю")
@@ -1260,6 +1340,12 @@ class PhoenixVpnService : VpnService() {
             storage.log("HEALTH: режим только что сменился — даю серверу устояться, перебор отложен")
             return
         }
+        // сеть только что менялась или система предупредила, что она пропадёт: сбой — вина сети, а не сервера (журнал 21.11: смена сервера через секунды после предупреждения, простой 50 с)
+        if (HealthGate.settling(System.currentTimeMillis(), maxOf(netShakeAt, ModeDetector.wobbleAt))) {
+            failures = 0
+            storage.log("HEALTH: сеть только что менялась или дёргалась (прямой замер ничего не открыл) — не виню сервер [$mainTitle] и не перебираю, проверю снова через минуту")
+            return
+        }
         // сеть только что прыгала (Wi-Fi ↔ мобильная каждые несколько минут): сбой связи — вина сети, а не сервера; не вешаем его на сервер и не меняем
         if (NetFlap.busy(System.currentTimeMillis())) {
             failures = 0
@@ -1267,7 +1353,9 @@ class PhoenixVpnService : VpnService() {
             return
         }
         recordHist(mainLink, false) // сервер перестал работать именно в этой сети
-        Quarantine.add(ConfigIdentity.key(mainLink), networkAlive = networkUsable()) // 10 минут не выбираем его снова; третий провал за сутки — на сутки
+        val early = HealthGate.earlyFall(System.currentTimeMillis(), mainChosenAt)
+        if (early) storage.log("HEALTH: [$mainTitle] упал вскоре после выбора — не беру его снова час")
+        Quarantine.add(ConfigIdentity.key(mainLink), networkAlive = networkUsable(), earlyFall = early) // 10 минут не выбираем его снова; третий провал за сутки — на сутки
         if (System.currentTimeMillis() < nextFailoverAt) {
             failures = 0 // недавно уже перебирали и ничего не нашли — не мучаем сеть и батарею
             return
@@ -1477,6 +1565,24 @@ class PhoenixVpnService : VpnService() {
      * ядра на каждом (журнал 06.11: 34, 102, 171 и 51 с, всего 6 минут без результата).
      * @return варианты, ответившие на проверку, либо null, если предпроверка не удалась (тогда работает прежний перебор)
      */
+    /**
+     * Быстрая проба сервера временным ядром (без перезапуска основного): TCP, затем один замер до gstatic. Блокирующая.
+     * [fast] — без повтора по запасному адресу после таймаута: брошенная проба (предпроверка режима отменяет остальные, а замер в ядре Go прервать нельзя)
+     * иначе дорабатывала бы двойной таймаут и держала место в лимите срочных проб.
+     */
+    private fun quickAlive(link: String, fast: Boolean = true): Boolean {
+        val parsed = LinkParser.parse(link)
+        var hosts: Map<String, String> = emptyMap()
+        if (parsed?.host != null && parsed.port != null) {
+            val ip = if (parsed.protocol == "hysteria2") ServerHosts.resolveOnly(parsed.host) else ServerHosts.reach(parsed.host, parsed.port, SEARCH_TCP_TIMEOUT_MS)
+            if (ip == null) return false
+            hosts = ServerHosts.hostsFor(parsed.host, ip)
+        }
+        val cfg = try { XrayConfig.probeConfig(link, hosts) } catch (_: UnsupportedLinkException) { return false }
+        val ms = ProbeShare.measure(cfg, CheckServices.BASELINE_URL) { XrayCore.measureDelay(this@PhoenixVpnService, cfg, CheckServices.BASELINE_URL, urgent = true, fast = fast) }
+        return ms >= 0
+    }
+
     private suspend fun prefilterPicks(picks: List<Pick>): List<Pick>? {
         if (picks.isEmpty()) return emptyList()
         return try {
@@ -1489,16 +1595,7 @@ class PhoenixVpnService : VpnService() {
                 val jobs = picks.map { p ->
                     scope.launch {
                         gate.withPermit {
-                            val parsed = LinkParser.parse(p.link)
-                            var hosts: Map<String, String> = emptyMap()
-                            if (parsed?.host != null && parsed.port != null) {
-                                val ip = if (parsed.protocol == "hysteria2") ServerHosts.resolveOnly(parsed.host) else ServerHosts.reach(parsed.host, parsed.port, SEARCH_TCP_TIMEOUT_MS)
-                                if (ip == null) return@withPermit
-                                hosts = ServerHosts.hostsFor(parsed.host, ip)
-                            }
-                            val cfg = try { XrayConfig.probeConfig(p.link, hosts) } catch (_: UnsupportedLinkException) { return@withPermit }
-                            val ms = ProbeShare.measure(cfg, CheckServices.BASELINE_URL) { XrayCore.measureDelay(this@PhoenixVpnService, cfg, CheckServices.BASELINE_URL, urgent = true) }
-                            if (ms >= 0) { found[p.link] = true; firstFound.complete(Unit) }
+                            if (quickAlive(p.link)) { found[p.link] = true; firstFound.complete(Unit) }
                         }
                     }
                 }
@@ -1634,7 +1731,7 @@ class PhoenixVpnService : VpnService() {
         val none = NetInfo.kind(this) == NetInfo.Kind.NONE
         if (none) return Triple(true, false, false)
         if (withContext(Dispatchers.IO) { try { healthy() } catch (_: Throwable) { false } }) return Triple(false, false, true)
-        val offline = withContext(Dispatchers.IO) { BlockDetector.classify(ModeDetector.measure(this@PhoenixVpnService)) == BlockType.OFFLINE }
+        val offline = withContext(Dispatchers.IO) { BlockDetector.classify(ModeDetector.measureConfirmed(this@PhoenixVpnService)) == BlockType.OFFLINE }
         return Triple(false, offline, false)
     }
 
@@ -1733,6 +1830,8 @@ class PhoenixVpnService : VpnService() {
         val currentId = ConfigIdentity.key(origLink)
         val currentHost = ConfigIdentity.host(origLink)
         val started = System.currentTimeMillis()
+        val totalBudget = FailoverBudget.totalMs(forced, NetInfo.kind(this) == NetInfo.Kind.MOBILE)
+        fun stageMs(want: Long) = FailoverBudget.stageMs(System.currentTimeMillis(), started, totalBudget, want)
         val rows = ConfigRepository.load(storage)
         // все конфиги режима (мёртвые отметки только понижают очередь), а в чёрных списках — ещё и конфиги белых
         val ordered0 = SearchPool.build(this, storage)
@@ -1769,7 +1868,7 @@ class PhoenixVpnService : VpnService() {
         VpnState.set(VpnStatus(VpnPhase.CONNECTING, mainTitle, note = if (forced) tr("меняю сервер…") else tr("ищу рабочий сервер среди {}…", ordered.size), link = mainLink, sub = VpnSub.SEARCHING))
         val sink = SearchSink(storage, this)
         val gnet = NetInfo.label(this)
-        val spareLink = SpareServer.take(gnet, System.currentTimeMillis(), currentId)
+        val spareLink = SpareServer.take(gnet, System.currentTimeMillis(), currentId, storage.mode.name)
         val fit = appFit
         val spareCand = spareLink?.let { l -> ordered.firstOrNull { it.link == l } }
         // запасной, найденный заранее, подбирался без учёта приложения: берём его, только если он подходит открытому сейчас приложению
@@ -1851,8 +1950,12 @@ class PhoenixVpnService : VpnService() {
         return false
         }
         if (spareFound.isNotEmpty()) {
-            storage.log("FAILOVER: пробую запасной сервер, найденный заранее")
-            if (tryFound(spareFound)) return@withLock
+            // сначала быстрая проба временным ядром: мёртвый запасной не должен перезапускать основное ядро (это ещё один обрыв связи)
+            val spareAlive = withContext(Dispatchers.IO) { quickAlive(spareFound[0].cand.link) }
+            if (spareAlive) {
+                storage.log("FAILOVER: пробую запасной сервер, найденный заранее (быстрая проверка прошла)")
+                if (tryFound(spareFound)) return@withLock
+            } else storage.log("FAILOVER: запасной найденный заранее не ответил на быструю проверку — основное ядро не трогаю, ищу дальше")
         }
         // поиск — гонка: побеждает самый быстрый ответивший. Серверы, где открытый сейчас сервис уже открывался, проверяем первым отдельным этапом
         val readyForApp = ReadyFirst.pick(ordered, fit)
@@ -1860,24 +1963,28 @@ class PhoenixVpnService : VpnService() {
         var found: List<Found> = emptyList()
         if (readyForApp.isNotEmpty()) {
             storage.log((if (forced) "SWITCH" else "FAILOVER") + ": под открытое приложение есть ${readyForApp.size} серверов, где сервис уже открывался — проверяю сначала их")
-            found = withContext(Dispatchers.IO) { searchFor(readyForApp, want = 2, budgetMs = FAILOVER_BUDGET_MS / 2, sink = sink) }
+            found = withContext(Dispatchers.IO) { searchFor(readyForApp, want = 2, budgetMs = stageMs(FAILOVER_BUDGET_MS / 2).coerceAtLeast(FailoverBudget.MIN_STAGE_MS), sink = sink) }
             if (found.isEmpty()) storage.log((if (forced) "SWITCH" else "FAILOVER") + ": из них никто не отвечает — ищу среди остальных")
         }
         // первый этап закончился на «похоже, нет интернета»: второй этап по тем же серверам даст то же самое, ждать ещё до 2 минут незачем
         val offlineAfterStage = readyForApp.isNotEmpty() && ModeDetector.offlineAt != offlineAtBefore && FailoverGate.offlineRecently(ModeDetector.offlineAt, System.currentTimeMillis())
         if (offlineAfterStage) storage.log((if (forced) "SWITCH" else "FAILOVER") + ": похоже, интернета нет — остальных серверов сейчас не перебираю")
-        if (found.isEmpty() && !offlineAfterStage) found = withContext(Dispatchers.IO) { searchFor(ordered, want = 2, budgetMs = FAILOVER_BUDGET_MS, sink = sink) }
+        if (found.isEmpty() && !offlineAfterStage) {
+            val ms = stageMs(FAILOVER_BUDGET_MS)
+            if (ms > 0) found = withContext(Dispatchers.IO) { searchFor(ordered, want = 2, budgetMs = ms, sink = sink) }
+            else storage.log((if (forced) "SWITCH" else "FAILOVER") + ": общее время смены (${totalBudget / 1000} с) вышло — остальных серверов не перебираю")
+        }
         sink.flush()
         energy("search", sink.count)
         // никто из остальных не отвечает: серверы из карантина получают второй шанс первыми
         val parked = ordered.filter { it.quarantined }
-        if (found.isEmpty() && parked.isNotEmpty() && wantRunning) {
+        if (found.isEmpty() && parked.isNotEmpty() && wantRunning && stageMs(FAILOVER_BUDGET_MS / 3) > 0) {
             Quarantine.releaseAll()
             storage.log("FAILOVER: остальные не отвечают — снимаю карантин и проверяю первыми ${parked.size} серверов из него")
-            found = withContext(Dispatchers.IO) { searchFor(parked, want = 2, budgetMs = FAILOVER_BUDGET_MS / 3, sink = sink) }
+            found = withContext(Dispatchers.IO) { searchFor(parked, want = 2, budgetMs = stageMs(FAILOVER_BUDGET_MS / 3), sink = sink) }
             sink.flush()
         }
-        found.drop(1).firstOrNull { fit == null || it.cand.identity in fit }?.let { SpareServer.remember(it.cand.link, it.cand.identity, gnet, System.currentTimeMillis()) }
+        found.drop(1).firstOrNull { fit == null || it.cand.identity in fit }?.let { SpareServer.remember(it.cand.link, it.cand.identity, gnet, System.currentTimeMillis(), storage.mode.name) }
         if (tryFound(found)) return@withLock
         // Ничего не нашлось: вероятно, нет интернета вообще. Возвращаем прежний сервер и повторим позже (с растущей паузой).
         // mainLink сам по себе не докажет, что возврат не нужен: если кандидат бросил исключение, reloadCore успел
@@ -1954,6 +2061,7 @@ class PhoenixVpnService : VpnService() {
         val net = NetInfo.label(this)
         if (gov.level(net) > 0) storage.log("SEARCH: сеть $net не любит много параллельных проверок — иду осторожнее (уровень ${gov.level(net)}, TCP ${gov.tcp(net)})")
         gov.begin(net)
+        MemInfo.currentPssMb().let { pss -> if (MemGuard.scale(16, pss) < 16) storage.log("MEM: процесс занимает $pss МБ — параллельных проверок меньше (${MemGuard.scale(16, pss)} вместо 16), чтобы систему не пришлось убивать его по памяти") }
         val search = ServerSearch(
             reach = { h, p -> ServerHosts.reach(h, p, SEARCH_TCP_TIMEOUT_MS) },
             probe = { cfg, url -> ProbeShare.measure(cfg, url) { XrayCore.measureDelay(this, cfg, url, urgent = true) } },
@@ -2655,6 +2763,9 @@ class PhoenixVpnService : VpnService() {
         private val HEALTH_URLS = listOf(
             "http://connectivitycheck.gstatic.com/generate_204",
             "http://cp.cloudflare.com/generate_204",
+            // тот же адрес, что у пробы при поиске сервера (TLS, порт 443): бесплатные серверы часто открывают наружу только 443,
+            // и поиск говорил «жив», а проверка по порту 80 писала «пустой ответ» (журналы 20–21.11: 13 и 7 случаев)
+            "https://www.gstatic.com/generate_204",
         )
 
         /** Вызывать после того, как пользователь дал системное разрешение на VPN (VpnService.prepare). Пустая ссылка — взять лучший конфиг. */

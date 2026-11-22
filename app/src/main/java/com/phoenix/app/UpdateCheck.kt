@@ -1,7 +1,7 @@
 package com.phoenix.app
 
 /** Описание последнего релиза на GitHub (то, что нужно для плашки и уведомления). */
-data class ReleaseInfo(val tag: String, val url: String, val apkUrl: String, val notes: String, val apkSha256: String = "", val apkSize: Long = 0L)
+data class ReleaseInfo(val tag: String, val url: String, val apkUrl: String, val notes: String, val apkSha256: String = "", val apkSize: Long = 0L, val signingSha256: String = "")
 
 /**
  * Проверка новой версии приложения: чистая часть (разбор ответа GitHub и сравнение версий).
@@ -50,8 +50,23 @@ object UpdateCheck {
             sha = Regex("\"digest\"\\s*:\\s*\"sha256:([0-9a-fA-F]{64})\"").findAll(own).lastOrNull()?.groupValues?.get(1)?.lowercase().orEmpty()
             size = Regex("\"size\"\\s*:\\s*(\\d{1,12})").findAll(own).lastOrNull()?.groupValues?.get(1)?.toLongOrNull() ?: 0L
         }
-        val notes = (str(json, "body") ?: "").take(600)
-        return ReleaseInfo(tag, url, apk, notes, sha, size)
+        val body = str(json, "body") ?: ""
+        return ReleaseInfo(tag, url, apk, body.take(600), sha, size, signingFromNotes(body))
+    }
+
+    /**
+     * Отпечаток ключа подписи новой версии из описания релиза: строка «Подпись: <sha256>» (или «Signing: …»), хеш из 64 символов, можно с двоеточиями.
+     * Пусто — в описании не указан (тогда о смене ключа станет известно только после скачивания).
+     */
+    fun signingFromNotes(body: String): String {
+        for (line in body.lines()) {
+            val l = line.lowercase()
+            if (!(l.contains("подпись") || l.contains("signing") || l.contains("signature"))) continue
+            val hex = line.replace(Regex("(?<=[0-9a-fA-F]{2}):(?=[0-9a-fA-F]{2})"), "")
+            val m = Regex("(?<![0-9a-zA-Z])[0-9a-fA-F]{64}(?![0-9a-zA-Z])").find(hex) ?: continue
+            return m.value.lowercase()
+        }
+        return ""
     }
 
     /** «v3.9.64» / «3.9.64-debug» → [3, 9, 64]; пустой список, если чисел нет. */
@@ -95,4 +110,21 @@ object UpdateCheck {
 
     /** Сколько места нужно: файл в кэше и его копия в сессии установки, плюс запас. Размер неизвестен — берём с запасом. */
     fun neededBytes(apkSize: Long): Long = (if (apkSize > 0) apkSize else 100_000_000L) * 2 + 20_000_000L
+}
+
+/**
+ * Когда обновление придётся ставить с удалением приложения: подпись новой версии не совпадает с подписью установленной
+ * (Android не ставит такое обновление поверх: данные приложения привязаны к ключу).
+ */
+object ReinstallPlan {
+    /** По описанию релиза, до скачивания: известен отпечаток новой версии и он не совпал ни с одним из ключей установленной. */
+    fun neededByRelease(ownCerts: Set<String>, releaseSigning: String): Boolean =
+        releaseSigning.isNotEmpty() && ownCerts.isNotEmpty() && ownCerts.none { it.equals(releaseSigning, ignoreCase = true) }
+
+    /** По скачанному файлу (надёжнее описания): ключи файла и установленной версии не пересекаются. */
+    fun neededByFile(ownCerts: Set<String>, fileCerts: Set<String>): Boolean =
+        ownCerts.isNotEmpty() && fileCerts.isNotEmpty() && ownCerts.none { o -> fileCerts.any { it.equals(o, ignoreCase = true) } }
+
+    /** Имя файла новой версии в Загрузках (виден после удаления приложения). */
+    fun apkFileName(tag: String): String = "Phoenix-" + tag.filter { it.isLetterOrDigit() || it == '.' || it == '-' || it == '_' }.replace(Regex("\\.{2,}"), ".").trim('.').ifEmpty { "new" } + ".apk"
 }

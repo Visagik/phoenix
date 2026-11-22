@@ -1,5 +1,7 @@
 package com.phoenix.app
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -66,6 +68,7 @@ object SearchPool {
 object Recheck {
     const val BUDGET_MS = 25 * 60_000L
     const val MIN_GAP_MS = 30 * 60_000L
+    const val RETRY_DELAY_SEC = 120L
 
     suspend fun runAll(context: Context, mode: Mode, budgetMs: Long = BUDGET_MS, withForeign: Boolean = false, reason: String = "вручную"): String {
         if (!XrayCore.available) return "ядро недоступно"
@@ -84,8 +87,19 @@ object Recheck {
             val allGroups = SearchPool.groups(context, storage, withForeign)
                 .map { (st, list) -> st to list.filter { XrayConfig.supports(it.link) } }
             val quarantineSkipped = allGroups.sumOf { (_, l) -> l.count { RecheckSkip.quarantined(it) } }
-            val groups = allGroups.map { (st, l) -> st to l.filterNot { RecheckSkip.quarantined(it) } }
-            val totalCount = groups.sumOf { it.second.size }
+            val notQuarantined = allGroups.map { (st, l) -> st to l.filterNot { RecheckSkip.quarantined(it) } }
+            // крупные источники (>500 конфигов) — «скамейка запасных»: проверяются, только если основной части не хватило живых
+            val benchGroups = ArrayList<Pair<Storage, List<Candidate>>>()
+            val groups = notQuarantined.map { (st, l) ->
+                val benchIds = try {
+                    if (st.sourceMembersFile.exists()) SourceBench.benchIds(SourceStats.decode(st.sourceMembersFile.readText()), UserSources(st.userSourcesFile).load().toSet()) else emptySet()
+                } catch (_: Exception) { emptySet() }
+                val (main, bench) = SourceBench.split(l, benchIds) { CheckStore.keyOf(it.link) }
+                if (bench.isNotEmpty()) benchGroups += st to bench
+                st to main
+            }
+            val benchCount = benchGroups.sumOf { it.second.size }
+            var totalCount = groups.sumOf { it.second.size }
             if (totalCount == 0) {
                 RecheckState.progress.value = "Нет конфигов для проверки"
                 return "нет конфигов"
@@ -93,7 +107,7 @@ object Recheck {
             storage.log(
                 "RECHECK: старт ($reason), режим ${mode.title}, конфигов $totalCount" +
                     groups.joinToString("") { (st, l) -> ", ${if (st.mode == mode) "свои" else "из режима «${st.mode.title}»"} ${l.size}" } +
-                    (if (withForeign) "" else " (только этот режим)") +
+                    (if (withForeign) "" else " (только этот режим)") + (if (benchCount > 0) "; запасных из крупных источников $benchCount (проверю, если основных не хватит)" else "") +
                     (if (quarantineSkipped > 0) "; пропущено $quarantineSkipped: недавно мёртвые и в этой сети подряд не работали" else "")
             )
             val reachCache = ConcurrentHashMap<String, String>()
@@ -107,7 +121,23 @@ object Recheck {
             var abortNote = ""
             var userStopped = false
             var checked = 0
-            for ((st, list) in groups) {
+            val queue = ArrayDeque(groups)
+            var benchAdded = benchGroups.isEmpty()
+            while (true) {
+                if (queue.isEmpty()) {
+                    if (!benchAdded) {
+                        benchAdded = true
+                        val tg = try { TargetStore(storage.targetsFile).load() } catch (_: Exception) { emptyList() }
+                        val why = SourceBench.reason(alive.get(), SourceBench.activeCount(tg), SourceBench.shortOf(tg))
+                        if (why != null) {
+                            queue.addAll(benchGroups)
+                            totalCount += benchCount
+                            storage.log("RECHECK: достаю запасных из крупных источников ($benchCount): $why")
+                        } else storage.log("RECHECK: запасных из крупных источников не трогаю — основных хватило (живых ${alive.get()})")
+                    }
+                    if (queue.isEmpty()) break
+                }
+                val (st, list) = queue.removeFirst()
                 val left = budgetMs - (System.currentTimeMillis() - started)
                 if (left <= 0 || list.isEmpty()) continue
                 val sink = SearchSink(st, context)
@@ -194,6 +224,16 @@ object Recheck {
                 }
                 if (search.aborted) {
                     abortNote = RunGuard.abortReason(guard.stale(Storage(context).mode, NetInfo.label(context)), judged.get(), alive.get())
+                    // «ни один не ответил» — серверы мертвы или замер сам прямой канал? Проверяем прямым замером: если и он ничего не открыл,
+                    // виноват канал (журнал 22.11: 207 из 207 за 25 с сразу после сбора), и перепроверку повторим через две минуты
+                    if (RunGuard.hopeless(judged.get(), alive.get()) && !guard.stale(Storage(context).mode, NetInfo.label(context))) {
+                        val counts = ModeDetector.measureConfirmed(context)
+                        if (BlockDetector.classify(counts) == BlockType.OFFLINE) {
+                            abortNote = "прямой канал замер (замер напрямую тоже ничего не открыл) — повторю через 2 мин"
+                            ModeDetector.offlineAt = System.currentTimeMillis()
+                            if (reason != "повтор") enqueueRetry(context, mode)
+                        }
+                    }
                     st.log("RECHECK: прервана — $abortNote")
                     break
                 }
@@ -272,7 +312,7 @@ object Recheck {
 
     fun enqueueServices(context: Context, mode: Mode) {
         val request = OneTimeWorkRequestBuilder<RecheckWorker>()
-            .setConstraints(constraints(context, manual = true))
+            .setConstraints(constraints())
             .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_ONLY_SERVICES to true))
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
@@ -280,21 +320,35 @@ object Recheck {
         WorkManager.getInstance(context).enqueueUniqueWork("phoenix_recheck", ExistingWorkPolicy.KEEP, request)
     }
 
-    private fun constraints(context: Context, manual: Boolean): Constraints {
+    /** «Только Wi-Fi» — требование, которое проверяет сама перепроверка при старте. Раньше это было ограничение WorkManager
+     *  (UNMETERED/CONNECTED), и когда включался VPN, сеть по ограничению «менялась», работа останавливалась и начиналась заново
+     *  (журнал 22.11: подключение во время перепроверки сбрасывало её без единой строки в журнале). */
+    private fun wifiOnly(context: Context, manual: Boolean): Boolean {
         val st = AppSettings(context)
-        val wifi = WifiOnlyPolicy.effective(st.wifiOnly, manual, st.lastSuccessAt, System.currentTimeMillis())
-        return Constraints.Builder().setRequiredNetworkType(if (wifi) NetworkType.UNMETERED else NetworkType.CONNECTED).build()
+        return WifiOnlyPolicy.effective(st.wifiOnly, manual, st.lastSuccessAt, System.currentTimeMillis())
     }
+
+    private fun constraints(): Constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED).build()
 
     /** Запустить в фоне (переживает закрытие экрана). Повторный запуск, пока идёт прежний, ничего не делает. */
     fun enqueue(context: Context, mode: Mode, withForeign: Boolean = false, reason: String = "вручную") {
         val request = OneTimeWorkRequestBuilder<RecheckWorker>()
-            .setConstraints(constraints(context, manual = reason == "вручную"))
-            .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_FOREIGN to withForeign, RecheckWorker.KEY_REASON to reason))
+            .setConstraints(constraints())
+            .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_FOREIGN to withForeign, RecheckWorker.KEY_REASON to reason, RecheckWorker.KEY_WIFI_ONLY to wifiOnly(context, reason == "вручную")))
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
         RecheckState.progress.value = "Перепроверка запущена…"
         WorkManager.getInstance(context).enqueueUniqueWork("phoenix_recheck", ExistingWorkPolicy.KEEP, request)
+    }
+
+    /** Повтор прерванной перепроверки через [RETRY_DELAY_SEC] секунд (один раз: у повтора причина «повтор»). */
+    fun enqueueRetry(context: Context, mode: Mode) {
+        val request = OneTimeWorkRequestBuilder<RecheckWorker>()
+            .setConstraints(constraints())
+            .setInitialDelay(RETRY_DELAY_SEC, java.util.concurrent.TimeUnit.SECONDS)
+            .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_FOREIGN to false, RecheckWorker.KEY_REASON to "повтор", RecheckWorker.KEY_WIFI_ONLY to wifiOnly(context, false)))
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork("phoenix_recheck_retry", ExistingWorkPolicy.REPLACE, request)
     }
 
     /** Сам запускать, когда запасной не нашёлся: не чаще раза в [MIN_GAP_MS] и только если это не отключено в настройках. */
@@ -312,16 +366,28 @@ object Recheck {
 
 class RecheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val mode = Mode.entries.firstOrNull { it.name == inputData.getString(KEY_MODE) } ?: Storage(applicationContext).mode
+        var mode = Mode.entries.firstOrNull { it.name == inputData.getString(KEY_MODE) } ?: Storage(applicationContext).mode
         // автоматическая перепроверка не тратит больше суточного лимита по мобильной сети; ручная и поиск сервера при обрыве не ограничиваются
         val autoRun = !inputData.getBoolean(KEY_ONLY_SERVICES, false) && (inputData.getString(KEY_REASON) ?: "вручную") != "вручную"
         if (autoRun && BackgroundBudgetGate.exhausted(applicationContext)) return Result.success()
-        if (inputData.getBoolean(KEY_ONLY_SERVICES, false)) {
-            Recheck.runServices(applicationContext, mode)
+        // условия запуска (раньше — ограничения WorkManager): нет сети или нужен Wi-Fi, а сейчас мобильная — подождать и повторить
+        val kind = NetInfo.kind(applicationContext)
+        if (kind == NetInfo.Kind.NONE || (inputData.getBoolean(KEY_WIFI_ONLY, false) && kind == NetInfo.Kind.MOBILE)) return Result.retry()
+        // перепроверка (и ручная тоже) не идёт в режиме «по умолчанию»: сначала определяем тип блокировок в этой сети
+        if (ModeFirst.ensure(applicationContext)) mode = Storage(applicationContext).mode
+        try {
+            if (inputData.getBoolean(KEY_ONLY_SERVICES, false)) {
+                Recheck.runServices(applicationContext, mode)
+                return Result.success()
+            }
+            Recheck.runAll(applicationContext, mode, withForeign = inputData.getBoolean(KEY_FOREIGN, false), reason = inputData.getString(KEY_REASON) ?: "вручную")
             return Result.success()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // систему или WorkManager остановили работу: без этой строки перепроверка пропадала бесследно
+            val why = if (android.os.Build.VERSION.SDK_INT >= 31) "причина ${stopReason}" else "причина неизвестна"
+            try { Storage(applicationContext).log("RECHECK: работа остановлена системой ($why) — сеть ${NetInfo.label(applicationContext)}") } catch (_: Throwable) {}
+            throw e
         }
-        Recheck.runAll(applicationContext, mode, withForeign = inputData.getBoolean(KEY_FOREIGN, false), reason = inputData.getString(KEY_REASON) ?: "вручную")
-        return Result.success()
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
@@ -341,6 +407,7 @@ class RecheckWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         const val KEY_ONLY_SERVICES = "only_services"
         const val KEY_FOREIGN = "foreign"
         const val KEY_REASON = "reason"
+        const val KEY_WIFI_ONLY = "wifi_only"
         private const val CHANNEL_ID = "phoenix_recheck"
         // другое число, чем у уведомления VPN (4712): иначе на Android 10-11 срочная задача перепроверки
         // подменяет уведомление VPN своим, и кнопки «Отключить»/«Сменить сервер» пропадают до смены статуса

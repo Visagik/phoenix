@@ -50,7 +50,7 @@ fun TipsPage(onOpenTargets: () -> Unit, onOpenSources: () -> Unit = {}) {
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Tip(tr("Свой сервер для приложений"), tr("Привяжите отдельный сервер к Telegram, ChatGPT и другим: Phoenix проверяет и держит именно его.")) {
+        if (!LiteProfile.ON) Tip(tr("Свой сервер для приложений"), tr("Привяжите отдельный сервер к Telegram, ChatGPT и другим: Phoenix проверяет и держит именно его.")) {
             FilledTonalButton(onClick = onOpenTargets) { Text(tr("Открыть «Свой сервер»")) }
         }
         Tip(tr("Кнопка «Не работает»"), tr("На главной: если сервис не открывается, нажмите её, и Phoenix сам найдёт и поставит другой сервер."))
@@ -76,7 +76,8 @@ fun TipsPage(onOpenTargets: () -> Unit, onOpenSources: () -> Unit = {}) {
         Tip(tr("Ярлыки на значке"), tr("Долгое нажатие на значок Phoenix: «Не работает», «Сменить сервер», «Отключить» — не открывая приложение."))
         Tip(tr("Виджет"), tr("Виджет на рабочем столе показывает состояние и меняет сервер одним нажатием.")) {
             val manager = AppWidgetManager.getInstance(context)
-            if (manager.isRequestPinAppWidgetSupported) {
+            // isRequestPinAppWidgetSupported и requestPinAppWidget — с Android 8 (API 26): на Android 6 NoSuchMethodError ронял «Ещё → Фишки»
+            if (Build.VERSION.SDK_INT >= 26 && manager.isRequestPinAppWidgetSupported) {
                 FilledTonalButton(onClick = {
                     try { manager.requestPinAppWidget(ComponentName(context, PhoenixWidgetProvider::class.java), null, null) } catch (_: Throwable) { }
                 }) { Text(tr("Добавить виджет")) }

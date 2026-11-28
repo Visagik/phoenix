@@ -93,8 +93,12 @@ object XrayCore {
         val gate = if (urgent) urgentGate else probeGate
         gate.acquire()
         return try {
-            if (url == Baseline.PRIMARY) Baseline.measure({ rawDelay(context, config, it) }, { threadError.get().orEmpty() }, fast = fast)
-            else rawDelay(context, config, url)
+            if (url == Baseline.PRIMARY) {
+                val t0 = System.nanoTime()
+                val r = Baseline.measure({ rawDelay(context, config, it) }, { threadError.get().orEmpty() }, fast = fast)
+                if (!urgent) ProbeStats.record(r, (System.nanoTime() - t0) / 1_000_000, threadError.get().orEmpty()) // только счётчики для журнала
+                r
+            } else rawDelay(context, config, url)
         } finally {
             gate.release()
         }
@@ -126,9 +130,15 @@ object XrayCore {
     class Controller {
         private val controller: Any
 
+        /** Какой обработчик ядра работает: «класс» (настоящий) или «Proxy» (запасной). Пишется в журнал при старте. */
+        val handlerKind: String
+
         init {
             val callbackClass = Class.forName(CALLBACK)
-            val handler = Proxy.newProxyInstance(callbackClass.classLoader, arrayOf(callbackClass)) { proxy, method, args ->
+            // Настоящий класс; Proxy на Android 6 роняет CheckJNI (libart CheckMethodArguments). Класса нет (сборка без aar) — Proxy, как раньше.
+            val real = CoreHandlerPick.create(CoreHandlerPick.CALLBACK_CLASS)?.takeIf { callbackClass.isInstance(it) }
+            handlerKind = if (real != null) "класс" else "Proxy"
+            val handler = real ?: Proxy.newProxyInstance(callbackClass.classLoader, arrayOf(callbackClass)) { proxy, method, args ->
                 when (method.name) {
                     "startup", "shutdown", "onEmitStatus" -> 0L
                     "toString" -> "PhoenixCoreCallback"
@@ -156,7 +166,12 @@ object XrayCore {
             } catch (_: Throwable) {
                 return false // в этой версии ядра маршрутов по приложениям нет
             }
-            val proxy = Proxy.newProxyInstance(finderClass.classLoader, arrayOf(finderClass)) { p, method, args ->
+            val real = CoreHandlerPick.create(
+                CoreHandlerPick.FINDER_CLASS,
+                listOf(Class.forName("kotlin.jvm.functions.Function5")),
+                listOf(find)
+            )?.takeIf { finderClass.isInstance(it) }
+            val proxy = real ?: Proxy.newProxyInstance(finderClass.classLoader, arrayOf(finderClass)) { p, method, args ->
                 when (method.name) {
                     "findProcessByConnection" -> try {
                         find(args[0] as String, args[1] as String, (args[2] as Number).toLong(), args[3] as String, (args[4] as Number).toLong())

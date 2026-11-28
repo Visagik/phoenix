@@ -11,6 +11,9 @@ import java.util.concurrent.TimeUnit
 object DirectProbe {
     private fun reachable(url: String): Boolean = reachableOnce(url) || reachableOnce(url) // один таймаут (медленная сеть) не считается отказом
 
+    /** Почему адрес не открылся в последний раз (по адресу), для строки BYPASS: сервер ответил отказом или мы не доверяем его сертификату (Д1). */
+    private val failWhy = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     private fun reachableOnce(url: String): Boolean = try {
         val c = URL(url).openConnection() as HttpURLConnection
         c.connectTimeout = 4_000
@@ -18,7 +21,8 @@ object DirectProbe {
         c.instanceFollowRedirects = false
         c.setRequestProperty("User-Agent", "Mozilla/5.0 (Phoenix)")
         try { c.responseCode in 200..499 } finally { c.disconnect() }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        failWhy[url] = FetchFailure.classify(e).text + ModeDetector.causeChain(e).let { if (it.isEmpty()) "" else " ($it)" }
         false
     }
 
@@ -46,13 +50,19 @@ object DirectProbe {
         val bypass = BypassStore(storage.base, storage.mode, net)
         val now = System.currentTimeMillis()
         val old = DirectLearn.load(bypass.learnFile)
-        val all = DirectCatalog.ENTRIES.filter { if (it.russian) bypass.presetEnabled else bypass.openEnabled }
+        // цели, пущенные «мимо VPN» при подборе (возможно, в другой сети): та же проверка и то же обучение по сетям, что у каталога
+        val targetEntries = try {
+            TargetStore(storage.targetsFile).load().filter { it.isDirect && it.checkUrl.isNotBlank() }
+                .map { DirectEntry(DirectLearn.targetKey(it.id), it.checkUrl, russian = false) }
+        } catch (_: Throwable) { emptyList() }
+        val all = DirectCatalog.ENTRIES.filter { if (it.russian) bypass.presetEnabled else bypass.openEnabled } + targetEntries
         if (all.isEmpty()) return 0
         val entries = if (onlyDue) all.filter { DirectLearn.due(DirectLearn.entry(old, net, it.id), now) } else all
         if (entries.isEmpty()) {
             storage.log("BYPASS: в сети $net все ${all.size} сервисов уже проверены и доверенные — проверки не нужны (проактивно раз в 12 часов)")
             return 0
         }
+        failWhy.clear()
         val pool = Executors.newFixedThreadPool(6)
         val ok = try {
             pool.invokeAll(entries.map { e -> Callable { e.id to reachable(e.url) } }, 30, TimeUnit.SECONDS)
@@ -111,12 +121,19 @@ object DirectProbe {
         }
         DirectLearn.save(bypass.learnFile, next)
         val blocked = DirectLearn.blockedIds(next, net)
+        // российские записи каталога, не открывшиеся напрямую, с причиной: банк с домашней сети закрыт быть не может, значит дело в нас (Д1)
+        val ruWhy = entries.filter { it.russian && ok[it.id] == false }.joinToString(", ") { it.id + " — " + (failWhy[it.url] ?: "не успели") }
         val trusted = all.count { DirectLearn.trusted(DirectLearn.entry(next, net, it.id), now) }
         storage.log(
             "BYPASS: сеть $net, проверено напрямую ${ok.size} из ${all.size}, открылось ${ok.values.count { it }}, доверенных $trusted, через VPN сейчас: " +
-                (if (blocked.isEmpty()) "нет" else blocked.joinToString()) + if (changes > 0) " (применяю к работающему VPN)" else "",
+                (if (blocked.isEmpty()) "нет" else blocked.joinToString()) + (if (changes > 0) " (применяю к работающему VPN)" else "") +
+                (if (ruWhy.isNotEmpty()) "; российские не открылись напрямую: $ruWhy" else ""),
         )
-        if (changes > 0) PhoenixVpnService.applyBypass(context)
+        if (changes > 0) {
+            PhoenixVpnService.applyBypass(context)
+            // изменилось и «мимо VPN» у целей: маршруты целей строятся заново (список обхода приложений от этого не меняется)
+            if (entries.any { it.id.startsWith(DirectLearn.TARGET_PREFIX) }) PlanBus.notifyChanged()
+        }
         return changes
     }
 }

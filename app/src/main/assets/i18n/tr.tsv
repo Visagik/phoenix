@@ -809,8 +809,6 @@ Notebook больше не ставит ✓ на закрытых сервера
 С выключенным экраном проверки идут раз в 2 минуты, при нагреве телефона — раз в 3.	Ekran kapalıyken kontroller 2 dakikada bir, telefon ısındığında 3 dakikada bir yapılır.
 Phoenix сам определяет, белые у вас списки или чёрные: открывает 15 сайтов и сравнивает.	Phoenix engellemenin beyaz liste mi kara liste mi olduğunu kendisi anlar: 15 siteyi açıp karşılaştırır.
 Замер блокировок идёт напрямую, мимо VPN, в 8 потоков и не дольше 14 секунд.	Engelleme ölçümü doğrudan, VPN'siz, 8 iş parçacığıyla ve en fazla 14 saniye sürer.
-Режим меняется только после двух одинаковых определений подряд.	Mod yalnızca arka arkaya iki aynı tespitten sonra değişir.
-«Белые списки» подтверждаются дольше «чёрных»: ложное «белые» из-за сбоя Wi-Fi обходится дороже всего.	«Beyaz liste» «kara liste»den daha uzun doğrulanır: Wi-Fi arızasından gelen yanlış «beyaz liste» en pahalıya mal olur.
 Режим, выбранный вручную, держится 30 минут или до смены сети.	Elle seçilen mod 30 dakika veya ağ değişene kadar korunur.
 Тип блокировок проверяется каждые 5 минут, но только когда экран включён.	Engelleme türü 5 dakikada bir kontrol edilir, ama yalnızca ekran açıkken.
 Знакомую сеть Phoenix запоминает: после двух подтверждений режим берётся сразу.	Phoenix tanıdık ağı hatırlar: iki doğrulamadan sonra mod hemen uygulanır.
@@ -830,14 +828,12 @@ Wi-Fi узнаётся по отпечатку шлюза и DNS, без гео�
 Перепроверка сначала отсеивает конфиги по TCP, потом мерит настоящую задержку через ядро.	Yeniden kontrol önce yapılandırmaları TCP ile eler, sonra çekirdek üzerinden gerçek gecikmeyi ölçer.
 Полная перепроверка идёт не дольше 25 минут и не чаще раза в 30 минут.	Tam yeniden kontrol en fazla 25 dakika sürer ve 30 dakikada birden sık çalışmaz.
 Если на одном адресе три пробы подряд молчат, остальные конфиги этого адреса не пробуются.	Bir adrese art arda üç yoklama yanıtsız kalırsa o adresteki diğer yapılandırmalar denenmez.
-Тяжёлые задачи идут на зарядке; если телефон не заряжали сутки, их разрешают при заряде от 50%.	Ağır işler şarjdayken yapılır; telefon bir gündür şarj edilmediyse %50 ve üzerinde izin verilir.
 «Скорость перепроверки» имеет три режима: щадящая, обычная и быстрая.	«Yeniden kontrol hızı» üç moda sahiptir: hafif, normal ve hızlı.
 За один прогон настоящая страна выхода определяется у 12 рабочих серверов.	Her turda 12 çalışan sunucunun gerçek çıkış ülkesi belirlenir.
 Фоновый трафик на мобильной сети ограничен: по умолчанию 100 МБ.	Mobil veride arka plan trafiği sınırlıdır: varsayılan 100 MB.
 На мобильной сети параллельных TCP-проверок не больше 16: радиомодуль греется от частых соединений.	Mobil ağda en fazla 16 paralel TCP kontrolü yapılır: sık bağlantılar telsiz modülünü ısıtır.
 Если процесс занимает больше 200 МБ, проверок становится меньше; при 260 МБ — вчетверо меньше.	İşlem 200 MB'ı aşarsa daha az kontrol yapılır; 260 MB'ta dört kat az.
 Phoenix запоминает часы, когда вы обычно пользуетесь телефоном, и тяжёлую работу старается не делать в них.	Phoenix telefonu genelde kullandığınız saatleri hatırlar ve o saatlerde ağır iş yapmamaya çalışır.
-Если поиск проверил 200 серверов и ни один не ответил, он останавливается: дальше впустую.	Arama 200 sunucuyu kontrol edip hiçbiri yanıt vermediyse durur: devamı boşuna olur.
 Журнал занимает не больше 5 МБ: старые строки отбрасываются.	Günlük en fazla 5 MB yer kaplar: eski satırlar atılır.
 Автокопия настроек делается раз в неделю, хранятся три последние.	Ayarların otomatik yedeği haftada bir alınır, son üçü saklanır.
 Новый DNS получает 30 секунд на проверку, иначе возвращается прежний.	Yeni DNS'in doğrulanması için 30 saniye vardır, aksi halde eskisine dönülür.
@@ -850,3 +846,41 @@ Phoenix запоминает часы, когда вы обычно пользу
 Если обновление подписано другим ключом, Phoenix сохранит копию настроек и скачает новую версию, а ставить её дальше вам.	Güncelleme farklı bir anahtarla imzalanmışsa Phoenix ayarların bir kopyasını saklar ve yeni sürümü indirir; kurmak size kalır.
 Тип блокировок определяется сразу после запуска, а Wi-Fi без интернета больше не переключает режим туда-сюда.	Engelleme türü başlangıçta hemen belirlenir ve internetsiz Wi-Fi artık modu ileri geri değiştirmez.
 Бегущая строка с фактами о Phoenix на главном экране: выключена, включается в «Ещё → Фишки».	Ana ekranda Phoenix hakkında bilgi şeridi: varsayılan olarak kapalı, Daha fazla → Püf noktaları'ndan açılır.
+3. Удалить Phoenix в настройках	3. Phoenix'i ayarlardan kaldır
+Убрано лишнее разрешение на удаление приложений: при смене ключа подписи удалить Phoenix нужно в настройках телефона.	Gereksiz uygulama silme izni kaldırıldı: imza anahtarı değişirse Phoenix'i telefon ayarlarından kaldırın.
+Если подключиться не удалось: при включённой настройке туннель остаётся, и интернета нет, пока приложение ищет рабочий сервер; при выключенной телефон выходит в интернет напрямую. Если связь пропала посреди работы, туннель держится в любом случае, пока ищется другой сервер.	Bağlanılamazsa: açıkken tünel kalır ve uygulama çalışan bir sunucu ararken internet kapalıdır; kapalıyken telefon doğrudan internete çıkar. Çalışırken bağlantı kesilirse, başka sunucu aranırken tünel her iki durumda da korunur.
+Приложение запоминает, в какие часы недели вы пользуетесь телефоном (только на телефоне, файл входит в резервную копию) и через неделю проверяет туннель заранее, перед обычным началом активности. Без зарядки тяжёлые проверки и так не запускаются; в тихие часы не делается даже редкое исключение «давно не проверяли».	Uygulama haftanın hangi saatlerinde telefonu kullandığınızı öğrenir (yalnızca telefonda; dosya yedeğe dahildir) ve bir hafta sonra tüneli olağan etkinlik başlangıcından önce önceden kontrol eder. Şarjda değilken ağır kontroller zaten başlamaz; sessiz saatlerde “uzun süredir kontrol edilmedi” istisnası bile uygulanmaz.
+То же, но по заданным вами часам; сильнее автоматических.	Aynısı, ancak belirlediğiniz saatlere göre; otomatik olanlardan önceliklidir.
+Бывает, что интернет «есть», но фото и страницы почти не грузятся. Пока вы пользуетесь телефоном, раз в {} секунд смотрится, сколько данных идёт через сервер; если мало, делается один маленький замер (до 400 КБ), и после двух медленных подряд пробуются другие серверы. Если телефон не используется — ничего не качается. На мобильной сети работает, только если включено «Измерять скорость и по мобильной сети» и не исчерпан суточный лимит.	Bazen internet “var” ama fotoğraflar ve sayfalar neredeyse yüklenmez. Telefonu kullanırken her {} saniyede bir sunucudan ne kadar veri geçtiğine bakılır; azsa küçük bir ölçüm (en fazla 400 KB) yapılır ve art arda iki yavaş sonuçtan sonra başka sunucular denenir. Telefon kullanılmıyorsa hiçbir şey indirilmez. Mobil ağda yalnızca “Hızı mobil ağda da ölç” açıksa ve günlük sınır dolmadıysa çalışır.
+Сейчас мобильная сеть: без замеров по ней эта функция не работает	Şu an mobil ağ: bu ağda ölçüm yapılmadan bu özellik çalışmaz
+Сам запускает полную перепроверку после ночного сбора и когда запасной сервер не нашёлся (не чаще раза в 30 минут). После ручного «Собрать» перепроверка идёт всегда.	Gece toplamasından sonra ve yedek sunucu bulunamadığında tam yeniden kontrolü kendisi başlatır (en fazla 30 dakikada bir). Elle “Topla”dan sonra yeniden kontrol her zaman çalışır.
+Если туннель перестал работать (неудачных проверок подряд: {} на Wi-Fi, {} на мобильной сети), приложение перебирает запасные конфиги лучшего рейтинга.	Tünel çalışmayı bırakırsa (art arda başarısız kontrol: Wi-Fi'de {}, mobil ağda {}), uygulama en iyi puanlı yedek yapılandırmaları dener.
+При включении телефона и при открытии приложения (последний или лучший конфиг). Если VPN был включён, после перезагрузки он поднимется и при выключенной настройке. Нужно один раз дать системное разрешение на VPN.	Telefon açıldığında ve uygulama açıldığında (son veya en iyi yapılandırma). VPN açıksa, bu ayar kapalı olsa bile yeniden başlatmadan sonra yükselir. Sistem VPN izni bir kez verilmelidir.
+Приложение проверяет, какие сайты открываются напрямую, и переключает режим. После смены сети хватает одного определения, иначе нужно два подряд. Проверка идёт при смене сети, при обрыве связи и при запуске.	Uygulama hangi sitelerin doğrudan açıldığını kontrol eder ve modu değiştirir. Ağ değişikliğinden sonra tek tespit yeter, aksi halde art arda iki tespit gerekir. Kontrol ağ değiştiğinde, bağlantı koptuğunda ve başlangıçta yapılır.
+Касается автоматической перепроверки, подбора серверов для целей и замеров скорости. Поиск сервера при обрыве не ограничивается никогда.	Otomatik yeniden kontrolleri, hedefler için sunucu seçimini ve hız ölçümlerini kapsar. Bağlantı koptuğunda sunucu arama hiçbir zaman sınırlanmaz.
+Замеры идут и по мобильной сети (включено ниже).	Ölçümler mobil ağda da yapılır (aşağıda açık).
+Сбрасывает только настройки этого экрана для выбранной области (Общие / Белые / Чёрные).	Yalnızca bu ekranın ayarlarını seçili kapsam için sıfırlar (Ortak / Beyaz / Kara).
+К значениям по умолчанию вернутся: {}. Продолжить?	Varsayılana dönecekler: {}. Devam edilsin mi?
+Закрепление сервера	Sabitlenen sunucu
+DNS	DNS
+Для выбранной области	Seçili kapsam için
+Для всех режимов	Tüm modlar için
+Действуют в любом режиме и не зависят от выбора «Общие / Белые / Чёрные».	Her modda geçerlidir ve “Ortak / Beyaz / Kara” seçimine bağlı değildir.
+Для режима «{}» (у него свои настройки)	“{}” modu için (kendi ayarları var)
+Сохранено: {}	Kaydedildi: {}
+Отчёт сохранён: {}	Rapor kaydedildi: {}
+Загрузки/Phoenix	İndirilenler/Phoenix
+Лёгкий режим (сборка Lite): отключены белые списки, цели, обновления	Hafif mod (Lite sürümü): beyaz listeler, hedefler ve güncellemeler kapalı
+Показано {} из {}. Показать все	{} / {} gösteriliyor. Tümünü göster
+Перепроверка серверов идёт службой на переднем плане, а при отказе системы — частями и продолжает круг с того же места.	Sunucu yeniden kontrolü ön plan hizmeti olarak çalışır; sistem izin vermezse parçalar halinde ilerler ve turu kaldığı yerden sürdürür.
+Возврат к привычному режиму сети — по одному замеру; «Не работает» при свежем замере другого режима меняет режим, а не ищет сервер.	Ağın alışılmış moduna dönmek tek ölçümle olur; başka bir modun yeni ölçümü varken «Çalışmıyor» sunucu aramak yerine modu değiştirir.
+Статистика перерывов связи одна на оба режима; в журнале видно, кто запросил смену сервера и сколько ушло на поиск.	Kesinti istatistikleri iki mod için ortaktır; günlükte sunucu değişikliğini kimin istediği ve aramanın ne kadar sürdüğü görünür.
+Смена сервера занимает не дольше 60 секунд на мобильной сети и 120 на Wi-Fi, по кнопке «Не работает» — до 150.	Sunucu değişimi mobil ağda en fazla 60, Wi-Fi'de 120 saniye sürer; «Çalışmıyor» düğmesiyle 150 saniyeye kadar.
+Если система не даёт запустить перепроверку службой, она идёт частями по 8 минут и продолжает круг с того же места.	Sistem yeniden kontrolün hizmet olarak çalışmasına izin vermezse, kontrol 8 dakikalık parçalarla ilerler ve turu kaldığı yerden sürdürür.
+Источник, который два сбора подряд в разные дни отвечает 404 или 410, убирается сам; вернуть его можно кнопкой.	Farklı günlerde art arda iki toplamada 404 veya 410 yanıtı veren kaynak kendiliğinden kaldırılır; bir düğmeyle geri alınabilir.
+Режим меняется после двух одинаковых определений подряд; возврат к привычному режиму сети — после одного.	Mod arka arkaya iki aynı tespitten sonra değişir; ağın alışılmış moduna dönmek için bir tespit yeter.
+Если при живой сети не открылось ничего, замер через 4 секунды повторяется: сбой Wi-Fi не должен менять режим.	Ağ çalışırken hiçbir şey açılmazsa ölçüm 4 saniye sonra tekrarlanır: Wi-Fi arızası modu değiştirmemeli.
+Тяжёлые задачи идут на зарядке; если их не было сутки, их разрешают без неё при заряде от 50% и не на мобильной сети.	Ağır işler şarjdayken yapılır; bir gündür hiç çalışmadıysa şarjsız da %50 ve üzerinde, mobil ağda olmamak şartıyla izin verilir.
+Если за 60 запусков ядра ни один сервер не ответил, проверка останавливается: дальше впустую.	60 çekirdek başlatmasından sonra hiçbir sunucu yanıt vermediyse kontrol durur: devamı boşuna olur.
+Источники, которые два сбора подряд отвечают 404 или 410, убираются сами; кнопка «Вернуть» остаётся. Добавлены новые адреса для белых списков.	Art arda iki toplamada 404 veya 410 yanıtı veren kaynaklar kendiliğinden kaldırılır; «Geri al» düğmesi durur. Beyaz listeler için yeni adresler eklendi.
+Если связь вернулась посреди сбора, источники получают ещё одну попытку через VPN.	Toplama sırasında bağlantı geri gelirse kaynaklar VPN üzerinden bir deneme daha alır.

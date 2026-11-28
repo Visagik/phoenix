@@ -16,9 +16,14 @@ class Release3940Test {
     }
 
     @Test fun hopelessOnlyAfterEnoughChecksWithoutAnyAlive() {
-        assertFalse(RunGuard.hopeless(RunGuard.HOPELESS_AFTER - 1, 0))
-        assertTrue(RunGuard.hopeless(RunGuard.HOPELESS_AFTER, 0))
+        // считаются только запуски ядра (Н3), порог 60: отказы TCP в счёт не идут
+        assertFalse(RunGuard.hopeless(RunGuard.HOPELESS_PROBES - 1, 0))
+        assertTrue(RunGuard.hopeless(RunGuard.HOPELESS_PROBES, 0))
         assertFalse(RunGuard.hopeless(500, 1))
+        assertFalse(RunGuard.hopeless(7, 0)) // 217 отказов TCP и 7 мёртвых проб (24.11 16:00): не безнадёжно
+        assertFalse(RunGuard.hopeless(59, 0))
+        assertFalse(RunGuard.hopeless(59 + 1, 1)) // 59 мёртвых и одна живая
+        assertTrue(RunGuard.abortReason(false, 60, 0).contains("60 запусков ядра"))
     }
 
     @Test fun manualHoldYieldsOnlyToPersistentContradiction() {

@@ -98,6 +98,20 @@ object ModeDecider {
         else -> null
     }
 
+    /**
+     * Сколько одинаковых замеров нужно для смены режима. Возврат к привычному режиму сети ([usual], см. ModeHint.usual) — с одного замера:
+     * для сети, где белые списки обычны, это самый вероятный исход, а не ложная тревога (28.11: 2 мин 21 с вместо ~25 с).
+     * Уход из привычного режима, частая смена сети ([flapping]) и ручной выбор режима (тогда [base] передают как есть) — прежнее число.
+     */
+    fun needFor(detected: BlockType, current: Mode, usual: Mode?, flapping: Boolean, base: Int = NEED_IN_ROW): Int {
+        val target = modeOf(detected) ?: return base
+        return if (!flapping && usual != null && target == usual && target != current) 1 else base
+    }
+
+    /** [needFor] с учётом ручного выбора режима ([held]) и памяти сети [hints]. */
+    fun needVotes(type: BlockType, current: Mode, hints: Map<String, ModeHint.Entry>, label: String, flapping: Boolean, held: Boolean, base: Int): Int =
+        if (held) base else needFor(type, current, ModeHint.usual(hints, label), flapping, base)
+
     /** @return новый счётчик и режим, на который нужно переключиться (или null) */
     fun step(vote: Vote, detected: BlockType, current: Mode, need: Int = NEED_IN_ROW): Pair<Vote, Mode?> {
         val target = modeOf(detected) ?: return vote to null // «не ясно» и «нет сети» ничего не меняют

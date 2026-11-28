@@ -97,20 +97,28 @@ object Background {
     }
 
     /** Экран «Экономия трафика»: приложению нужно разрешить неограниченные данные в фоне. */
-    fun requestUnrestrictedData(context: Context) = start(
-        context,
-        Intent(android.provider.Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS).setData(pkgUri(context)),
-        "Не удалось открыть настройки экономии трафика",
-    )
+    /** Экран «Данные в фоне без ограничений» есть с Android 7 (API 24); на более старых кнопку не показываем. */
+    fun requestUnrestrictedData(context: Context) {
+        if (android.os.Build.VERSION.SDK_INT < 24) return
+        start(
+            context,
+            Intent(android.provider.Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS).setData(pkgUri(context)),
+            "Не удалось открыть настройки экономии трафика",
+        )
+    }
 
     fun dataSaverText(context: Context): String = try {
-        val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
-        when (cm.restrictBackgroundStatus) {
-            android.net.ConnectivityManager.RESTRICT_BACKGROUND_STATUS_DISABLED -> "выключена"
-            android.net.ConnectivityManager.RESTRICT_BACKGROUND_STATUS_WHITELISTED -> "включена, Phoenix в исключениях"
-            else -> "включена, Phoenix ограничен"
+        if (android.os.Build.VERSION.SDK_INT < 24) {
+            "нет в этой версии Android" // restrictBackgroundStatus есть с Android 7
+        } else {
+            val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+            when (cm.restrictBackgroundStatus) {
+                android.net.ConnectivityManager.RESTRICT_BACKGROUND_STATUS_DISABLED -> "выключена"
+                android.net.ConnectivityManager.RESTRICT_BACKGROUND_STATUS_WHITELISTED -> "включена, Phoenix в исключениях"
+                else -> "включена, Phoenix ограничен"
+            }
         }
-    } catch (_: Exception) {
+    } catch (_: Throwable) {
         "неизвестно"
     }
 

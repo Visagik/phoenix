@@ -11,3 +11,6 @@
 # Нативный туннель (hev-socks5-tunnel) ищет класс и методы по имени.
 -keep class com.v2ray.ang.service.TProxyService { *; }
 -keepclasseswithmembernames class * { native <methods>; }
+
+# Обработчики ядра (app/src/xray): создаются по имени из XrayCore.
+-keep class com.phoenix.app.xray.** { *; }

@@ -13,38 +13,59 @@ object ModeHint {
     const val MAX_COUNT = 50
     const val MAX_NETS = 30
 
-    data class Entry(val mode: Mode, val count: Int)
+    /** Два счётчика на сеть: сколько подтверждений было у белых ([wl]) и у чёрных ([bl]) списков. */
+    data class Entry(val wl: Int, val bl: Int) {
+        fun of(mode: Mode): Int = if (mode == Mode.WHITELIST) wl else bl
+    }
 
+    /** Формат: `метка\tWL\t<wl>\tBL\t<bl>`. Старый `метка\tWHITELIST\t12` читается как wl=12, bl=0. */
     fun parse(text: String?): LinkedHashMap<String, Entry> {
         val out = LinkedHashMap<String, Entry>()
         for (line in (text ?: "").lineSequence()) {
             val p = line.split('\t')
-            if (p.size < 3) continue
-            val mode = Mode.entries.firstOrNull { it.name == p[1] } ?: continue
-            val n = p[2].toIntOrNull() ?: continue
-            if (p[0].isNotEmpty()) out[p[0]] = Entry(mode, n.coerceIn(1, MAX_COUNT))
+            if (p.size < 3 || p[0].isEmpty()) continue
+            if (p.size >= 5 && p[1] == "WL" && p[3] == "BL") {
+                val w = p[2].toIntOrNull() ?: continue
+                val b = p[4].toIntOrNull() ?: continue
+                out[p[0]] = Entry(w.coerceIn(0, MAX_COUNT), b.coerceIn(0, MAX_COUNT))
+            } else {
+                val mode = Mode.entries.firstOrNull { it.name == p[1] } ?: continue
+                val n = (p[2].toIntOrNull() ?: continue).coerceIn(1, MAX_COUNT)
+                out[p[0]] = if (mode == Mode.WHITELIST) Entry(n, 0) else Entry(0, n)
+            }
         }
         return out
     }
 
     fun render(map: Map<String, Entry>): String =
-        map.entries.joinToString("\n") { (k, v) -> "$k\t${v.mode.name}\t${v.count}" } + "\n"
+        map.entries.joinToString("\n") { (k, v) -> "$k\tWL\t${v.wl}\tBL\t${v.bl}" } + "\n"
 
-    /** Определение подтвердило режим [mode] в сети [label]; тот же режим копит счёт, другой начинает с единицы. */
+    /**
+     * Определение подтвердило режим [mode] в сети [label]: его счёт +1 (до 50), счёт другого −1 (не ниже 0).
+     * Короткий всплеск (16 минут без белых списков) привычку не стирает; если оператор снял списки насовсем, она сменится за часы.
+     */
     fun note(map: Map<String, Entry>, label: String, mode: Mode): LinkedHashMap<String, Entry> {
         val out = LinkedHashMap(map)
         if (label.isEmpty() || label == "none") return out
-        val old = out.remove(label)
-        out[label] = Entry(mode, if (old?.mode == mode) minOf(old.count + 1, MAX_COUNT) else 1)
+        val old = out.remove(label) ?: Entry(0, 0)
+        out[label] = if (mode == Mode.WHITELIST) Entry(minOf(old.wl + 1, MAX_COUNT), maxOf(old.bl - 1, 0))
+        else Entry(maxOf(old.wl - 1, 0), minOf(old.bl + 1, MAX_COUNT))
         while (out.size > MAX_NETS) out.remove(out.keys.first())
         return out
     }
 
-    /** Режим, на который стоит перейти сразу, или null (нет подсказки, она не подтверждена, совпадает с текущим). */
-    fun guess(map: Map<String, Entry>, label: String, current: Mode): Mode? {
+    /** Привычный режим сети: счёт не меньше [NEED] и хотя бы вдвое больше, чем у другого. Иначе null (режимы чередуются — доверять нельзя). */
+    fun usual(map: Map<String, Entry>, label: String): Mode? {
         val e = map[label] ?: return null
-        return if (e.count >= NEED && e.mode != current) e.mode else null
+        return when {
+            e.wl >= NEED && e.wl >= 2 * e.bl -> Mode.WHITELIST
+            e.bl >= NEED && e.bl >= 2 * e.wl -> Mode.BLACKLIST
+            else -> null
+        }
     }
+
+    /** Режим, на который стоит перейти сразу, или null (нет подсказки, она не подтверждена, совпадает с текущим). */
+    fun guess(map: Map<String, Entry>, label: String, current: Mode): Mode? = usual(map, label)?.takeIf { it != current }
 
     /** Результат замера относится к другой сети, чем та, где он начинался: голосов и выводов по нему не делаем. */
     fun stale(startLabel: String, endLabel: String): Boolean = startLabel != endLabel

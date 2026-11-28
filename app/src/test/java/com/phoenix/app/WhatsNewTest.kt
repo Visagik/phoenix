@@ -9,7 +9,7 @@ import org.junit.Test
 
 class WhatsNewTest {
     @Test fun currentReleaseHasItems() {
-        val e = WhatsNew.forVersion("3.9.67")
+        val e = WhatsNew.forVersion("3.9.68")
         assertNotNull(e)
         assertTrue(e!!.items.size in 3..8)
         assertTrue(e.items.none { it.isBlank() })

@@ -29,6 +29,7 @@ object CarryOver {
 
     /**
      * @param prevLines строки прошлого пула («ссылка#имя»); @param newKeys ключи конфигов, пришедших из источников сейчас
+     * @param sourceAlive false — источник конфига удалён из списка (убран, в чёрном списке): конфиг не переносится; источник неизвестен — переносится
      * @param alive false — конфиг проверкой признан мёртвым (не известный проверкам считается живым)
      */
     fun select(
@@ -38,6 +39,7 @@ object CarryOver {
         today: LocalDate,
         days: Int,
         keyOf: (String) -> String,
+        sourceAlive: (String) -> Boolean = { true },
         alive: (String) -> Boolean,
     ): List<String> {
         if (days <= 0) return emptyList()
@@ -51,6 +53,7 @@ object CarryOver {
             // нет отметки (первый запуск после обновления) — считаем, что видели сегодня: срок пойдёт с этого сбора
             val last = seen[key] ?: today
             if (last.plusDays(days.toLong()).isBefore(today)) continue
+            if (!sourceAlive(key)) continue
             if (!alive(key)) continue
             out += line
         }
@@ -63,6 +66,27 @@ object CarryOver {
         for ((k, d) in seen) if (!d.plusDays(KEEP_DAYS).isBefore(today)) out[k] = d
         for (k in newKeys) out[k] = today
         for (k in carriedKeys) if (k !in out) out[k] = today
+        return out
+    }
+
+    // --- из какого источника пришёл конфиг ---
+
+    fun decodeOwners(text: String): Map<String, String> {
+        val out = LinkedHashMap<String, String>()
+        for (line in text.lineSequence()) {
+            val i = line.indexOf('\t')
+            if (i <= 0 || i == line.length - 1) continue
+            out[line.substring(0, i).trim()] = line.substring(i + 1).trim()
+        }
+        return out
+    }
+
+    fun encodeOwners(owners: Map<String, String>): String = owners.entries.joinToString("\n") { "${it.key}\t${it.value}" } + "\n"
+
+    /** Источники пула на следующий сбор: пришедшие сейчас ([fresh]) и перенесённые с прежним источником; чужого источника не выдумываем. */
+    fun nextOwners(fresh: Map<String, String>, previous: Map<String, String>, carriedKeys: Set<String>): Map<String, String> {
+        val out = LinkedHashMap<String, String>(fresh)
+        for (k in carriedKeys) if (k !in out) previous[k]?.let { out[k] = it }
         return out
     }
 }

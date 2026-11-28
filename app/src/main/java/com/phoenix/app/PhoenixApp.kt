@@ -33,13 +33,17 @@ class PhoenixApp : Application() {
         // и догоняет пропущенный сбор, если он не прошёл.
         // остатки оборванных записей (временные файлы) не нужны
         // почему система закрыла прошлый процесс (падение, ANR, лимит памяти Android 17) — в журнал, не на главном потоке
+        NetHooks.mem = { tag -> MemInfo.log(this, tag) }
         NetHooks.offline = { NetInfo.kind(this) == NetInfo.Kind.NONE }
         NetHooks.mobile = { NetInfo.kind(this) == NetInfo.Kind.MOBILE }
         NetHooks.carryDays = { AppSettings(this).carryDays }
         NetHooks.label = { NetInfo.label(this) }
         NetHooks.level = { st, net -> GovernedLimits.get(st).level(net) }
+        val tlsNote = LiteEnv.installTls(this) // Lite: корни Let's Encrypt до первого запроса; строка для журнала пишется ниже, в потоке
         // диск и WorkManager — не в основном потоке (первый кадр не ждёт): прошлое падение в журнал, обрывки записей, планировщик
         Thread {
+            LiteEnv.logEnv(this, Storage(this)) // только в Lite
+            tlsNote?.let { Storage(this).log(it) }
             try { PoolPolicyStore.load(this) } catch (_: Throwable) { }
             try { LogTrim.configure(AppSettings(this).logSize) } catch (_: Throwable) { }
             try { Quarantine.attach(java.io.File(filesDir, "quarantine.txt")) } catch (_: Throwable) { }

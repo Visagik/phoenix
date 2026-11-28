@@ -36,7 +36,7 @@ object SettingsKeys {
         "quiet_manual" to 'b',
         "quiet_from" to 'i',
         "quiet_to" to 'i',
-        // добавленные позже; списки «по одному в строке» (страны, приложения) в копию не входят: формат копии построчный
+        // добавленные позже; списки «по одному в строке» (страны, приложения) идут отдельными секциями, см. [LISTS]; формат копии построчный
         "animations" to 'b',
         "language" to 's',
         "theme" to 'i',
@@ -48,7 +48,42 @@ object SettingsKeys {
         "bg_mobile_mb" to 'i',
         "auto_backup" to 'b',
         "dns_provider" to 's',
+        // Н7: раньше не входили в копию, хотя причин нет
+        "carry_days" to 'i',
+        "tun_engine_hev" to 'b',
+        "log_size" to 'i',
+        "facts_ticker" to 'b',
+        "geo_rules_url" to 's',
     )
+
+    /** Н7: списки «по одному в строке» (страны, приложения): в копии это отдельные секции «lists:<ключ>», а не «ключ=значение». */
+    val LISTS: List<String> = listOf("pool_prefer", "pool_avoid", "pool_hidden", "only_apps")
+
+    const val LISTS_PREFIX = "lists:"
+
+    /**
+     * Что пишет AppSettings, но в резервную копию не идёт, и почему. Сторож в тесте: новая настройка без решения «в копии или здесь»
+     * роняет тест.
+     */
+    val NOT_IN_BACKUP: Map<String, String> = mapOf(
+        "alarm_at" to "служебная отметка будильника", "alarm_exact" to "служебная отметка: точные будильники зависят от телефона",
+        "auto_backup_at" to "служебная отметка времени автокопии", "dns_trial_at" to "служебная отметка пробы DNS",
+        "dns_trial_prev" to "служебная отметка пробы DNS", "last_attempt_at" to "журнал запусков", "last_detect" to "результат последнего определения",
+        "last_detect_at" to "результат последнего определения", "last_link" to "последний выбранный сервер: ключи доступа в копию не кладём",
+        "last_recheck_at" to "служебная отметка", "last_result" to "журнал запусков", "last_success_at" to "служебная отметка сбора",
+        "last_targets_at" to "служебная отметка", "last_title" to "последний выбранный сервер", "last_trigger" to "журнал запусков",
+        "manual_mode_at" to "ручной выбор режима привязан к сети и времени", "manual_mode_net" to "ручной выбор режима привязан к сети и времени",
+        "onboarding_seen" to "служебная отметка показа", "whats_new_seen" to "служебная отметка показа",
+        "update_apk_sha" to "служебное: обновление", "update_apk_size" to "служебное: обновление", "update_apk_url" to "служебное: обновление",
+        "update_checked_at" to "служебное: обновление", "update_notified" to "служебное: обновление", "update_reinstall" to "служебное: обновление",
+        "vpn_restart_times" to "служебный счётчик перезапусков VPN", "kill_ts" to "служебная отметка: плашка «система убила процесс»",
+        "kill_ack" to "служебная отметка: плашка «система убила процесс»", "kill_code" to "служебная отметка: плашка «система убила процесс»",
+        "xray_key_b64" to "ключ установки: в копию не кладём ни при каких условиях", "exit_seen_ts" to "служебная отметка журнала завершений процесса",
+        "update_tag" to "служебное: обновление", "update_url" to "служебное: обновление", "vpn_wanted" to "служебная отметка: был ли VPN включён",
+    )
+
+    /** Принимать ли значение настройки из копии (копия — внешний файл). Ссылка на правила регионов — только https:// или пустая. */
+    fun importValueOk(key: String, value: String): Boolean = if (key == "geo_rules_url") value.isEmpty() || value.startsWith("https://") else true
 
     /** Человеческие названия режимных настроек (для списка «что переопределено»). */
     val LABELS: Map<String, String> = mapOf(
@@ -63,6 +98,11 @@ object SettingsKeys {
         "block_quic" to "Закрыть QUIC",
         "auto_recheck" to "Автоперепроверка",
         "auto_service_check" to "Автопроверка сервисов",
+        // общие настройки экрана «Подключение» (для списка в диалоге сброса)
+        "pin_hours" to "Закрепление сервера",
+        "focus_mode" to "Режим «Фокус»",
+        "app_aware_failover" to "Смена сервера с учётом открытого приложения",
+        "dns_provider" to "DNS",
     )
 
     /**
@@ -83,14 +123,20 @@ object SettingsKeys {
     fun separateKey(mode: String): String = "sep_$mode"
 
     /** Всё, что уходит в резервную копию: общие, обычные значения режимов, их отдельные и флаги «свои настройки». */
-    /** Общие настройки, которые сбрасывает «Вернуть рекомендуемые». Язык, тема, анимации, расписание и тихие часы — личные, их не трогаем. */
-    val RESETTABLE_COMMON: List<String> = listOf(
-        "only_charging", "auto_mode", "app_aware_failover", "focus_mode", "apps_mode", "pin_hours", "bg_wifi_only", "bg_mobile_mb", "dns_provider",
+    /** Режимные настройки, которые есть на экране «Подключение» (не все SCOPED: «Автопроверка сервисов» живёт на экране VPN, «Политика целей» — на экране «Цели»). Н6 */
+    val CONNECTION_SCREEN_SCOPED: List<String> = listOf(
+        "auto_reconnect", "slow_switch", "slow_min_mbps", "speed_on_metered", "block_quic", "auto_recheck", "auto_connect", "ipv6_mode", "kill_switch",
     )
 
-    /** Ключи, которые удаляются при сбросе: режимные настройки выбранной области ([scopeMode] null — общие) и общие из [RESETTABLE_COMMON]. */
+    /** Общие настройки, которые есть на экране «Подключение»; сбрасываются только в области «Общие». Язык, тема, расписание, тихие часы, режим приложений и автоопределение режима живут на других экранах и не трогаются. */
+    val CONNECTION_SCREEN_COMMON: List<String> = listOf("pin_hours", "focus_mode", "app_aware_failover", "dns_provider")
+
+    /** Какие настройки вернёт «Вернуть рекомендуемые» для области [scopeMode] (null — «Общие») — базовые ключи, для диалога. */
+    fun resetBaseKeys(scopeMode: String?): List<String> = CONNECTION_SCREEN_SCOPED + (if (scopeMode == null) CONNECTION_SCREEN_COMMON else emptyList())
+
+    /** Ключи, которые удаляются при сбросе: режимные настройки экрана для выбранной области и, только в области «Общие», общие настройки экрана. */
     fun recommendedResetKeys(scopeMode: String?): List<String> =
-        SCOPED.keys.map { scopedKey(it, scopeMode) } + RESETTABLE_COMMON
+        CONNECTION_SCREEN_SCOPED.map { scopedKey(it, scopeMode) } + (if (scopeMode == null) CONNECTION_SCREEN_COMMON else emptyList())
 
     fun portable(modes: List<String>): Map<String, Char> {
         val out = LinkedHashMap<String, Char>()

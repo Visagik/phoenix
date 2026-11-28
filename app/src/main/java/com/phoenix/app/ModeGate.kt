@@ -24,3 +24,13 @@ object NetMismatch {
     fun ignore(measuredCellular: Boolean, nominalWifi: Boolean, since: Long, now: Long): Boolean =
         measuredCellular && nominalWifi && since > 0 && now - since in 0 until GRACE_MS
 }
+
+/**
+ * «Белые списки» из чёрных по замеру через Wi-Fi, который сейчас дёргается (система предупредила, что сеть пропадёт, или сеть прыгала):
+ * умирающий Wi-Fi даёт «0 зарубежных», это не блокировка. Журнал 22.11: три смены режима за 3 минуты, перерывы 38, 59 и 23 с. Сменить режим
+ * на белые можно позже, когда сеть устоялась; обратное (на чёрные) не задерживается.
+ */
+object WobbleGuard {
+    fun ignore(detected: BlockType, current: Mode, measuredWifi: Boolean, shaky: Boolean): Boolean =
+        detected == BlockType.WHITELIST && current != Mode.WHITELIST && measuredWifi && shaky
+}

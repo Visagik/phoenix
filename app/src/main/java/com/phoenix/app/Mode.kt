@@ -24,7 +24,7 @@ enum class Mode(val title: String, val folder: String?) {
             } catch (_: Exception) {
                 null
             }
-            return entries.firstOrNull { it.name == text } ?: WHITELIST
+            return LiteProfile.mode(entries.firstOrNull { it.name == text } ?: WHITELIST)
         }
 
         /** Растёт при каждой смене режима из любого места (служба, определитель, экран): экраны подхватывают смену сразу. */

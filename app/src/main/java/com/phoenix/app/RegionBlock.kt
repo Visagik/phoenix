@@ -25,7 +25,7 @@ class GeoRules(
         val DEFAULT = GeoRules(
             hosts = listOf(
                 "claude.ai", "anthropic.com", "chatgpt.com", "openai.com", "sora.com", "gemini.google.com", "bard.google.com", "aistudio.google.com",
-                "ai.google.dev", "notebooklm.google.com", "notebook.google", "labs.google", "copilot.microsoft.com", "grok.com", "x.ai", "meta.ai", "perplexity.ai",
+                "ai.google.dev", "notebooklm.google.com", "notebooklm.google", "notebook.google", "labs.google", "copilot.microsoft.com", "grok.com", "x.ai", "meta.ai", "perplexity.ai",
             ),
             closed = setOf("RU", "CN", "IR", "KP", "BY", "SY", "CU"),
             // Claude и OpenAI не работают ещё и из Гонконга и Макао (по списку поддерживаемых стран; он меняется)

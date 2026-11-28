@@ -17,13 +17,13 @@ object SourceBench {
     /** Сколько живых в основной части нужно для [activeTargets] целей (с потолком [NEED_CAP]). */
     fun aliveNeeded(activeTargets: Int): Int = minOf(activeTargets * SERVERS_PER_TARGET * SPARE_FACTOR, NEED_CAP)
 
-    /** Крупные источники: больше [BIG_SOURCE] конфигов и не из своих ссылок. */
-    fun bigUrls(members: Map<String, Set<String>>, own: Set<String>): Set<String> =
-        members.filter { (url, ids) -> ids.size > BIG_SOURCE && url !in own }.keys
+    /** Крупные источники: больше [BIG_SOURCE] конфигов, не свои ссылки и не источники с высоким приоритетом ([high]: пользователь или авто-приоритет считают их лучшими). */
+    fun bigUrls(members: Map<String, Set<String>>, own: Set<String>, high: Set<String> = emptySet()): Set<String> =
+        members.filter { (url, ids) -> ids.size > BIG_SOURCE && url !in own && url !in high }.keys
 
     /** Ключи конфигов, которые есть только в крупных источниках. */
-    fun benchIds(members: Map<String, Set<String>>, own: Set<String>): Set<String> {
-        val big = bigUrls(members, own)
+    fun benchIds(members: Map<String, Set<String>>, own: Set<String>, high: Set<String> = emptySet()): Set<String> {
+        val big = bigUrls(members, own, high)
         if (big.isEmpty()) return emptySet()
         val normal = HashSet<String>()
         for ((url, ids) in members) if (url !in big) normal += ids

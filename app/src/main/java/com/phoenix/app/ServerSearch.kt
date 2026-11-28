@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -70,6 +71,10 @@ class ServerSearch(
     @Volatile var suspectedOffline = false
         private set
 
+    /** Когда не открылся первый TCP в этом поиске (0 — не было): отсюда считается начало потери интернета. */
+    @Volatile var firstFailAt = 0L
+        private set
+
     /** Поиск прерван по [shouldStop]. */
     @Volatile var aborted = false
         private set
@@ -95,6 +100,10 @@ class ServerSearch(
     @Volatile var probeOkCount = 0
         private set
 
+    /** Поиск дошёл до конца списка (а не остановлен бюджетом, внешней причиной или «нет интернета»). */
+    @Volatile var finished = false
+        private set
+
     /** Сколько раз поиск притормаживал из-за перегрузки шлюза (для журнала). */
     @Volatile var throttled = 0
         private set
@@ -112,7 +121,13 @@ class ServerSearch(
     ): List<Found> {
         val ordered = (if (onePerHost) candidates.distinctBy { it.host.ifEmpty { it.link } } else candidates).take(maxCandidates)
         if (ordered.isEmpty() || want <= 0) return emptyList()
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        // Свои потоки, а не общий Dispatchers.IO (64 потока на весь процесс): при «Быстрой» скорости поиску нужно 48 TCP + 28 проб = 76 занятых
+        // потоков (Socket.connect и JNI блокируют поток), и проверка связи VPN, запись файлов и экраны вставали бы в очередь за перепроверкой (Н2)
+        val pool = java.util.concurrent.ThreadPoolExecutor(
+            tcpParallel + probeParallel + 4, tcpParallel + probeParallel + 4, 15, java.util.concurrent.TimeUnit.SECONDS,
+            java.util.concurrent.LinkedBlockingQueue(),
+        ) { r -> Thread(r, "phx-search").also { it.isDaemon = true } }.also { it.allowCoreThreadTimeOut(true) }
+        val scope = CoroutineScope(SupervisorJob() + pool.asCoroutineDispatcher())
         val found = ConcurrentLinkedQueue<Found>()
         val done = CompletableDeferred<Unit>()
         val remaining = AtomicInteger(ordered.size)
@@ -120,10 +135,12 @@ class ServerSearch(
         val probedN = AtomicInteger()
         val stop = AtomicBoolean(false)
         suspectedOffline = false
+        firstFailAt = 0L
         aborted = false
+        finished = false
         val tcpOk = AtomicInteger()
         val tcpFail = AtomicInteger()
-        val failedHosts = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+        val failedHosts: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet<String>() // тип Set: size у KeySetView — с API 24
         // с замером шлюза начинаем с малого числа потоков и наращиваем; без замера — сразу на полную
         val tcpGate = AdaptiveGate(if (loadSample != null) AdaptiveGate.SLOW_START else tcpParallel, tcpParallel)
         val monitor = loadSample?.let { sample ->
@@ -140,7 +157,7 @@ class ServerSearch(
         }
         val probeGate = Semaphore(probeParallel)
         val hostBad = java.util.concurrent.ConcurrentHashMap<String, AtomicInteger>()
-        val hostGood = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+        val hostGood: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
         val skippedN = AtomicInteger()
         val hostKeyOf = { c: Candidate -> ServerFingerprint.transportKey(c.link) }
         val tcpMsSum = java.util.concurrent.atomic.AtomicLong()
@@ -168,6 +185,7 @@ class ServerSearch(
                         if (ip == null) {
                             onProbe(c, TCP_FAIL)
                             failedHosts.add("${parsed.host}:${parsed.port}")
+                            if (firstFailAt == 0L) firstFailAt = System.currentTimeMillis()
                             val failN = tcpFail.incrementAndGet() // считаем всегда: раньше после первого открытого порта провалы не учитывались («не открылись 0» при ~1500 отброшенных, журнал 20.11)
                             if (tcpOk.get() == 0 && failN >= offlineSuspect && failedHosts.size >= minOf(OFFLINE_MIN_HOSTS, offlineSuspect)) {
                                 suspectedOffline = true
@@ -232,7 +250,9 @@ class ServerSearch(
             throttled = tcpGate.throttled
             monitor?.cancel()
             scope.cancel()
+            pool.shutdown() // без прерывания: идущая проба доработает сама, потоки потом исчезнут
         }
+        finished = remaining.get() == 0
         triedTcp = tcpOk.get() + tcpFail.get()
         tcpFailed = tcpFail.get()
         probed = probedN.get()

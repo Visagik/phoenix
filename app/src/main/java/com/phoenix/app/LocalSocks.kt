@@ -76,6 +76,9 @@ object LocalSocks {
         count(stage)
     }
 
+    /** Причина неудачи из самого исключения: [lastError] общее для всех потоков, а при параллельных запросах причины перепутались бы. */
+    fun describe(e: Throwable): String = "${e.javaClass.simpleName}: ${e.message?.take(120)}"
+
     /** Итог запросов через внутренний SOCKS с прошлого вызова (и обнуление): для одной строки журнала в конце прогона. null — запросов не было. */
     fun statsLine(): String? {
         val ok = counts.remove("ok")?.get() ?: 0
@@ -181,11 +184,22 @@ object LocalSocks {
             try {
                 if (https) {
                     sock.soTimeout = readTimeoutMs
-                    val ssl = (sslFactory ?: SSLSocketFactory.getDefault() as SSLSocketFactory).createSocket(sock, host.trim('[', ']'), destPort, true) as SSLSocket
-                    val ps = ssl.sslParameters
-                    ps.endpointIdentificationAlgorithm = "HTTPS" // имя в сертификате проверяется
-                    ssl.sslParameters = ps
-                    ssl.startHandshake()
+                    val ssl = (sslFactory ?: TlsRoots.factory ?: SSLSocketFactory.getDefault() as SSLSocketFactory).createSocket(sock, host.trim('[', ']'), destPort, true) as SSLSocket
+                    // имя в сертификате проверяется в обеих ветках (защита от подмены сервера)
+                    if (android.os.Build.VERSION.SDK_INT >= 24) {
+                        val ps = ssl.sslParameters
+                        ps.endpointIdentificationAlgorithm = "HTTPS" // setEndpointIdentificationAlgorithm — с API 24
+                        ssl.sslParameters = ps
+                        ssl.startHandshake()
+                    } else {
+                        ssl.startHandshake()
+                        // Android 6: алгоритма проверки имени в SSLParameters нет — сверяем имя вручную после рукопожатия
+                        val name = host.trim('[', ']')
+                        if (!javax.net.ssl.HttpsURLConnection.getDefaultHostnameVerifier().verify(name, ssl.session)) {
+                            try { ssl.close() } catch (_: Exception) { }
+                            throw javax.net.ssl.SSLPeerUnverifiedException("имя в сертификате не совпало: $host")
+                        }
+                    }
                     sock = ssl
                 }
                 sock.soTimeout = readTimeoutMs

@@ -3,4 +3,5 @@
     <string name="shortcut_fix">无法使用</string>
     <string name="shortcut_switch">切换服务器</string>
     <string name="shortcut_stop">断开连接</string>
+    <string name="site_watcher_desc">仅读取浏览器地址栏，以获知当前网站的域名并为其选择服务器。域名只保存在内存中，不读取网页内容，也不发送任何数据。</string>
 </resources>

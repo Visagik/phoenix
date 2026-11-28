@@ -47,7 +47,7 @@ Android-приложение: собирает публичные VPN-конфи
 
 ```bash
 ./gradlew testDebugUnitTest   # тесты логики на JVM
-./gradlew assembleDebug       # APK: app/build/outputs/apk/debug/
+./gradlew :app:assembleFullDebug :app:assembleLiteDebug   # APK: app/build/outputs/apk/full/debug/ (телефон) и lite/debug/ (планшет)
 ```
 
 Ядро Xray в репозиторий не входит: скачайте `libv2ray.aar` (релизы [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) или из [v2rayNG](https://github.com/2dust/v2rayNG)) и положите в `app/libs/`. Без файла приложение собирается и собирает конфиги, но подключиться не может.
@@ -82,11 +82,16 @@ Android-приложение: собирает публичные VPN-конфи
 - `Mode.kt` — режимы «Белые списки» / «Чёрные списки»: у каждого свои источники, чёрный список, статистика, файлы конфигов и список обхода VPN (белые лежат в корне данных — старые данные сохраняются, чёрные — в `mode_bl/`)
 - `XrayConfig.kt` — ссылка (vless / vmess / trojan / ss; reality, tls, ws, grpc, httpupgrade, xhttp+extra, h2) → конфиг Xray (TUN-вход, proxy/direct/block). Покрыт тестами; JSON дополнительно проверен парсером
 - `XrayCore.kt` — обёртка над `libv2ray.aar` через рефлексию (без файла приложение всё равно собирается)
-- `PhoenixVpn.kt` — `PhoenixVpnService` (VpnService, TUN-дескриптор передаётся ядру напрямую, без tun2socks), состояние VPN
+- `PhoenixVpn.kt` — `PhoenixVpnService` (VpnService, TUN-дескриптор передаётся ядру напрямую, без tun2socks): подключение, ядро, наблюдатели сети и экрана; состояние VPN. Остальное вынесено в расширения службы: `ServiceHealth.kt` (проверки связи, решение после обрыва), `ServiceFailover.kt` (смена и перебор серверов), `ServiceSpeed.kt` (низкая скорость), `ServiceWatch.kt` (маршруты по часам, открытое приложение), `ServiceDiag.kt` (диагностика Google-сервисов)
+- `MainActivity.kt` — активность; `MainViewModel.kt` — состояние главного экрана; `MainScreen.kt`, `HomeScreen.kt`, `SourcesScreen.kt`, `SettingsMain.kt` — экраны и вкладки
 - `BypassApps.kt` — список обхода VPN: свои приложения + готовый российский набор (банки, Госуслуги, ВК, Яндекс, маркетплейсы, операторы…); само приложение всегда мимо VPN
-- `ServiceCheck.kt` — проверка Telegram / Qwen / Claude / YouTube / Steam через каждый конфиг (временный экземпляр ядра), результаты по конфигам
+- `HealthGate.kt`, `SwitchControl.kt`, `ProbeLoad.kt`, `CheckVerdicts.kt`, `DowntimeStats.kt`, `LogMute.kt`, `ListHint.kt` — небольшие правила по вопросам (засчитывать ли сбой, как часто менять сервер, сколько проверок, как читать ответ), список в `ARCHITECTURE.md`
+- `SettingsScreens.kt` (режим, подключение), `SettingsTargets.kt` (цели), `SettingsDiag.kt` (диагностика, журнал), `SettingsBackup.kt` (копии, прошивка) — страницы настроек по темам
+- `CLAUDE.md` — правила работы с проектом и проверки; `tools/check-docs.sh` — сверка карты с кодом
+- `ARCHITECTURE.md` — карта: какой код отвечает на какой вопрос (смотреть перед новым правилом)
+- `ServiceCheck.kt` — список сервисов и результат проверки; `ServiceStores.kt` — хранилища результатов, свои и скрытые сервисы, выбор; `ServiceChecker.kt` — проверка через каждый конфиг (временный экземпляр ядра); `TargetServices.kt` — цели как сервисы, подписи колонок
 - `VpnScreen.kt` — вкладка «VPN»
-- `Targets.kt`, `TargetsWorker.kt` — цели (приложения и сайты) и подбор сервера под них: рейтинг кандидатов, фоновая проверка, свой маршрут по UID приложения или переключение всего VPN
+- `Targets.kt` (цели, хранилище, синхронизация), `Ranking.kt` (рейтинг кандидатов), `TargetPlan.kt` (проверка целей, план маршрутов), `TargetsWorker.kt` — цели (приложения и сайты) и подбор сервера под них: фоновая проверка, свой маршрут по UID приложения или переключение всего VPN
 - `DirectLearn.kt`, `DirectCatalog.kt`, `BypassApps.kt` (`BypassStore`) — что идёт мимо VPN в какой сети: обучение по сети, каталог приложений, список обхода по режимам
 - `DnsProvider.kt` — провайдеры DNS и проба с откатом; `AutoBackup.kt`, `Backup.kt` — копии настроек и данных
 - `PinPolicy.kt` — срок закрепления сервера, выбранного вручную

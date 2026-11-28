@@ -2,8 +2,6 @@ package com.phoenix.app
 
 import java.io.File
 import java.io.FileOutputStream
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 
 /**
  * Запись файла «всё или ничего»: сначала во временный файл рядом, затем fsync и переименование.
@@ -13,7 +11,8 @@ import java.nio.file.StandardCopyOption
 object AtomicWrite {
     const val SUFFIX = ".tmp"
 
-    fun write(file: File, bytes: ByteArray) {
+    /** java.nio.file.Files есть только с Android 8 (API 26); на старых версиях замена идёт через renameTo (на одной файловой системе она атомарна). */
+    fun write(file: File, bytes: ByteArray, useNio: Boolean = android.os.Build.VERSION.SDK_INT >= 26) {
         file.absoluteFile.parentFile?.mkdirs()
         val tmp = File(file.absoluteFile.parentFile, file.name + "." + System.nanoTime() + SUFFIX)
         try {
@@ -22,13 +21,19 @@ object AtomicWrite {
                 out.flush()
                 try { out.fd.sync() } catch (_: Exception) {}
             }
-            try {
-                Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
-            } catch (_: Exception) {
-                Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
-            }
+            if (useNio && android.os.Build.VERSION.SDK_INT >= 26) moveNio(tmp, file) else if (!tmp.renameTo(file)) throw java.io.IOException("не удалось заменить файл ${file.name}")
         } finally {
             if (tmp.exists()) tmp.delete()
+        }
+    }
+
+    // java.nio.file — полными именами и в отдельной функции: на Android 6 класс не загружается, пока эту ветку не вызвали
+    @androidx.annotation.RequiresApi(26)
+    private fun moveNio(tmp: File, file: File) {
+        try {
+            java.nio.file.Files.move(tmp.toPath(), file.toPath(), java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } catch (_: Exception) {
+            java.nio.file.Files.move(tmp.toPath(), file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         }
     }
 

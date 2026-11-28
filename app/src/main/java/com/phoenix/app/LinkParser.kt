@@ -1,7 +1,6 @@
 package com.phoenix.app
 
 import java.net.URLDecoder
-import java.util.Base64
 
 /**
  * Разобранная ссылка. Поддерживаются vless / vmess / trojan / ss и hysteria2 (hy2://, с ядром Xray 26+).
@@ -107,7 +106,7 @@ object LinkParser {
             if (clean.isEmpty()) return null
             val noPad = clean.trimEnd('=')
             val padded = noPad + "=".repeat((4 - noPad.length % 4) % 4)
-            String(Base64.getDecoder().decode(padded), Charsets.UTF_8)
+            String(B64.decode(padded), Charsets.UTF_8)
         } catch (e: IllegalArgumentException) {
             null
         }

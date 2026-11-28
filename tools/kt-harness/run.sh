@@ -9,7 +9,7 @@ W="${WORK:-/tmp/phoenix-kt}"
 rm -rf "$W"; mkdir -p "$W/src" "$W/out" "$W/data" "$W/dump"
 for f in $(cat "$H/pure.txt"); do cp "$P/main/java/com/phoenix/app/$f" "$W/src/"; done
 for f in $(cat "$H/tests.txt"); do cp "$P/test/java/com/phoenix/app/$f" "$W/src/"; done
-cp "$H/Stubs.kt" "$H/JunitStubs.kt" "$W/src/"
+cp "$H/Stubs.kt" "$H/StubsAnnotation.kt" "$H/StubsBuild.kt" "$H/StubsBuildConfig.kt" "$H/JunitStubs.kt" "$W/src/"
 python3 - "$H" "$W" <<'PY'
 import sys
 h,w=sys.argv[1],sys.argv[2]

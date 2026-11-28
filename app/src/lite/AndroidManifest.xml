@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Lite (Android 6, API 23): libv2ray.aar объявляет minSdk 24, но это только метка в манифесте библиотеки.
+         Разрешаем сборку и проверяем на планшете: если ядро Xray не загрузится, в журнале будет ошибка загрузки libgojni. -->
+    <uses-sdk tools:overrideLibrary="go.libv2ray.gojni" />
+</manifest>

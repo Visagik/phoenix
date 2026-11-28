@@ -60,6 +60,15 @@ object DirectLearn {
     fun groupDown(map: Map<String, LearnEntry>, net: String, ids: Collection<String>): Boolean =
         ids.isNotEmpty() && ids.all { blocked(map[key(net, it)]) }
 
+    /** Ключ цели «мимо VPN» в обучении: рядом с каталогом сервисов, отдельно по сетям. */
+    const val TARGET_PREFIX = "T:"
+
+    fun targetKey(targetId: String) = TARGET_PREFIX + targetId
+
+    /** Цели, которым напрямую в этой сети не открывается (два отказа подряд): им «мимо VPN» не давать, пока не откроется снова. */
+    fun blockedTargets(map: Map<String, LearnEntry>, net: String): Set<String> =
+        blockedIds(map, net).filter { it.startsWith(TARGET_PREFIX) }.map { it.removePrefix(TARGET_PREFIX) }.toSet()
+
     /** Забыть всё про сеть (например, сменился тип блокировок). */
     fun forgetNet(map: Map<String, LearnEntry>, net: String): Map<String, LearnEntry> = map.filterKeys { !it.startsWith("$net|") }
 }

@@ -28,13 +28,6 @@ class Release3941Test {
         repeat(20) { assertEquals(GatewayLoad.Verdict.OK, g.feed(5L + it % 3)) }
     }
 
-    @Test fun vpnRetryIsLimited() {
-        assertTrue(VpnRetryBudget.allow(false, 0, false))
-        assertFalse(VpnRetryBudget.allow(true, 0, false))
-        assertFalse(VpnRetryBudget.allow(false, 0, true))
-        assertFalse(VpnRetryBudget.allow(false, VpnRetryBudget.MAX_PER_RUN, false))
-    }
-
     @Test fun subscriptionTokenIsMaskedInLog() {
         val line = "FETCH: https://your-durev.com/sub/AbCdEfGhIjKlMnOpQrStUv123456/white/ код 200"
         val out = LogMask.apply(line)

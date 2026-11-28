@@ -47,7 +47,7 @@ object CheckLimits {
     /** Для поиска рабочего сервера, когда пользователь ждёт: больше параллельных проверок (в v2rayNG по умолчанию 16). */
     fun searchParallel(context: Context): Int {
         val am = context.getSystemService(android.app.ActivityManager::class.java)
-        return MemGuard.scale(if (am != null && am.isLowRamDevice) 5 else 16, MemInfo.currentPssMb())
+        return LiteProfile.probeCap(MemGuard.scale(if (am != null && am.isLowRamDevice) 5 else 16, MemInfo.currentPssMb()))
     }
 }
 
@@ -203,6 +203,7 @@ object TargetsRunner {
         }
 
         // 3. запасные серверы целей
+        TargetSyncIO.merge(context)
         val targetStore = TargetStore(storage.targetsFile)
         val targets = targetStore.load()
         if (targets.isNotEmpty()) {
@@ -220,6 +221,9 @@ object TargetsRunner {
             val wide = Ranking.rank(Ranking.candidates(rows, checksNow, history = hview(), mode = storage.mode, priority = storage.priorityView(), svcIds = storage.selectedServiceIds())).take(TARGET_WIDE_POOL)
             val missMap = HashMap<String, Long>(try { MissBackoff.parse(if (storage.missFile.exists()) storage.missFile.readText() else "") } catch (_: Throwable) { emptyMap() })
             val nowMs = System.currentTimeMillis()
+            // «открывается напрямую» запоминаем по сетям (DirectLearn), как у каталога: иначе «мимо VPN», найденное дома на Wi-Fi, на мобильной сети так и осталось бы
+            val directNet = try { NetInfo.label(context) } catch (_: Throwable) { "" }
+            val directLearnFile = BypassStore(storage.base, storage.mode, directNet).learnFile
             var deepLeft = if (budgetOut) 0 else TARGET_DEEP_MAX // глубокий и последний поиск — тоже только пока есть суточный лимит мобильного трафика
             var fullLeft = if (budgetOut) 0 else 1
             val nameOf = rows.associate { it.raw to it.displayName }
@@ -282,7 +286,13 @@ object TargetsRunner {
                     storage.log("TARGET: для «${t.label}» последняя попытка по ${all.size} конфигам" + (if (storage.mode == Mode.BLACKLIST) " (своего режима и белых списков)" else " всего режима") + reasonsText(verifier.lastReasons))
                 }
                 // ни один сервер не открыл сайт, а напрямую (мимо VPN) он открывается — пускаем цель мимо VPN
-                if (servers.isEmpty() && directOpens(t.checkUrl)) {
+                val opensDirect = servers.isEmpty() && directOpens(t.checkUrl)
+                if (servers.isEmpty() && directNet.isNotEmpty()) {
+                    try {
+                        DirectLearn.save(directLearnFile, DirectLearn.record(DirectLearn.load(directLearnFile), directNet, DirectLearn.targetKey(t.id), opensDirect, nowMs))
+                    } catch (_: Throwable) { }
+                }
+                if (opensDirect) {
                     servers = listOf(Target.DIRECT)
                     storage.log("TARGET: «${t.label}» — через серверы сайт не открылся, а напрямую открывается: пущу мимо VPN")
                 }
@@ -339,7 +349,7 @@ class TargetsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         } catch (e: kotlinx.coroutines.CancellationException) {
             // система остановила работу (смена сети при подключении VPN, низкий заряд): повторим позже, а не считаем ошибкой
             // причина остановки (WorkManager 2.9+): без неё не понять, что именно прерывает проверку целей
-            val why = try { " (причина $stopReason)" } catch (_: Throwable) { "" }
+            val why = if (android.os.Build.VERSION.SDK_INT >= 31) " (причина $stopReason)" else "" // stopReason — API 31
             Storage(applicationContext).log("TARGETS: прервано системой$why, повторю через 10 минут")
             LiveActivity.targets.value = ""
             LiveActivity.targetsDetail.value = null
@@ -369,6 +379,7 @@ class TargetsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         /** Разовая перепроверка (после ночного сбора, по кнопке). */
         /** [delaySec] — подождать, пока закончится пересборка туннеля: подбор, запущенный в тот же миг, снимала система (журнал 20.11: «прервано системой (причина 7)» через 3–7 с после «пересоздаю туннель»). */
         fun enqueue(context: Context, delaySec: Long = 0L) {
+            if (LiteProfile.ON) return // Lite: подбор серверов для целей не запускается
             val builder = OneTimeWorkRequestBuilder<TargetsWorker>().setConstraints(constraints())
             if (NetFlap.busy(System.currentTimeMillis())) builder.setInitialDelay(3, TimeUnit.MINUTES) // сеть меняется часто — не начинать сейчас
             else if (delaySec > 0) builder.setInitialDelay(delaySec, TimeUnit.SECONDS)
@@ -377,6 +388,7 @@ class TargetsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
         /** После свежего сбора или перепроверки: полный поиск для целей чаще раза в 30 минут только тратит сеть (журнал: три поиска за 50 минут на мобильной). */
         fun enqueueAfterRefresh(context: Context) {
+            if (LiteProfile.ON) return
             val ago = System.currentTimeMillis() - AppSettings(context).lastTargetsAt
             if (ago in 0 until MIN_GAP_MS) {
                 Storage(context).log("TARGETS: поиск для целей пропущен — был ${ago / 60_000} мин назад (следующий не раньше чем через ${MIN_GAP_MS / 60_000})")
@@ -386,6 +398,12 @@ class TargetsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         }
 
         private const val MIN_GAP_MS = 30 * 60_000L
+
+        /** Lite: снимает задачи, поставленные раньше (например, при переносе данных с телефона) — подбор для целей там не работает. */
+        fun cancelAll(context: Context) {
+            val wm = WorkManager.getInstance(context)
+            for (n in listOf(ONCE, "phoenix_targets_retry", PERIODIC)) wm.cancelUniqueWork(n)
+        }
 
         private fun enqueueRetry(context: Context) {
             val request = OneTimeWorkRequestBuilder<TargetsWorker>()
@@ -397,6 +415,7 @@ class TargetsWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
         /** Раз в 6 часов: серверы целей могут отвалиться и в течение дня. */
         fun schedulePeriodic(context: Context) {
+            if (LiteProfile.ON) return
             val request = PeriodicWorkRequestBuilder<TargetsWorker>(6, TimeUnit.HOURS)
                 .setConstraints(constraints())
                 .setInputData(androidx.work.workDataOf("auto" to true))

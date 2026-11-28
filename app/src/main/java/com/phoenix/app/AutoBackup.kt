@@ -16,7 +16,7 @@ object AutoBackup {
             val settings = AppSettings(context)
             val now = System.currentTimeMillis()
             if (!settings.autoBackup || !AutoBackupPolicy.due(settings.lastAutoBackupAt, now)) return
-            val text = Backup.export(context.filesDir, settings.exportMap(), java.time.OffsetDateTime.now().toString(), withLog = false)
+            val text = Backup.export(context.filesDir, settings.exportMap(), java.time.OffsetDateTime.now().toString(), withLog = false, lists = settings.exportLists())
             val d = dir(context)
             d.mkdirs()
             File(d, AutoBackupPolicy.fileName(java.time.LocalDate.now().toString())).writeTextAtomic(text)

@@ -84,8 +84,9 @@ object AppDomains {
  * открывается, а пользователю не работает). Поэтому такие цели ведутся через ОДИН сервер, и общие узлы Google идут туда же.
  */
 object GoogleAi {
-    private val packages = setOf("com.google.android.apps.bard", "com.google.android.apps.labs.language.tailwind", "com.google.android.googlequicksearchbox")
-    private val sites = listOf("gemini.google.com", "bard.google.com", "notebooklm.google.com", "notebooklm.google", "notebook.google", "aistudio.google.com")
+    /** Единый список: GoogleDiag и остальные берут пакеты и адреса отсюда (раньше в каждом месте был свой, и они расходились). */
+    internal val packages = setOf("com.google.android.apps.bard", "com.google.android.apps.labs.language.tailwind", "com.google.android.googlequicksearchbox")
+    internal val sites = listOf("gemini.google.com", "bard.google.com", "notebooklm.google.com", "notebooklm.google", "notebook.google", "aistudio.google.com")
 
     /** Общие узлы Google, через которые сервис проверяет аккаунт и страну. */
     val familyRules: List<String> = listOf(

@@ -20,6 +20,7 @@ fun switchListIntent(context: Context): Intent =
     Intent(context, MainActivity::class.java).putExtra(SwitchRequest.EXTRA_SHOW, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
 /** Плитка «Сменить сервер» в шторке: открывает список серверов. */
+@androidx.annotation.RequiresApi(24) // плитки шторки есть с Android 7; на Android 6 система их не вызывает
 class SwitchTileService : TileService() {
     private var scope: CoroutineScope? = null
 
@@ -36,6 +37,7 @@ class SwitchTileService : TileService() {
         super.onStopListening()
     }
 
+    @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated") // Intent-вариант вызывается только до API 34
     override fun onClick() {
         super.onClick()
         if (VpnState.status.value.phase != VpnPhase.CONNECTED) return // подключён — тогда есть что менять
@@ -59,6 +61,7 @@ class SwitchTileService : TileService() {
 }
 
 /** Плитка «Не работает» в шторке (та же логика, что у кнопки в уведомлении: разбор и умная смена или пометка сервиса): проверяет сеть и туннель и подбирает сервер под открытое приложение. */
+@androidx.annotation.RequiresApi(24) // плитки шторки есть с Android 7; на Android 6 система их не вызывает
 class SmartTileService : TileService() {
     private var scope: CoroutineScope? = null
 

@@ -3,4 +3,5 @@
     <string name="shortcut_fix">Not working</string>
     <string name="shortcut_switch">Switch server</string>
     <string name="shortcut_stop">Disconnect</string>
+    <string name="site_watcher_desc">Reads only the browser address bar to find out the domain of the open site and pick a server for it. The domain is kept in memory only, page contents are not read, nothing is sent.</string>
 </resources>

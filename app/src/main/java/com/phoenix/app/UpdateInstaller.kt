@@ -88,10 +88,13 @@ object UpdateInstaller {
         }
     }
 
-    /** Системное окно удаления Phoenix (после него пользователь ставит сохранённый файл). */
+    /**
+     * Страница приложения Phoenix в системных настройках: кнопка «Удалить» там. Окно удаления напрямую (ACTION_DELETE) требует разрешения
+     * REQUEST_DELETE_PACKAGES; оно убрано в 3.9.68, потому что Play Protect блокировал сборку 3.9.67 как вредоносную (причина не подтверждена).
+     */
     fun requestUninstall(context: Context) {
         try {
-            context.startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:" + context.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (_: Exception) {
         }
     }
@@ -115,7 +118,7 @@ object UpdateInstaller {
                     continue
                 }
                 if (code != 200) throw java.io.IOException("ответ $code")
-                val total = c.contentLengthLong.takeIf { it > 0 } ?: expectedSize
+                val total = (if (android.os.Build.VERSION.SDK_INT >= 24) c.contentLengthLong else c.contentLength.toLong()).takeIf { it > 0 } ?: expectedSize // contentLengthLong — API 24
                 if (total > MAX_BYTES) throw java.io.IOException("файл слишком большой")
                 var done = 0L
                 var last = -1

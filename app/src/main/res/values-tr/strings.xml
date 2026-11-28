@@ -3,4 +3,5 @@
     <string name="shortcut_fix">Çalışmıyor</string>
     <string name="shortcut_switch">Sunucuyu değiştir</string>
     <string name="shortcut_stop">Bağlantıyı kes</string>
+    <string name="site_watcher_desc">Yalnızca tarayıcının adres çubuğunu okur; açık sitenin alan adını öğrenip ona uygun sunucuyu seçer. Alan adı yalnızca bellekte tutulur, sayfa içeriği okunmaz, hiçbir şey gönderilmez.</string>
 </resources>

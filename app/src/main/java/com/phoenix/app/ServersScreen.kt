@@ -176,6 +176,9 @@ fun ServersPage(vm: MainViewModel, onConnect: (ConfigRow) -> Unit) {
     }
     val entries = model.entries
     val visible = model.visible
+    // Lite: на слабом планшете в списке не больше RECHECK_MAX строк, остальные — по кнопке
+    var showAll by remember { mutableStateOf(false) }
+    val shown = if (showAll) visible else LiteProfile.capRecheck(visible)
     val countries = model.countries
     val protocols = model.protocols
 
@@ -205,7 +208,7 @@ fun ServersPage(vm: MainViewModel, onConnect: (ConfigRow) -> Unit) {
                                 menu = false
                                 val text = vm.enrichedText()
                                 val ok = text.isNotEmpty() && Exporter.saveToDownloads(context, Storage.ENRICHED_NAME, text)
-                                Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить файл"), Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (ok) tr("Сохранено: {}", Exporter.where(context)) else tr("Не удалось сохранить файл"), Toast.LENGTH_SHORT).show()
                             })
                         }
                     }
@@ -236,7 +239,10 @@ fun ServersPage(vm: MainViewModel, onConnect: (ConfigRow) -> Unit) {
             }
                 }
             }
-            items(visible, key = { it.raw }, contentType = { "server" }) { e ->
+            if (shown.size < visible.size) item {
+                TextButton(onClick = { showAll = true }) { Text(tr("Показано {} из {}. Показать все", shown.size, visible.size)) }
+            }
+            items(shown, key = { it.raw }, contentType = { "server" }) { e ->
                 val open = openRaw == e.raw
                 val isCurrent = currentId.isNotEmpty() && remember(e.raw) { ConfigIdentity.key(e.raw) } == currentId
                 val isPinned = isCurrent && pinnedNow

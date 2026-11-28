@@ -28,6 +28,9 @@ object RecheckState {
 
     /** Подробности хода: пусто, пока перепроверка не идёт или ещё не проверен ни один сервер. */
     val detail = MutableStateFlow<RecheckDetail?>(null)
+
+    /** Последний запуск остановился по времени, не дойдя до конца круга (не из-за ошибки и не вами): стоит продолжить. */
+    @Volatile var roundOpen = false
 }
 
 /**
@@ -36,7 +39,7 @@ object RecheckState {
  * белых списков: серверы белых списков работают и в обычной сети.
  */
 object SearchPool {
-    fun build(context: Context, storage: Storage, withForeign: Boolean = storage.mode == Mode.BLACKLIST): List<Candidate> {
+    fun build(context: Context, storage: Storage, withForeign: Boolean = storage.mode == Mode.BLACKLIST && !LiteProfile.ON): List<Candidate> {
         val own = poolOf(context, storage, storage.mode)
         if (!withForeign) return own
         val seen = own.map { it.identity }.toHashSet()
@@ -47,7 +50,7 @@ object SearchPool {
     }
 
     /** Сначала свои конфиги режима, потом чужие — отдельными списками, чтобы результаты сохранялись в данные своего режима. */
-    fun groups(context: Context, storage: Storage, withForeign: Boolean = storage.mode == Mode.BLACKLIST): List<Pair<Storage, List<Candidate>>> {
+    fun groups(context: Context, storage: Storage, withForeign: Boolean = storage.mode == Mode.BLACKLIST && !LiteProfile.ON): List<Pair<Storage, List<Candidate>>> {
         val out = ArrayList<Pair<Storage, List<Candidate>>>()
         out += storage to poolOf(context, storage, storage.mode)
         if (withForeign) for (m in Mode.entries) if (m != storage.mode) {
@@ -66,14 +69,25 @@ object SearchPool {
 
 /** Принудительная перепроверка всех конфигов: TCP-отсев, потом настоящая задержка через ядро; итоги идут в проверки и опыт. */
 object Recheck {
+    /** Подпись ручного запуска: единственное место, где она записана; ручной ли запуск, решает [isManual], а не сравнение текста по месту. */
+    const val MANUAL = "вручную"
+
+    fun isManual(reason: String): Boolean = reason == MANUAL
+
     const val BUDGET_MS = 25 * 60_000L
+
+    /** Без службы переднего плана система обрывает работу через 10 минут: идём частями по 8 и ставим продолжение. */
+    const val NO_FOREGROUND_BUDGET_MS = 8 * 60_000L
+    const val CONTINUE_REASON = "продолжение"
+    const val MAX_CONTINUATIONS = 8
     const val MIN_GAP_MS = 30 * 60_000L
     const val RETRY_DELAY_SEC = 120L
 
-    suspend fun runAll(context: Context, mode: Mode, budgetMs: Long = BUDGET_MS, withForeign: Boolean = false, reason: String = "вручную"): String {
+    suspend fun runAll(context: Context, mode: Mode, budgetMs: Long = BUDGET_MS, withForeign: Boolean = false, reason: String = MANUAL): String {
         if (!XrayCore.available) return "ядро недоступно"
         if (!RecheckState.running.compareAndSet(false, true)) return "перепроверка уже идёт"
         val started = System.currentTimeMillis()
+        RecheckState.roundOpen = false
         val storage = Storage(context, mode)
         if (NetInfo.kind(context) == NetInfo.Kind.NONE || FailoverGate.offlineRecently(ModeDetector.offlineAt, started)) {
             // без сети все конфиги «не отвечают», и перепроверка испортила бы приоритеты (в логе: живых 0 из 677)
@@ -87,12 +101,34 @@ object Recheck {
             val allGroups = SearchPool.groups(context, storage, withForeign)
                 .map { (st, list) -> st to list.filter { XrayConfig.supports(it.link) } }
             val quarantineSkipped = allGroups.sumOf { (_, l) -> l.count { RecheckSkip.quarantined(it) } }
-            val notQuarantined = allGroups.map { (st, l) -> st to l.filterNot { RecheckSkip.quarantined(it) } }
+            // круг перепроверки (Н1): уже проверенные в этом круге (та же сеть, не старше 6 часов) пропускаем — следующий запуск идёт дальше, а не с верха списка
+            val roundFileOf = { s: Storage -> java.io.File(s.checksFile.parentFile, RecheckRound.FILE_NAME) }
+            val resumes = HashMap<Mode, RecheckRound.Round>()
+            fun pools(useResume: Boolean) = allGroups.map { (st, l) ->
+                val ok = l.filterNot { RecheckSkip.quarantined(it) }
+                val prev = if (useResume) RecheckRound.load(roundFileOf(st)).takeIf { RecheckRound.resumable(it, netBefore, started) } else null
+                if (prev != null) resumes[st.mode] = prev else resumes.remove(st.mode)
+                val rest = if (prev != null) RecheckRound.remaining(ok, prev.keys) { CheckStore.keyOf(it.link) } else ok
+                val cut = LiteProfile.capRecheck(rest) // Lite: только лучшие по рейтингу (список уже отсортирован)
+                if (cut.size < rest.size) storage.log("LITE: в перепроверку взял ${cut.size} лучших из ${rest.size}")
+                st to cut
+            }
+            var notQuarantined = pools(true)
+            if (resumes.isNotEmpty() && notQuarantined.sumOf { it.second.size } == 0) {
+                // прежний круг уже пройден целиком: начинаем новый
+                allGroups.forEach { (st, _) -> try { roundFileOf(st).delete() } catch (_: Throwable) { } }
+                notQuarantined = pools(false)
+            }
             // крупные источники (>500 конфигов) — «скамейка запасных»: проверяются, только если основной части не хватило живых
+            // источники с высоким приоритетом (вручную или по авто-оценке) на скамейку не уходят, даже если крупные
+            fun highSources(st: Storage): Set<String> = try {
+                AutoPriority.effective(SourcePriorities(st.sourcePriorityFile).load(), SourcePriorities(st.sourceAutoPriorityFile).load())
+                    .filterValues { it >= SourcePriority.HIGH }.keys
+            } catch (_: Exception) { emptySet() }
             val benchGroups = ArrayList<Pair<Storage, List<Candidate>>>()
             val groups = notQuarantined.map { (st, l) ->
                 val benchIds = try {
-                    if (st.sourceMembersFile.exists()) SourceBench.benchIds(SourceStats.decode(st.sourceMembersFile.readText()), UserSources(st.userSourcesFile).load().toSet()) else emptySet()
+                    if (st.sourceMembersFile.exists()) SourceBench.benchIds(SourceStats.decode(st.sourceMembersFile.readText()), UserSources(st.userSourcesFile).load().toSet(), highSources(st)) else emptySet()
                 } catch (_: Exception) { emptySet() }
                 val (main, bench) = SourceBench.split(l, benchIds) { CheckStore.keyOf(it.link) }
                 if (bench.isNotEmpty()) benchGroups += st to bench
@@ -104,6 +140,7 @@ object Recheck {
                 RecheckState.progress.value = "Нет конфигов для проверки"
                 return "нет конфигов"
             }
+            for ((m, r) in resumes) Storage(context, m).log(RecheckRound.resumeLine(r) { java.text.SimpleDateFormat("dd.MM HH:mm", java.util.Locale.US).format(java.util.Date(it)) })
             storage.log(
                 "RECHECK: старт ($reason), режим ${mode.title}, конфигов $totalCount" +
                     groups.joinToString("") { (st, l) -> ", ${if (st.mode == mode) "свои" else "из режима «${st.mode.title}»"} ${l.size}" } +
@@ -112,7 +149,7 @@ object Recheck {
             )
             val reachCache = ConcurrentHashMap<String, String>()
             val done = AtomicInteger()
-            val judged = AtomicInteger()
+            val probedJudged = AtomicInteger() // только запуски ядра (ms ≥ 0 и −1): по ним судит RunGuard.hopeless
             val alive = AtomicInteger()
             val tcpDead = AtomicInteger()
             val skippedLive = AtomicInteger()
@@ -120,6 +157,8 @@ object Recheck {
             val guard = RunGuard(mode, NetInfo.label(context))
             var abortNote = ""
             var userStopped = false
+            var budgetCut = false // время вышло, не все дошли до конца: круг остаётся в файле, следующий запуск продолжит
+            val trackers = HashMap<Mode, RecheckRound.Tracker>()
             var checked = 0
             val queue = ArrayDeque(groups)
             var benchAdded = benchGroups.isEmpty()
@@ -139,16 +178,22 @@ object Recheck {
                 }
                 val (st, list) = queue.removeFirst()
                 val left = budgetMs - (System.currentTimeMillis() - started)
+                if (left <= 0) budgetCut = true
                 if (left <= 0 || list.isEmpty()) continue
                 val sink = SearchSink(st, context)
+                val tracker = trackers.getOrPut(st.mode) {
+                    val prev = resumes[st.mode]
+                    RecheckRound.Tracker(roundFileOf(st), prev?.startedAt ?: started, netBefore, prev?.keys.orEmpty())
+                }
+                sink.onFlushed = { items -> tracker.add(items.map { CheckStore.keyOf(it.first.link) }); tracker.save() }
                 val speed = AppSettings(context).recheckSpeed
-                val probeBase = RecheckSpeed.probes(speed, CheckLimits.searchParallel(context))
+                val probeBase = LiteProfile.probeCap(RecheckSpeed.probes(speed, CheckLimits.searchParallel(context)))
                 val gov = GovernedLimits.get(st)
                 val govNet = NetInfo.label(context)
                 gov.begin(govNet)
                 // ручной запуск и «Быстрая» — выбор человека: уровень, накопленный из-за сбоев сети, урезает их слабее
-                val lvlCap = when { speed == RecheckSpeed.FAST -> 0; reason == "вручную" -> 1; else -> ParallelGovernor.MAX_LEVEL }
-                val detailTcp = minOf(RecheckSpeed.tcpCap(speed), ParallelGovernor.capFor(gov.tcp(govNet, lvlCap), NetInfo.kind(context) == NetInfo.Kind.MOBILE))
+                val lvlCap = when { speed == RecheckSpeed.FAST -> 0; Recheck.isManual(reason) -> 1; else -> ParallelGovernor.MAX_LEVEL }
+                val detailTcp = minOf(LiteProfile.tcpCap(RecheckSpeed.tcpCap(speed)), ParallelGovernor.capFor(gov.tcp(govNet, lvlCap), NetInfo.kind(context) == NetInfo.Kind.MOBILE))
                 val detailProbe = gov.probe(govNet, ColdStart.recheckParallel(probeBase, AppSettings(context).lastSuccessAt), lvlCap)
                 MemInfo.log(context, "перепроверка: старт, конфигов ${list.size}")
                 val search = ServerSearch(
@@ -159,21 +204,23 @@ object Recheck {
                         else (ServerHosts.reach(h, p, RecheckSpeed.reachMs(speed))).also { reachCache[key] = it ?: "" }
                     },
                     probe = { cfg, url -> ProbeShare.measure(cfg, url) { XrayCore.measureDelay(context, cfg, url, fast = mode == Mode.BLACKLIST) } },
-                    tcpParallel = minOf(RecheckSpeed.tcpCap(speed), ParallelGovernor.capFor(gov.tcp(govNet, lvlCap), NetInfo.kind(context) == NetInfo.Kind.MOBILE)),
+                    tcpParallel = minOf(LiteProfile.tcpCap(RecheckSpeed.tcpCap(speed)), ParallelGovernor.capFor(gov.tcp(govNet, lvlCap), NetInfo.kind(context) == NetInfo.Kind.MOBILE)),
                     probeParallel = gov.probe(govNet, ColdStart.recheckParallel(probeBase, AppSettings(context).lastSuccessAt), lvlCap),
                     maxCandidates = 20_000,
                     onePerHost = false,
                     loadSample = GatewayProbe.sampler(context),
-                    shouldStop = { StopRequest.requestedSince(started) || guard.stale(Storage(context).mode, NetInfo.label(context)) || RunGuard.hopeless(judged.get(), alive.get()) },
+                    shouldStop = { StopRequest.requestedSince(started) || guard.stale(Storage(context).mode, NetInfo.label(context)) || RunGuard.hopeless(probedJudged.get(), alive.get()) },
                     offlineSuspect = ServerSearch.offlineLimit(NetInfo.kind(context) == NetInfo.Kind.MOBILE),
                     hostStrikes = RecheckSkip.HOST_STRIKES,
                 )
+                ProbeStats.begin() // этап 0: пять строк диагностики проб в конце прохода
+                try {
                 search.find(list, want = Int.MAX_VALUE, budgetMs = left) { c, ms ->
                     sink.add(c, ms)
                     if (ms >= 0) alive.incrementAndGet()
                     if (ms == ServerSearch.TCP_FAIL) tcpDead.incrementAndGet()
                     if (ms == ServerSearch.HOST_SKIPPED) skippedLive.incrementAndGet()
-                    if (ms != ServerSearch.HOST_SKIPPED) judged.incrementAndGet()
+                    if (ms >= 0 || ms == -1L) probedJudged.incrementAndGet()
                     val n = done.incrementAndGet()
                     val nowMs = System.currentTimeMillis()
                     if (nowMs - lastDetailAt >= 700 || n == totalCount) {
@@ -199,14 +246,20 @@ object Recheck {
                     }
                     if (sink.pending >= 150) sink.flush()
                 }
-                sink.flush()
+                } finally {
+                    // и при отмене (система остановила работу) последние результаты не теряются: запись синхронная
+                    sink.flush()
+                    ProbeStats.end()
+                }
+                if (!search.finished && !search.aborted && !search.suspectedOffline) budgetCut = true
                 val offlineNow = search.suspectedOffline
                 MemInfo.log(context, "перепроверка: конец")
                 st.log("RECHECK: итог по этапам — хостов проверено по TCP ${search.triedTcp} (не открылись ${search.tcpFailed}), запусков ядра ${search.probed}, ответов без запуска (ProbeShare) ${ProbeShare.saved}, пропущено по адресу ${search.hostSkipped}")
                 st.log("RECHECK: время по этапам — TCP в среднем ${if (search.triedTcp > 0) search.tcpMsTotal / search.triedTcp else 0} мс на хост, проба через ядро в среднем ${if (search.probed > 0) search.probeMsTotal / search.probed else 0} мс (живые ${if (search.probeOkCount > 0) search.probeOkMsTotal / search.probeOkCount else 0} мс ×${search.probeOkCount}, мёртвые ${if (search.probed > search.probeOkCount) (search.probeMsTotal - search.probeOkMsTotal) / (search.probed - search.probeOkCount) else 0} мс ×${(search.probed - search.probeOkCount).coerceAtLeast(0)}), притормаживал из-за нагрузки роутера ${search.throttled} раз, параллельно TCP ${ParallelGovernor.capFor(gov.tcp(govNet, lvlCap), NetInfo.kind(context) == NetInfo.Kind.MOBILE)}, проб ${gov.probe(govNet, probeBase, lvlCap)}, скорость ${speed}, уровень сети ${gov.level(govNet)}")
+                ProbeStats.lines(detailProbe, govNet).forEach { st.log("RECHECK: $it") }
                 if (offlineNow) {
                     // серверы подряд не открыли TCP — вероятнее всего, нет интернета у телефона, а не умерли серверы: ограничение не снимаем, а ужесточаем
-                    if (gov.outage(govNet, System.currentTimeMillis())) st.log("RECHECK: сеть $govNet потеряла интернет во время перепроверки — в следующий раз параллельных проверок будет меньше")
+                    if (gov.outage(govNet, System.currentTimeMillis(), startedAt = search.firstFailAt.takeIf { it > 0 } ?: -1L)) st.log("RECHECK: сеть $govNet потеряла интернет во время перепроверки — в следующий раз параллельных проверок будет меньше")
                     ModeDetector.offlineAt = System.currentTimeMillis()
                 } else gov.finish(govNet, System.currentTimeMillis())
                 gov.save()
@@ -223,10 +276,10 @@ object Recheck {
                     break
                 }
                 if (search.aborted) {
-                    abortNote = RunGuard.abortReason(guard.stale(Storage(context).mode, NetInfo.label(context)), judged.get(), alive.get())
+                    abortNote = RunGuard.abortReason(guard.stale(Storage(context).mode, NetInfo.label(context)), probedJudged.get(), alive.get())
                     // «ни один не ответил» — серверы мертвы или замер сам прямой канал? Проверяем прямым замером: если и он ничего не открыл,
                     // виноват канал (журнал 22.11: 207 из 207 за 25 с сразу после сбора), и перепроверку повторим через две минуты
-                    if (RunGuard.hopeless(judged.get(), alive.get()) && !guard.stale(Storage(context).mode, NetInfo.label(context))) {
+                    if (RunGuard.hopeless(probedJudged.get(), alive.get()) && !guard.stale(Storage(context).mode, NetInfo.label(context))) {
                         val counts = ModeDetector.measureConfirmed(context)
                         if (BlockDetector.classify(counts) == BlockType.OFFLINE) {
                             abortNote = "прямой канал замер (замер напрямую тоже ничего не открыл) — повторю через 2 мин"
@@ -240,9 +293,13 @@ object Recheck {
             }
             // прервана — результаты следующих этапов были бы ложными (журнал 05.11 11:01: после «прервана» — «SVC: … рабочих 0», «BYPASS: напрямую не открылось ничего»)
             val interrupted = abortNote.isNotEmpty()
+            // круг дошёл до конца (или вы его остановили) — файл круга не нужен; иначе остаётся, и следующий запуск продолжит
+            RecheckState.roundOpen = budgetCut && !interrupted && !userStopped
+            if ((!interrupted && !budgetCut) || userStopped) allGroups.forEach { (st, _) -> try { roundFileOf(st).delete() } catch (_: Throwable) { } }
+            else if (budgetCut && !interrupted) trackers.values.firstOrNull()?.let { storage.log("RECHECK: круг не закончен (проверено ${it.count} в этом круге), следующий запуск продолжит с этого места") }
             if (interrupted) storage.log("RECHECK: сервисы, список обхода и приоритеты не трогаю — перепроверка прервана")
             try {
-                if (!interrupted && !userStopped && budgetMs - (System.currentTimeMillis() - started) > 0) {
+                if (!interrupted && !userStopped && !budgetCut && budgetMs - (System.currentTimeMillis() - started) > 0) {
                     RecheckState.progress.value = "Проверяю сервисы у рабочих конфигов…"
                     AutoServices.run(context, storage)
                 }
@@ -284,7 +341,7 @@ object Recheck {
     }
 
     /** Только приложения (сервисы) у уже рабочих конфигов: без TCP-отсева и без полной перепроверки всех конфигов. */
-    suspend fun runServices(context: Context, mode: Mode, reason: String = "вручную"): String {
+    suspend fun runServices(context: Context, mode: Mode, reason: String = MANUAL): String {
         if (!XrayCore.available) return "ядро недоступно"
         if (!RecheckState.running.compareAndSet(false, true)) return "перепроверка уже идёт"
         val storage = Storage(context, mode)
@@ -331,14 +388,25 @@ object Recheck {
     private fun constraints(): Constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED).build()
 
     /** Запустить в фоне (переживает закрытие экрана). Повторный запуск, пока идёт прежний, ничего не делает. */
-    fun enqueue(context: Context, mode: Mode, withForeign: Boolean = false, reason: String = "вручную") {
+    fun enqueue(context: Context, mode: Mode, withForeign: Boolean = false, reason: String = MANUAL) {
         val request = OneTimeWorkRequestBuilder<RecheckWorker>()
             .setConstraints(constraints())
-            .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_FOREIGN to withForeign, RecheckWorker.KEY_REASON to reason, RecheckWorker.KEY_WIFI_ONLY to wifiOnly(context, reason == "вручную")))
+            .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_FOREIGN to withForeign, RecheckWorker.KEY_REASON to reason, RecheckWorker.KEY_WIFI_ONLY to wifiOnly(context, Recheck.isManual(reason))))
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
         RecheckState.progress.value = "Перепроверка запущена…"
         WorkManager.getInstance(context).enqueueUniqueWork("phoenix_recheck", ExistingWorkPolicy.KEEP, request)
+    }
+
+    /** Продолжение круга после части без службы переднего плана: [part] — номер части (не больше [MAX_CONTINUATIONS]). */
+    fun enqueueContinuation(context: Context, mode: Mode, withForeign: Boolean, part: Int) {
+        if (part > MAX_CONTINUATIONS) return
+        val request = OneTimeWorkRequestBuilder<RecheckWorker>()
+            .setConstraints(constraints())
+            .setInitialDelay(15, java.util.concurrent.TimeUnit.SECONDS)
+            .setInputData(workDataOf(RecheckWorker.KEY_MODE to mode.name, RecheckWorker.KEY_FOREIGN to withForeign, RecheckWorker.KEY_REASON to "$CONTINUE_REASON $part", RecheckWorker.KEY_WIFI_ONLY to wifiOnly(context, false)))
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork("phoenix_recheck_cont", ExistingWorkPolicy.REPLACE, request)
     }
 
     /** Повтор прерванной перепроверки через [RETRY_DELAY_SEC] секунд (один раз: у повтора причина «повтор»). */
@@ -359,7 +427,7 @@ object Recheck {
         // тяжёлое делаем на зарядке; срочное (запасной не нашёлся) — сразу
         if (!urgent && !PowerInfo.heavyAllowed(context, settings.lastRecheckAt)) return false
         if (System.currentTimeMillis() - settings.lastRecheckAt < MIN_GAP_MS) return false
-        enqueue(context, mode, withForeign = mode == Mode.BLACKLIST, reason = reason) // авто: в чёрных списках — и конфиги белых (как раньше)
+        enqueue(context, mode, withForeign = mode == Mode.BLACKLIST && !LiteProfile.ON, reason = reason) // авто: в чёрных списках — и конфиги белых (как раньше)
         return true
     }
 }
@@ -368,7 +436,7 @@ class RecheckWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     override suspend fun doWork(): Result {
         var mode = Mode.entries.firstOrNull { it.name == inputData.getString(KEY_MODE) } ?: Storage(applicationContext).mode
         // автоматическая перепроверка не тратит больше суточного лимита по мобильной сети; ручная и поиск сервера при обрыве не ограничиваются
-        val autoRun = !inputData.getBoolean(KEY_ONLY_SERVICES, false) && (inputData.getString(KEY_REASON) ?: "вручную") != "вручную"
+        val autoRun = !inputData.getBoolean(KEY_ONLY_SERVICES, false) && !Recheck.isManual(inputData.getString(KEY_REASON) ?: Recheck.MANUAL)
         if (autoRun && BackgroundBudgetGate.exhausted(applicationContext)) return Result.success()
         // условия запуска (раньше — ограничения WorkManager): нет сети или нужен Wi-Fi, а сейчас мобильная — подождать и повторить
         val kind = NetInfo.kind(applicationContext)
@@ -380,7 +448,26 @@ class RecheckWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                 Recheck.runServices(applicationContext, mode)
                 return Result.success()
             }
-            Recheck.runAll(applicationContext, mode, withForeign = inputData.getBoolean(KEY_FOREIGN, false), reason = inputData.getString(KEY_REASON) ?: "вручную")
+            // Н1: служба переднего плана снимает лимит фоновой задачи (10 минут): раньше система обрывала перепроверку на 10-й минуте
+            val reason = inputData.getString(KEY_REASON) ?: Recheck.MANUAL
+            val fg = try {
+                setForeground(getForegroundInfo())
+                true
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: IllegalStateException) { // на Android 12+ из фона: ForegroundServiceStartNotAllowedException (API 31) — это IllegalStateException
+                Storage(applicationContext).log("RECHECK: без службы переднего плана (${e.javaClass.simpleName}) — иду частями по ${Recheck.NO_FOREGROUND_BUDGET_MS / 60_000} мин")
+                false
+            } catch (e: SecurityException) {
+                Storage(applicationContext).log("RECHECK: без службы переднего плана (${e.javaClass.simpleName}) — иду частями по ${Recheck.NO_FOREGROUND_BUDGET_MS / 60_000} мин")
+                false
+            }
+            val withForeign = inputData.getBoolean(KEY_FOREIGN, false)
+            Recheck.runAll(applicationContext, mode, budgetMs = if (fg) Recheck.BUDGET_MS else Recheck.NO_FOREGROUND_BUDGET_MS, withForeign = withForeign, reason = reason)
+            if (!fg && RecheckState.roundOpen) {
+                val part = (reason.removePrefix(Recheck.CONTINUE_REASON).trim().toIntOrNull() ?: 0) + 1
+                Recheck.enqueueContinuation(applicationContext, mode, withForeign, part)
+            }
             return Result.success()
         } catch (e: kotlinx.coroutines.CancellationException) {
             // систему или WorkManager остановили работу: без этой строки перепроверка пропадала бесследно
@@ -391,9 +478,8 @@ class RecheckWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
-        val nm = applicationContext.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, tr("Phoenix: перепроверка"), NotificationManager.IMPORTANCE_LOW))
-        val notification = Notification.Builder(applicationContext, CHANNEL_ID)
+        NotifChannels.ensure(applicationContext, CHANNEL_ID, tr("Phoenix: перепроверка"), NotificationManager.IMPORTANCE_LOW)
+        val notification = androidx.core.app.NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle("Phoenix")
             .setContentText(tr("Перепроверяю конфиги…"))

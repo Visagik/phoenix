@@ -60,6 +60,7 @@ object ServerChoiceLoader {
 }
 
 /** Окно «Сменить сервер»: список всех рабочих серверов с местом, сервисами и откликом; выбор переключает VPN. */
+@android.annotation.SuppressLint("ProduceStateDoesNotAssignValue") // значение присваивается в блоке: ложное срабатывание lint
 @Composable
 fun ServerSwitchHost() {
     val context = LocalContext.current

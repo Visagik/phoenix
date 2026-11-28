@@ -40,11 +40,11 @@ data class PermCheck(val title: String, val ok: Boolean, val detail: String, val
 object StateInfo {
     fun permissions(context: Context, withClock: Boolean = true): List<PermCheck> {
         val bg = Background.status(context)
-        val nm = context.getSystemService(NotificationManager::class.java)
+        val notifOn = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
         val vpnOk = try { VpnService.prepare(context) == null } catch (_: Throwable) { false }
         return listOf(
             PermCheck(tr("Разрешение на VPN"), vpnOk, if (vpnOk) tr("выдано") else tr("будет запрошено при первом подключении")),
-            PermCheck(tr("Уведомления"), nm?.areNotificationsEnabled() == true, if (nm?.areNotificationsEnabled() == true) tr("включены") else tr("выключены — служба VPN может не показываться"),
+            PermCheck(tr("Уведомления"), notifOn, if (notifOn) tr("включены") else tr("выключены — служба VPN может не показываться"),
                 fix = { Background.openNotificationSettings(context) }),
             PermCheck(tr("Ограничение батареи снято"), bg.ignoringBatteryOptimization, if (bg.ignoringBatteryOptimization) tr("да") else tr("нет — система может выгружать приложение"),
                 fix = { Background.requestIgnoreBatteryOptimization(context) }),

@@ -7,13 +7,23 @@ import org.junit.Test
 
 class StopRequestTest {
     @Test
-    fun stopAffectsOnlyWorkStartedBeforeIt() {
+    fun stopAffectsWorkStartedBeforeItAndTheChainAfterIt() {
         StopRequest.at.value = 0L
         assertFalse(StopRequest.requestedSince(1_000))
         StopRequest.request(5_000)
         assertTrue(StopRequest.requestedSince(4_000))
-        assertFalse(StopRequest.requestedSince(6_000))
+        assertTrue(StopRequest.requestedSince(6_000)) // следующий этап цепочки (сбор → перепроверка → цели)
+        assertTrue(StopRequest.requestedSince(5_000 + StopRequest.CHAIN_MS))
+        assertFalse(StopRequest.requestedSince(5_000 + StopRequest.CHAIN_MS + 1)) // новая работа позже окна не отменяется
         StopRequest.at.value = 0L
+    }
+
+    @Test
+    fun manualStartClearsPreviousRequest() {
+        StopRequest.request(5_000)
+        StopRequest.clear()
+        assertFalse(StopRequest.requestedSince(6_000))
+        assertFalse(StopRequest.pending(6_000))
     }
 
     @Test

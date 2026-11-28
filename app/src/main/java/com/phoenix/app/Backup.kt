@@ -29,7 +29,7 @@ object BackupCodec {
     }
 
     fun decode(text: String): Map<String, List<String>> {
-        val lines = text.removePrefix("﻿").lines()
+        val lines = text.removePrefix("\uFEFF").lines()
         val first = lines.firstOrNull { it.isNotBlank() }?.trim() ?: throw BackupFormatException("Файл пустой")
         if (!first.startsWith(HEADER)) throw BackupFormatException("Это не резервная копия Phoenix")
         val version = first.removePrefix(HEADER).trim().toIntOrNull() ?: throw BackupFormatException("Не удалось прочитать версию файла")
@@ -56,7 +56,8 @@ object BackupCodec {
 }
 
 /** Что именно попало в импорт — для сообщения пользователю. */
-data class ImportReport(val settings: Map<String, String>, val notes: List<String>) {
+/** [lists] — списки из секций «lists:…» (только те, что были в копии: нет секции — текущий список не трогаем). */
+data class ImportReport(val settings: Map<String, String>, val notes: List<String>, val lists: Map<String, List<String>> = emptyMap()) {
     fun text(): String = notes.joinToString("\n")
 }
 
@@ -111,10 +112,11 @@ object Backup {
         lines.map { line -> line.split('\t').take(7).joinToString("\t") }
 
     /** @param withLog false — без журнала загрузок: автокопия по размеру в разы меньше (журнал — до 5 МБ). */
-    fun export(root: File, settings: Map<String, String>, stamp: String, withLog: Boolean = true): String {
+    fun export(root: File, settings: Map<String, String>, stamp: String, withLog: Boolean = true, lists: Map<String, List<String>> = emptyMap()): String {
         val sections = LinkedHashMap<String, List<String>>()
         sections["info"] = listOf("exported=$stamp")
         sections["settings"] = settings.map { (k, v) -> "$k=$v" }
+        for (k in SettingsKeys.LISTS) lists[k]?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { sections[SettingsKeys.LISTS_PREFIX + k] = it }
         for (mode in Mode.entries) {
             val dir = modeDir(root, mode)
             for ((name, how) in FILES) {
@@ -131,7 +133,8 @@ object Backup {
         return BackupCodec.encode(sections)
     }
 
-    fun import(root: File, text: String): ImportReport {
+    /** [skip] — режимы, данные которых не принимаются (Lite: белые списки); в отчёт идёт строка об этом. */
+    fun import(root: File, text: String, skip: Set<Mode> = emptySet()): ImportReport {
         val sections = BackupCodec.decode(text)
         val notes = ArrayList<String>()
         val settings = LinkedHashMap<String, String>()
@@ -140,8 +143,17 @@ object Backup {
             if (eq > 0) settings[l.substring(0, eq)] = l.substring(eq + 1)
         }
         if (settings.isNotEmpty()) notes += "Настройки: ${settings.size}"
+        // имена списков — только из нашего перечня; нет секции — список не трогаем
+        val lists = LinkedHashMap<String, List<String>>()
+        for (k in SettingsKeys.LISTS) sections[SettingsKeys.LISTS_PREFIX + k]?.let { lists[k] = it.map { l -> l.trim() }.filter { l -> l.isNotEmpty() } }
+        if (lists.isNotEmpty()) notes += "Списки: " + lists.entries.joinToString(", ") { "${it.key} ${it.value.size}" }
 
         for (mode in Mode.entries) {
+            if (mode in skip) {
+                val n = sections.keys.count { it.startsWith(mode.name + ":") }
+                if (n > 0) notes += "Режим «${mode.title}»: данных в копии $n, пропущены (в этой сборке режим не используется)"
+                continue
+            }
             val dir = modeDir(root, mode)
             val parts = ArrayList<String>()
             for ((name, how) in FILES) {
@@ -203,6 +215,6 @@ object Backup {
             }
             notes += "${mode.title}: " + (if (parts.isEmpty()) "нового нет" else parts.joinToString(", "))
         }
-        return ImportReport(settings, notes)
+        return ImportReport(settings, notes, lists)
     }
 }

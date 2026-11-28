@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
  * всё в одну секунду) пропускается, а не запускает вторую такую же проверку параллельно.
  */
 class SingleFlight {
-    private val running = ConcurrentHashMap.newKeySet<String>()
+    private val running: MutableSet<String> = ConcurrentHashMap.newKeySet<String>()
 
     /** true — можно начинать (ключ занят этим вызовом); false — такая работа уже идёт. После работы обязательно [leave]. */
     fun tryEnter(key: String): Boolean = running.add(key)

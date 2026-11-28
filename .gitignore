@@ -26,5 +26,7 @@ __pycache__/
 # Сборки и временная распаковка обновлений: в репозиторий не попадают (APK — в GitHub Releases)
 *.apk
 phx-update/
+
+# 32-битная hev для Lite (из v2rayNG): в репозиторий не кладём, пока hev в Lite выключен
+app/src/lite/jniLibs/
 .phone/
-CLAUDE.md

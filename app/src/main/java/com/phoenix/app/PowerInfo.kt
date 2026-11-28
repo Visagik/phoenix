@@ -53,7 +53,7 @@ object PowerInfo {
 
     /** Телефон заметно нагрелся (система сообщает «умеренный» перегрев и выше). */
     fun hot(context: Context): Boolean = try {
-        context.getSystemService(android.os.PowerManager::class.java).currentThermalStatus >= android.os.PowerManager.THERMAL_STATUS_MODERATE
+        if (android.os.Build.VERSION.SDK_INT < 29) false else context.getSystemService(android.os.PowerManager::class.java).currentThermalStatus >= android.os.PowerManager.THERMAL_STATUS_MODERATE
     } catch (_: Throwable) { false }
 
     fun heavyAllowed(context: Context, lastRunAt: Long, manual: Boolean = false): Boolean {

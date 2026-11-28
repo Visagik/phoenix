@@ -96,7 +96,7 @@ object AppFit {
     fun exitBlocked(checkUrl: String, service: CheckService?, cc: String?): Boolean {
         if (cc.isNullOrEmpty()) return false
         if (GeoGate.blocks(checkUrl, cc)) return true
-        val i = if (service != null) ServiceBlocks.LABELS.indexOf(service.id) else -1
+        val i = if (service != null) ServiceBlocks.index(service) else -1
         return i >= 0 && ServiceBlocks.status(cc.uppercase())[i] == "blocked"
     }
 

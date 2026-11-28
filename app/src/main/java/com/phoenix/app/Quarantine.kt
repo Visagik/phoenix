@@ -6,7 +6,7 @@ package com.phoenix.app
  *  - Третий провал за [STRIKE_WINDOW_HOURS] часов: карантин на [LONG_HOURS] часов. Такой сервер остаётся в самом конце очереди
  *    и не возвращается первым, даже когда остальные не нашлись ([releaseAll] снимает только короткий карантин).
  *  - Провал при мёртвой сети не считается: сервер тут ни при чём ([add] с networkAlive = false ничего не делает).
- *  - Успешное подключение прощает все провалы ([forgive]).
+ *  - Успешное подключение снимает один провал ([forgive]); ручная смена провалом не считается ([skip]).
  *  - Хранится в файле ([attach]): перезапуск службы или процесса карантин не сбрасывает.
  */
 object Quarantine {
@@ -16,11 +16,14 @@ object Quarantine {
     const val LONG_HOURS = 24L
     const val STRIKES_FOR_LONG = 3
     const val STRIKE_WINDOW_HOURS = 24L
+    /** Повторный [add] по тому же серверу в течение этого времени — тот же эпизод сбоя: страйк не добавляется (проверка связи и перебор оба винят один обрыв). */
+    const val SAME_EPISODE_MS = 120_000L
 
     private val lock = Any()
     private val until = HashMap<String, Long>()
     private val long = HashSet<String>()
     private val strikes = HashMap<String, MutableList<Long>>()
+    private val lastStrikeAt = HashMap<String, Long>()
     @Volatile private var file: java.io.File? = null
 
     /** Подключает файл хранения и подгружает из него ещё действующий карантин; повторный вызов с тем же файлом ничего не ломает. */
@@ -38,6 +41,15 @@ object Quarantine {
     fun add(identity: String, now: Long = System.currentTimeMillis(), networkAlive: Boolean = true, earlyFall: Boolean = false) {
         if (identity.isEmpty() || !networkAlive || identity.contains('\t') || identity.contains('\n')) return
         synchronized(lock) {
+            val minutes = if (earlyFall) EARLY_MINUTES else MINUTES
+            val prev = lastStrikeAt[identity]
+            if (prev != null && now - prev in 0 until SAME_EPISODE_MS) {
+                // тот же эпизод (проверка связи и перебор винят один обрыв): страйк уже записан, срок только продлевается (час «упал сразу» не сбивается на 10 минут)
+                if (identity !in long) until[identity] = maxOf(until[identity] ?: 0L, now + minutes * 60_000L)
+                save(now)
+                return
+            }
+            lastStrikeAt[identity] = now
             val list = strikes.getOrPut(identity) { ArrayList() }
             list.removeAll { now - it > STRIKE_WINDOW_HOURS * 3_600_000L }
             list.add(now)
@@ -45,9 +57,22 @@ object Quarantine {
                 until[identity] = now + LONG_HOURS * 3_600_000L
                 long.add(identity)
             } else {
-                until[identity] = now + (if (earlyFall) EARLY_MINUTES else MINUTES) * 60_000L
+                until[identity] = maxOf(until[identity] ?: 0L, now + minutes * 60_000L)
                 long.remove(identity)
             }
+            save(now)
+        }
+    }
+
+    /**
+     * Сервер, с которого ушли по просьбе (кнопка «Сменить сервер», умная смена при рабочем туннеле): не виноват, страйка нет;
+     * на [MINUTES] минут просто не берём его первым (чтобы не вернуться на него же сразу).
+     */
+    fun skip(identity: String, now: Long = System.currentTimeMillis()) {
+        if (identity.isEmpty() || identity.contains('\t') || identity.contains('\n')) return
+        synchronized(lock) {
+            if (identity in long) return
+            until[identity] = maxOf(until[identity] ?: 0L, now + MINUTES * 60_000L)
             save(now)
         }
     }
@@ -65,12 +90,21 @@ object Quarantine {
         synchronized(lock) { return active(identity, now) && identity in long }
     }
 
-    /** Сервер снова подтвердил работу: провалы забываются. */
+    /**
+     * Сервер снова подтвердил работу: снимается один (последний) провал и короткий карантин. Остальные остаются: сервер, который то
+     * работает, то падает, как раз и должен набрать три провала за сутки (раньше удача стирала все, и суточный карантин не наступал).
+     */
     fun forgive(identity: String) {
         synchronized(lock) {
-            val had = strikes.remove(identity) != null
-            val q = until.remove(identity) != null
-            long.remove(identity)
+            val list = strikes[identity]
+            val had = list != null && list.isNotEmpty()
+            if (had) list!!.removeAt(list.size - 1)
+            if (list != null && list.isEmpty()) strikes.remove(identity)
+            lastStrikeAt.remove(identity)
+            val q = if ((strikes[identity]?.size ?: 0) < STRIKES_FOR_LONG) {
+                long.remove(identity)
+                until.remove(identity) != null
+            } else false
             if (had || q) save()
         }
     }
@@ -138,7 +172,7 @@ object Quarantine {
         }
     }
 
-    internal fun resetForTest() = synchronized(lock) { until.clear(); long.clear(); strikes.clear(); file = null }
+    internal fun resetForTest() = synchronized(lock) { until.clear(); long.clear(); strikes.clear(); lastStrikeAt.clear(); file = null }
 
     private fun save(now: Long = System.currentTimeMillis()) {
         val f = file ?: return
@@ -148,61 +182,5 @@ object Quarantine {
             if (!tmp.renameTo(f)) { f.writeText(tmp.readText()); tmp.delete() }
         } catch (_: Throwable) {
         }
-    }
-}
-
-/** Как часто проверять туннель: спокойный и долго стабильный сервер проверяем реже, чтобы не будить радиомодуль. */
-object HealthPace {
-    // кратно общей сетке 30 с: фоновые таймеры просыпаются вместе, и радиомодуль не будится по отдельности
-    const val GRID_MS = 30_000L
-    const val BASE_MS = 30_000L
-    const val CALM_MS = 60_000L
-    const val LONG_CALM_MS = 90_000L
-    const val SCREEN_OFF_MS = 120_000L
-
-    /** Экран выключен, мобильная сеть, связи нет: повтор раз в минуту, а не раз в 30 с (по журналу 15–18.11 больше 2000 строк HEALTH, почти все — неудачи). */
-    const val SCREEN_OFF_MOBILE_FAIL_MS = 60_000L
-
-    /** [calmStreak] — сколько проверок подряд без неудач; [failures] — текущие неудачи. */
-    const val HOT_MS = 180_000L
-
-    /** [hot] — телефон греется: пока всё спокойно, проверяем туннель реже. */
-    const val LOW_BATTERY_MS = 90_000L
-    const val LOW_BATTERY_PCT = 20
-
-    /** Заряд низкий и телефон не на зарядке (или включена экономия): пока спокойно, проверяем не чаще, чем раз в 90 с. */
-    fun lowBattery(percent: Int, charging: Boolean, powerSave: Boolean): Boolean = !charging && (powerSave || percent in 0 until LOW_BATTERY_PCT)
-
-    fun nextDelay(screenOn: Boolean, failures: Int, calmStreak: Int, hot: Boolean = false, lowBattery: Boolean = false, mobile: Boolean = false): Long {
-        val d = when {
-            failures > 0 && !screenOn && mobile -> SCREEN_OFF_MOBILE_FAIL_MS
-            failures > 0 -> BASE_MS
-            hot -> HOT_MS
-            !screenOn -> SCREEN_OFF_MS
-            calmStreak >= 24 -> LONG_CALM_MS
-            calmStreak >= 8 -> CALM_MS
-            else -> BASE_MS
-        }
-        return if (lowBattery && failures == 0) maxOf(d, LOW_BATTERY_MS) else d
-    }
-}
-
-/**
- * Тяжёлые фоновые задачи (полная перепроверка, аудит источников) по умолчанию идут на зарядке.
- * Чтобы они не голодали, если телефон давно не заряжали, их разрешают и без зарядки: при хорошем заряде, не на мобильной сети,
- * и только если давно не запускались. Ручной запуск разрешён всегда.
- */
-object HeavyGate {
-    const val STARVE_HOURS = 24L
-    const val MIN_BATTERY = 50
-
-    /** [quiet] — тихие часы (ручные или по часам активности): без зарядки не будим радиомодуль, исключение «давно не делали» не действует. */
-    fun allow(manual: Boolean, charging: Boolean, batteryPct: Int, metered: Boolean, hoursSinceLast: Long, quiet: Boolean = false, hot: Boolean = false): Boolean = when {
-        manual -> true
-        hot -> false // телефон греется: тяжёлое откладываем даже на зарядке
-        charging -> true
-        quiet -> false
-        hoursSinceLast >= STARVE_HOURS && batteryPct >= MIN_BATTERY && !metered -> true
-        else -> false
     }
 }

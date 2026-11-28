@@ -21,8 +21,9 @@ object SourceTag {
         return if (i < 0) line else line.trimEnd() + "%20($tag)"
     }
 
-    /** @param perSource пары (адрес источника, строки его тела); возвращает все строки, у «чужих» дублей имён — с меткой. */
-    fun apply(perSource: List<Pair<String, List<String>>>, keyOf: (String) -> String): List<String> {
+    /** @param owners если задан, в него записывается «ключ получившегося конфига → адрес источника» (для переноса конфигов между сборами);
+     * @param perSource пары (адрес источника, строки его тела); возвращает все строки, у «чужих» дублей имён — с меткой. */
+    fun apply(perSource: List<Pair<String, List<String>>>, keyOf: (String) -> String, owners: MutableMap<String, String>? = null): List<String> {
         val owner = HashMap<String, String>()
         val out = ArrayList<String>()
         // сначала источники по адресу: кто «хозяин» имени, не зависит от того, в каком порядке они скачались
@@ -35,7 +36,9 @@ object SourceTag {
                 if (!line.contains("://")) { res += raw; continue }
                 val k = keyOf(line)
                 val o = owner.getOrPut(k) { url }
-                res += if (o == url) raw else withTag(line, tagOf(url))
+                val outLine = if (o == url) raw else withTag(line, tagOf(url))
+                res += outLine
+                owners?.put(keyOf(outLine.trim()), url)
             }
             tagged[url] = res
         }

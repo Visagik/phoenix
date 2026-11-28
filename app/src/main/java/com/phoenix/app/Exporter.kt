@@ -41,8 +41,24 @@ object Exporter {
         }
     }
 
+    /**
+     * До Android 10 (API 29) MediaStore.Downloads нет: пишем в папку приложения «Download/Phoenix» (разрешение не нужно; файл исчезает
+     * вместе с приложением). Путь для сообщения «Сохранено: …» даёт [where].
+     */
+    private fun legacyDir(context: Context): java.io.File =
+        java.io.File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir, "Phoenix").also { it.mkdirs() }
+
+    /** Куда сохраняются файлы: понятный путь для сообщения пользователю. */
+    fun where(context: Context): String {
+        if (android.os.Build.VERSION.SDK_INT >= 29) return tr("Загрузки/Phoenix")
+        val path = legacyDir(context).absolutePath
+        val k = path.indexOf("/Android/")
+        return if (k >= 0) path.substring(k + 1) else path
+    }
+
     /** Копирует файл в Загрузки/Phoenix/<fileName> (виден после удаления приложения). */
     fun saveFileToDownloads(context: Context, fileName: String, mime: String, source: java.io.File): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < 29) return try { source.copyTo(java.io.File(legacyDir(context), fileName), overwrite = true); true } catch (_: Exception) { false }
         return try {
             val resolver = context.contentResolver
             val relPath = Environment.DIRECTORY_DOWNLOADS + "/Phoenix"
@@ -70,6 +86,7 @@ object Exporter {
 
     /** Сохраняет в Загрузки/Phoenix/<fileName>. Старый файл с тем же именем заменяется. */
     fun saveToDownloads(context: Context, fileName: String, text: String): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < 29) return try { java.io.File(legacyDir(context), fileName).writeText(text, Charsets.UTF_8); true } catch (_: Exception) { false }
         return try {
             val resolver = context.contentResolver
             val relPath = Environment.DIRECTORY_DOWNLOADS + "/Phoenix"

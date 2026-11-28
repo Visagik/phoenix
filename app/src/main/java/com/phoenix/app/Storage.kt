@@ -75,6 +75,10 @@ class Storage(context: Context, val mode: Mode = Mode.read(context.applicationCo
     /** Накопленные «голоса» определения типа блокировок (лежит в корне — общий для режимов). */
     val voteFile = File(root, "detect_vote.txt")
     val modeHintFile = File(root, "mode_hint.txt")
+
+    /** Перерывы связи за день: один файл на оба режима (раньше в папке каждого режима свой, и счётчик «прыгал» при смене режима). Папка белых списков — корень, поэтому её старый файл уже на месте. */
+    val downtimeFile = File(root, "downtime.tsv")
+    val legacyDowntimeFiles: List<File> get() = Mode.entries.mapNotNull { it.folder }.map { File(File(root, it), "downtime.tsv") }
     val checkSelectionFile = File(base, "check_services.txt")
     /** Свои сервисы для проверки через конфиг (код, название, адрес). */
     val customServicesFile = File(base, "custom_services.tsv")
@@ -143,6 +147,8 @@ class Storage(context: Context, val mode: Mode = Mode.read(context.applicationCo
 
     /** Когда каждый конфиг последний раз приходил из источника (для срока переноса, см. [CarryOver]). */
     val carrySeenFile = File(base, "carry_seen.tsv")
+    /** Из какого источника пришёл конфиг пула («ключ\tадрес источника»): нужно, чтобы не переносить конфиги удалённых источников. */
+    val carrySourcesFile = File(base, "carry_sources.tsv")
 
     /** Есть ли уже итоговый файл конфигов за сегодня (значит, сегодняшний сбор выполнен). */
     fun hasEnrichedToday(): Boolean = File(File(base, today), ENRICHED_NAME).exists()

@@ -49,8 +49,14 @@ object Scheduler {
     fun ensureScheduled(context: Context) {
         scheduleNightly(context, replace = false)
         AlarmScheduler.arm(context)
-        TargetsWorker.schedulePeriodic(context)
-        UpdateChecker.schedule(context)
+        if (LiteProfile.ON) {
+            // Lite: цели и обновления отключены; задачи, которые могли остаться, снимаем
+            TargetsWorker.cancelAll(context)
+            UpdateChecker.cancel(context)
+        } else {
+            TargetsWorker.schedulePeriodic(context)
+            UpdateChecker.schedule(context)
+        }
         catchUpIfNeeded(context, trigger = "catch-up")
     }
 
@@ -284,10 +290,19 @@ class PhoenixWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         // перепроверку целей); если перепроверка не стартовала (выключена или была недавно) — только цели.
         if (allOk) {
             // кнопка «Собрать» — ручной запуск: перепроверка серверов не ждёт зарядки и не отступает из-за скачков сети, иначе сразу шёл поиск целей по старым серверам
-            val started = if (manual) Recheck.enqueueIfDue(ctx, Storage(ctx).mode, reason = "вручную", urgent = true) else Recheck.enqueueIfDue(ctx, Storage(ctx).mode)
+            // Н4: ручное действие сильнее настройки «Сам перепроверять» и паузы между перепроверками — не идёт только если перепроверка уже выполняется
+            val started = when (RecheckGate.afterCollect(manual, RecheckState.running.value, settings.autoRecheck)) {
+                RecheckGate.After.MANUAL_RECHECK -> {
+                    val m = Storage(ctx).mode
+                    Recheck.enqueue(ctx, m, withForeign = m == Mode.BLACKLIST && !LiteProfile.ON, reason = Recheck.MANUAL)
+                    true
+                }
+                RecheckGate.After.AUTO_IF_DUE -> Recheck.enqueueIfDue(ctx, Storage(ctx).mode)
+                RecheckGate.After.TARGETS_ONLY -> false
+            }
             if (!started) {
-                if (manual) Storage(ctx).log("SCHED: перепроверка не запущена (выключена, уже идёт или была недавно) — ищу только серверы для целей")
-                if (manual) TargetsWorker.enqueue(ctx) else TargetsWorker.enqueueAfterRefresh(ctx)
+                if (manual && !LiteProfile.ON) Storage(ctx).log("SCHED: перепроверка уже идёт — ищу только серверы для целей")
+                if (!LiteProfile.ON) { if (manual) TargetsWorker.enqueue(ctx) else TargetsWorker.enqueueAfterRefresh(ctx) }
             }
         }
         return if (allOk || runAttemptCount >= 2) Result.success() else Result.retry()
@@ -295,11 +310,8 @@ class PhoenixWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
     /** Нужно для срочных задач на Android 10–11 (на 12+ не показывается). */
     override suspend fun getForegroundInfo(): ForegroundInfo {
-        val nm = applicationContext.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, tr("Phoenix: сбор источников"), NotificationManager.IMPORTANCE_LOW)
-        )
-        val notification = Notification.Builder(applicationContext, CHANNEL_ID)
+        NotifChannels.ensure(applicationContext, CHANNEL_ID, tr("Phoenix: сбор источников"), NotificationManager.IMPORTANCE_LOW)
+        val notification = androidx.core.app.NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentTitle("Phoenix")
             .setContentText("Collecting configs…")

@@ -1,11 +1,19 @@
 package com.phoenix.app
 
 /**
- * Какие сервисы доступны из страны выхода. Порядок: TG, QW, CL, YT, ST.
+ * Какие сервисы доступны из страны выхода. Порядок столбцов задаёт [CheckServices.ALL] (сейчас TG, QW, CL, YT, ST).
  * Страны, которых нет в таблице, считаются «ok» по всем сервисам (как в service_blocks.tsv).
  */
 object ServiceBlocks {
-    val LABELS = listOf("TG", "QW", "CL", "YT", "ST")
+    /** Порядок столбцов таблицы = порядок встроенных сервисов проверки (общий источник правды, раньше список дублировался и мог разойтись). */
+    val LABELS: List<String> get() = CheckServices.ALL.map { it.id }
+
+    /**
+     * Столбец таблицы для сервиса; −1, если сервиса в таблице нет. У сервисов из целей id вида «APP:пакет» / «SITE:хост», а таблица знает только
+     * встроенные коды (TG, QW, CL…): для них берётся [CheckService.legacyId] (встроенный сервис с тем же адресом). Раньше искали по id и всегда получали −1,
+     * так что «сервер из закрытой страны без замера — в конец» для целей молча не работало.
+     */
+    fun index(service: CheckService): Int = LABELS.indexOf(service.legacyId.ifEmpty { service.id })
 
     private val table: Map<String, List<String>> = buildMap {
         for (cc in listOf("RU", "CN", "IR", "KP", "BY", "SA")) {

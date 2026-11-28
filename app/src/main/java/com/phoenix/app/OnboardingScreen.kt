@@ -69,7 +69,7 @@ fun onboardingEnv(context: Context): Onboarding.Env {
     val notifOk = if (Build.VERSION.SDK_INT >= 33) {
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     } else {
-        context.getSystemService(NotificationManager::class.java)?.areNotificationsEnabled() == true
+        androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
     val vendor = try { Background.vendor() } catch (_: Throwable) { OemGuide.Vendor.OTHER }
     val hasServers = Mode.entries.any { try { Storage(context, it).latestEnriched() != null } catch (_: Throwable) { false } }

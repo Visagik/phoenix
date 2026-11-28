@@ -8,8 +8,8 @@ package com.phoenix.app
 object GoogleDiag {
     const val PERIOD_MS = 120_000L
 
-    private val packages = setOf("com.google.android.apps.bard", "com.google.android.apps.labs.language.tailwind", "com.google.android.googlequicksearchbox")
-    private val sites = listOf("gemini.google.com", "bard.google.com", "notebooklm.google.com", "notebook.google", "aistudio.google.com")
+    private val packages get() = GoogleAi.packages
+    private val sites get() = GoogleAi.sites
 
     /** Узлы, которые обходятся при проверке: (метка, адрес). */
     val urls: List<Pair<String, String>> = listOf(

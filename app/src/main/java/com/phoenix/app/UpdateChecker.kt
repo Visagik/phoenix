@@ -97,12 +97,12 @@ object UpdateChecker {
 
     private fun showNotification(context: Context, rel: ReleaseInfo, reinstall: Boolean = false): Boolean = try {
         val nm = context.getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, tr("Phoenix: обновления"), NotificationManager.IMPORTANCE_DEFAULT))
+        NotifChannels.ensure(context, CHANNEL_ID, tr("Phoenix: обновления"), NotificationManager.IMPORTANCE_DEFAULT)
         val open = PendingIntent.getActivity(
             context, 0, Intent(context, MainActivity::class.java).putExtra(SwitchRequest.EXTRA_UPDATE, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val n = android.app.Notification.Builder(context, CHANNEL_ID)
+        val n = androidx.core.app.NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setContentTitle(if (reinstall) tr("Phoenix: обновление {} потребует переустановки", rel.tag) else tr("Phoenix: доступно обновление {}", rel.tag))
             .setContentText(if (reinstall) tr("Другой ключ подписи: сначала сохраните резервную копию, приложение придётся удалить") else tr("Нажмите, чтобы открыть страницу загрузки"))
@@ -110,12 +110,18 @@ object UpdateChecker {
             .setAutoCancel(true)
             .build()
         nm.notify(NOTIFICATION_ID, n)
-        nm.areNotificationsEnabled()
+        androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
     } catch (_: Throwable) {
         false
     }
 
+    /** Lite: проверка обновлений не работает; задачу, если она была, снимаем. */
+    fun cancel(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork("phoenix_update_check")
+    }
+
     fun schedule(context: Context) {
+        if (LiteProfile.ON) return
         val request = PeriodicWorkRequestBuilder<UpdateWorker>(24, TimeUnit.HOURS)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .build()

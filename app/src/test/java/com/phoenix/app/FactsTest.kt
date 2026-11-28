@@ -5,10 +5,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FactsTest {
-    @Test fun fiftyUniqueOneLineFacts() {
-        assertEquals(50, Facts.ALL.size)
-        assertEquals(50, Facts.ALL.toSet().size)
+    @Test fun fiftyToEightyUniqueOneLineFacts() {
+        assertTrue(Facts.ALL.size in 50..80)
+        assertEquals(Facts.ALL.size, Facts.ALL.toSet().size)
         Facts.ALL.forEach { assertTrue(it, it.isNotBlank() && !it.contains('\n') && it.length <= 130) }
+    }
+
+    @Test fun reviewedForLooksLikeVersion() {
+        assertTrue(Facts.REVIEWED_FOR, Regex("\\d+\\.\\d+\\.\\d+").matches(Facts.REVIEWED_FOR))
     }
 
     @Test fun nextWrapsAround() {

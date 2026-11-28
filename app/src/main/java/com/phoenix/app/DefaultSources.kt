@@ -6,6 +6,7 @@ package com.phoenix.app
  */
 object DefaultSources {
     private const val IGARECK = "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/"
+    private const val IGARECK_CODEBERG = "https://codeberg.org/igareck/vpn-configs-for-russia/raw/branch/main/"
 
     val BLACK = listOf(
         IGARECK + "BLACK_SS%2BAll_RUS.txt",
@@ -26,7 +27,7 @@ object DefaultSources {
     )
 
     val WHITE = listOf(
-        // Белые списки от igareck (мобильные сети): 150 лучших для телефона и проверенный набор по CIDR. WHITE-SNI-RU-all убран: на проверке файл был пустой
+        // Белые списки от igareck (мобильные сети): 150 лучших для телефона и проверенный набор по CIDR; SNI-подписка ниже (снова не пустая)
         IGARECK + "Vless-Reality-White-Lists-Rus-Mobile.txt",
         IGARECK + "WHITE-CIDR-RU-checked.txt",
         IGARECK + "WHITE-CIDR-RU-all.txt",
@@ -45,6 +46,38 @@ object DefaultSources {
         "https://raw.githubusercontent.com/gooseteam-hackers/GooseVPN/refs/heads/main/configs/balanced.txt",
         "https://raw.githubusercontent.com/gooseteam-hackers/GooseVPN/refs/heads/main/configs/plus.txt",
         "https://vpn.akres.fun/bwl",
+        // Зеркала не на GitHub: при белых списках raw.githubusercontent.com часто не открывается. Те же файлы, дубли конфигов отсеиваются при сборе.
+        // Адреса со страниц авторов 24.11; из песочницы не проверялись, проверяются на телефоне. Две последние ссылки Codeberg собраны по той же схеме, что и первые две.
+        IGARECK_CODEBERG + "Vless-Reality-White-Lists-Rus-Mobile.txt",
+        IGARECK_CODEBERG + "WHITE-CIDR-RU-checked.txt",
+        IGARECK_CODEBERG + "WHITE-CIDR-RU-all.txt",
+        "https://codeberg.org/zieng2/wl/raw/branch/main/vless_universal.txt",
+        "https://gitlab.com/zieng2/wl/-/raw/main/vless_universal.txt",
+        "https://cdn.jsdelivr.net/gh/solovyov-jenya2004/all_subs@main/final_sorted",
+        "https://gitlab.com/solovyov-jenya2004/all_subs/-/raw/main/final_sorted/",
+        "https://raw.githubusercontent.com/MrEndi777709/Endi-VPN/main/mrendi-vpn-white-list.txt",
+        // igareck SNI-подписка: снова не пустая (12 конфигов на 24.11), обновляется редко
+        IGARECK + "WHITE-SNI-RU-all.txt",
+        // Сборник AvenCores: файлы 1–25, отфильтрованные по CIDR/SNI белых списков. Большой (~1,3 МБ), в MAX_BODY_CHARS влезает
+        "https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/26.txt",
+        // Ещё зеркала igareck (телефонная подписка): GitHub raw при белых списках часто закрыт
+        "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
+        "https://bitbucket.org/igareck/vpn-configs-for-russia/raw/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
+        "https://gitea.com/igareck/vpn-configs-for-russia/raw/branch/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
+        "https://raw.githack.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
+        // Через Яндекс.Переводчик (домен Яндекса в белом списке): схема из README igareck
+        "https://translate.yandex.ru/translate?url=https://bitbucket.org/igareck/vpn-configs-for-russia/raw/main/Vless-Reality-White-Lists-Rus-Mobile.txt&lang=de-de",
+        // Российские хостинги (экспериментально: Mos.Hub, по отзывам, снесён; GitVerse не во всех белых списках). Мёртвые уберёт автоудаление
+        "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_universal.txt",
+        "https://hub.mos.ru/zieng2/wl/raw/main/list_universal.txt",
+        "https://gitverse.ru/api/repos/flaafix/AetrisVPN/raw/branch/master/AetrisVPN.txt",
+        "https://gitverse.ru/api/repos/MishaLan/MishaLan/raw/branch/master/MishaLan.txt",
+        "https://gitverse.ru/api/repos/ru-wbl/wl/raw/branch/master/KvRuVPN/KvRuVPN.txt",
+        // Адрес собран по образцу README (сам файл не открывался): проверка на телефоне
+        "https://raw.githubusercontent.com/kort0881/vpn-checker-backend/main/checked/RU_Best/ru_white_part1.txt",
+        // Не под белые списки напрямую: российские SNI / общий сборник — в LOW_TRUST
+        "https://raw.githubusercontent.com/kort0881/vpn-vless-configs-russia/main/githubmirror/ru-sni/vless_ru.txt",
+        "https://cdn.jsdelivr.net/gh/indelingDanil/MyAppVPN-subs@output/vless.txt",
     )
 
     /** Источники, которые по умолчанию не собираем (из общего списка): сами конфиги оттуда не нужны. */
@@ -76,6 +109,7 @@ object DefaultSources {
         "ShatakVPN/ConfigForge-V2Ray", "Delta-Kronecker/V2ray-Config", "Mohammadgb0078/IRV2ray", "iboxz/free-v2ray-collector",
         "MatinGhanbari/v2ray-configs", 
         "Pawdroid/Free-servers", "roosterkid/openproxylist",
+        "kort0881/vpn-vless-configs-russia", "indelingDanil/MyAppVPN-subs",
     )
 
     fun isLowTrust(url: String): Boolean = LOW_TRUST.any { url.contains(it) }

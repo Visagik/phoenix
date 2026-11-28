@@ -54,27 +54,25 @@ object FetchPolicy {
         }
     }
 
-    /** Строка для журнала. */
-    fun describe(direct: Int, vpn: Int?, vpnOn: Boolean): String = buildString {
+    /** Строка для журнала; [vpnOn] false — VPN выключен (для совместимости; причину точнее задаёт перегрузка ниже). */
+    fun describe(direct: Int, vpn: Int?, vpnOn: Boolean): String =
+        describe(direct, vpn, if (vpnOn || vpn != null) null else FetchRoute.REASON_VPN_OFF)
+
+    /** Строка для журнала. [noVpnReason] — настоящая причина, почему через VPN не пробовали (null — пробовали или не нужно). */
+    fun describe(direct: Int, vpn: Int?, noVpnReason: String?): String = buildString {
         append("напрямую: ").append(if (direct == 0) "нет ответа" else "код $direct")
         when {
             vpn != null -> append("; через VPN: ").append(if (vpn == 0) "нет ответа" else "код $vpn")
-            !vpnOn && tryVpn(direct) -> append("; VPN выключен — через него не пробовал")
+            noVpnReason != null && tryVpn(direct) -> append("; $noVpnReason — через него не пробовал")
         }
     }
 }
 
 /** Связь чистой логики сбора с Android (сеть, нагрузка): на устройстве заполняется в PhoenixApp, в тестах остаются значения по умолчанию. */
-/** Сколько раз за один сбор можно повторять загрузку через VPN (лишние повторы грузят туннель и сеть). */
-object VpnRetryBudget {
-    const val MAX_PER_RUN = 15
-
-    /** Повтор через VPN: не больше раза на источник за запрос, не при отсутствии сети и не сверх общего лимита сбора. */
-    fun allow(alreadyForSource: Boolean, usedInRun: Int, offline: Boolean): Boolean = !alreadyForSource && !offline && usedInRun < MAX_PER_RUN
-}
-
 object NetHooks {
     @Volatile var offline: () -> Boolean = { false }
+    /** Строка MEM в журнал (ставит PhoenixApp; в тестах пусто). */
+    @Volatile var mem: (String) -> Unit = { }
     @Volatile var mobile: () -> Boolean = { false }
     @Volatile var label: () -> String = { "" }
     @Volatile var level: (Storage, String) -> Int = { _, _ -> 0 }

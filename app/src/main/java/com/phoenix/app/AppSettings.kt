@@ -76,7 +76,7 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
 
     /** Запускать сбор только когда телефон на зарядке (экономия батареи). */
     var onlyCharging: Boolean
-        get() = prefs.getBoolean("only_charging", false)
+        get() = prefs.getBoolean("only_charging", LiteProfile.defaultOnlyCharging(false))
         set(v) = prefs.edit().putBoolean("only_charging", v).apply()
 
     /** Сбор и перепроверку выполнять только по Wi-Fi (см. [WifiOnlyPolicy]: через трое суток без сбора ограничение снимается). */
@@ -104,7 +104,7 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
 
     /** Сам определять тип блокировок (белые/чёрные списки) и переключать режим. */
     var autoMode: Boolean
-        get() = prefs.getBoolean("auto_mode", true)
+        get() = LiteProfile.autoMode(prefs.getBoolean("auto_mode", true))
         set(v) = prefs.edit().putBoolean("auto_mode", v).apply()
 
     /** Когда и в какой сети режим выбран вручную (автоопределение после этого ненадолго молчит). */
@@ -178,7 +178,7 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
 
     /** Менять сервер, если через него почти ничего не качается (интернет «есть», но страницы и фото не грузятся). */
     var slowSwitch: Boolean
-        get() = bool("slow_switch", true)
+        get() = bool("slow_switch", LiteProfile.defaultSlowSwitch())
         set(v) = putBool("slow_switch", v)
 
     /** Ниже этой скорости (Мбит/с) при активной работе считаем сервер медленным. */
@@ -242,7 +242,7 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
 
     /** Движок туннеля hev-socks5-tunnel (как у v2rayNG) вместо встроенного в ядро. Общая настройка, по умолчанию выключено. */
     var hevEngine: Boolean
-        get() = prefs.getBoolean("tun_engine_hev", false)
+        get() = LiteProfile.hevEngine(prefs.getBoolean("tun_engine_hev", false))
         set(v) = prefs.edit().putBoolean("tun_engine_hev", v).apply()
 
     /** Необязательная ссылка (https) на файл правил регионов: какие сайты закрыты по стране выхода и по каким фразам узнавать страницу-заглушку. */
@@ -257,7 +257,7 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
 
     /** Сами проверять выбранные сервисы у рабочих конфигов (после перепроверки и в фоне). По умолчанию включено. */
     var autoServiceCheck: Boolean
-        get() = bool("auto_service_check", true)
+        get() = LiteProfile.autoServiceCheck(bool("auto_service_check", true))
         set(v) = putBool("auto_service_check", v)
 
     // ---- расписание сбора (общее) ----
@@ -326,12 +326,12 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
 
     /** Бегущая строка с фактами о приложении вверху главного экрана (см. [Facts]); переключатель в «Ещё → Фишки». */
     var factsTicker: Boolean
-        get() = prefs.getBoolean("facts_ticker", false)
+        get() = prefs.getBoolean("facts_ticker", LiteProfile.defaultFactsTicker(false))
         set(v) = prefs.edit().putBoolean("facts_ticker", v).apply()
 
     /** Анимации главного экрана (свечение круга); системное «Убрать анимацию» их выключает независимо от этого переключателя. */
     var animations: Boolean
-        get() = prefs.getBoolean("animations", true)
+        get() = prefs.getBoolean("animations", LiteProfile.defaultAnimations())
         set(v) = prefs.edit().putBoolean("animations", v).apply()
 
     /** Язык интерфейса на Android 10–12 (на 13+ его выбирает система); пусто — как в системе. */
@@ -349,15 +349,16 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
         get() = prefs.getString("only_apps", "") ?: ""
         set(v) = prefs.edit().putString("only_apps", v).apply()
 
-    /** Тема: 0 как в системе, 1 светлая, 2 тёмная (см. [ThemeChoice]). */
+    /** Скорость перепроверки: 0 бережно, 1 обычно, 2 быстро (см. [RecheckSpeed]). */
     var recheckSpeed: Int
-        get() = RecheckSpeed.clamp(prefs.getInt("recheck_speed", RecheckSpeed.DEFAULT))
+        get() = RecheckSpeed.clamp(prefs.getInt("recheck_speed", LiteProfile.defaultRecheckSpeed(RecheckSpeed.DEFAULT, RecheckSpeed.GENTLE)))
         set(v) = prefs.edit().putInt("recheck_speed", RecheckSpeed.clamp(v)).apply()
 
     var activityStyle: Int
         get() = ActivityStyle.clamp(prefs.getInt("activity_style", ActivityStyle.DEFAULT))
         set(v) = prefs.edit().putInt("activity_style", ActivityStyle.clamp(v)).apply()
 
+    /** Тема: 0 как в системе, 1 светлая, 2 тёмная (см. [ThemeChoice]). */
     var theme: Int
         get() = ThemeChoice.clamp(prefs.getInt("theme", 0))
         set(v) = prefs.edit().putInt("theme", ThemeChoice.clamp(v)).apply()
@@ -384,7 +385,7 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
 
     /** При смене сервера учитывать, какое приложение открыто сейчас: первыми пробуются серверы, на которых оно работает. */
     var appAwareFailover: Boolean
-        get() = prefs.getBoolean("app_aware_failover", true)
+        get() = LiteProfile.appAwareFailover(prefs.getBoolean("app_aware_failover", true))
         set(v) = prefs.edit().putBoolean("app_aware_failover", v).apply()
 
     /** Свои тихие часы: сильнее автоматических. */
@@ -419,6 +420,22 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
     /** Настройки, которые уходят в резервную копию (ключ → тип: b, i, f, s). Служебные отметки сбора не переносим. */
     private val portable = SettingsKeys.portable(Mode.entries.map { it.name })
 
+    /** Списки «по одному в строке» для копии (пустые не отдаём). */
+    fun exportLists(): Map<String, List<String>> =
+        SettingsKeys.LISTS.associateWith { k -> (prefs.getString(k, "") ?: "").lines().map { it.trim() }.filter { it.isNotEmpty() } }.filterValues { it.isNotEmpty() }
+
+    /** Записать списки из копии; ключи только из [SettingsKeys.LISTS]. @return сколько списков записано */
+    fun importLists(lists: Map<String, List<String>>): Int {
+        val e = prefs.edit()
+        var n = 0
+        for (k in SettingsKeys.LISTS) {
+            val v = lists[k] ?: continue
+            e.putString(k, v.map { it.trim() }.filter { it.isNotEmpty() && !it.contains('\n') }.distinct().sorted().joinToString("\n")); n++
+        }
+        e.apply()
+        return n
+    }
+
     fun exportMap(): Map<String, String> {
         val all = prefs.all
         return portable.keys.filter { all[it] != null }.associateWith { all[it].toString() }
@@ -440,7 +457,7 @@ class AppSettings(context: Context, private val scope: Scope = Scope.AUTO) {
                         k.endsWith("ipv6_mode") -> Ipv6Mode.entries.any { it.name == v }
                         k == "schedule_kind" -> ScheduleKind.entries.any { it.name == v }
                         k == "dns_provider" -> DnsProvider.entries.any { it.name == v }
-                        else -> true
+                        else -> SettingsKeys.importValueOk(k, v)
                     }
                     if (ok) { e.putString(k, v); n++ }
                 }

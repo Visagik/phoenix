@@ -65,4 +65,12 @@ class SourceBenchTest {
         val (m2, b2) = SourceBench.split(listOf("a"), emptySet()) { it }
         assertEquals(listOf("a"), m2); assertTrue(b2.isEmpty())
     }
+
+    @Test fun highPrioritySourceIsNeverBench() {
+        val ids = (1..600).map { "c$it" }.toSet()
+        val m = mapOf("big" to ids, "small" to setOf("x"))
+        assertEquals(setOf("big"), SourceBench.bigUrls(m, emptySet()))
+        assertTrue(SourceBench.bigUrls(m, emptySet(), high = setOf("big")).isEmpty())
+        assertTrue(SourceBench.benchIds(m, emptySet(), high = setOf("big")).isEmpty())
+    }
 }

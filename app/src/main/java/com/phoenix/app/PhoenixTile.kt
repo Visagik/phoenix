@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /** Плитка «Phoenix VPN» в шторке уведомлений: включает и выключает VPN. */
+@androidx.annotation.RequiresApi(24) // плитки шторки есть с Android 7; на Android 6 система их не вызывает
 class PhoenixTileService : TileService() {
     private var scope: CoroutineScope? = null
 
@@ -57,6 +58,7 @@ class PhoenixTileService : TileService() {
         }, "phoenix-tile-pick").start()
     }
 
+    @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated") // Intent-вариант вызывается только до API 34
     private fun openApp() {
         val intent = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         if (Build.VERSION.SDK_INT >= 34) {

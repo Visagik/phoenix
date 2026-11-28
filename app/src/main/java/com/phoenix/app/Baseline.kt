@@ -45,11 +45,15 @@ object Baseline {
             if (transient(errorOf())) return ms
             // массовая перепроверка в обычной сети: gstatic открыт, а запасной адрес лишь удваивает ожидание у каждого мёртвого сервера
             if (fast) return ms
+            val afterTimeout = ProbeStats.classify(errorOf()) == ProbeStats.Err.TIMEOUT
             val alt = probe(ALTERNATIVES.first())
+            ProbeStats.alternative(afterTimeout, alt >= 0) // только счётчик для журнала (этап 0), поведение не меняет
             return if (alt >= 0) alt else ms
         }
         for (alt in ALTERNATIVES) {
+            val afterTimeout = ProbeStats.classify(errorOf()) == ProbeStats.Err.TIMEOUT
             ms = probe(alt)
+            ProbeStats.alternative(afterTimeout, ms >= 0)
             if (ms >= 0) return ms
             if (!answered(errorOf())) return ms // другая ошибка (обрыв, таймаут) — дальше пробовать смысла нет
         }

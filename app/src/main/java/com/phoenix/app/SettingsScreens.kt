@@ -71,7 +71,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 @Composable
-private fun Hint(text: String) = Text(
+internal fun Hint(text: String) = Text(
     text,
     style = MaterialTheme.typography.bodySmall,
     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -127,7 +127,7 @@ fun ModePage(vm: MainViewModel) {
         }
         SwitchRow(
             tr("Определять сам"),
-            tr("Приложение проверяет, какие сайты открываются напрямую, и переключает режим, когда два определения подряд совпали. Проверка идёт при смене сети."),
+            tr("Приложение проверяет, какие сайты открываются напрямую, и переключает режим. После смены сети хватает одного определения, иначе нужно два подряд. Проверка идёт при смене сети, при обрыве связи и при запуске."),
             auto,
         ) { vm.setAutoMode(it) }
         Spacer(Modifier.height(8.dp))
@@ -186,6 +186,7 @@ fun ConnectionPage(vm: MainViewModel) {
         Text(tr("Сеть сейчас: {}", tr(net.title)), style = MaterialTheme.typography.bodyMedium)
         Hint(
             if (NetInfo.isUnmetered(context)) tr("Замеры скорости идут сами.")
+            else if (metered) tr("Замеры идут и по мобильной сети (включено ниже).")
             else tr("Замеры скорости сами не идут (мобильная сеть); кнопка «Скорость» на карточке работает всегда.")
         )
         Spacer(Modifier.height(8.dp))
@@ -194,7 +195,9 @@ fun ConnectionPage(vm: MainViewModel) {
         Text(tr("Чьи настройки править"), style = MaterialTheme.typography.titleMedium)
         FlowRow(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
             FilterChip(selected = scope == AppSettings.Scope.COMMON, onClick = { vm.setScope(AppSettings.Scope.COMMON) }, label = { Text(tr("Общие")) })
-            FilterChip(selected = scope == AppSettings.Scope.WHITELIST, onClick = { vm.setScope(AppSettings.Scope.WHITELIST) }, label = { Text(tr("Белые")) })
+            if (Mode.WHITELIST !in LiteProfile.skipModes()) {
+                FilterChip(selected = scope == AppSettings.Scope.WHITELIST, onClick = { vm.setScope(AppSettings.Scope.WHITELIST) }, label = { Text(tr("Белые")) })
+            }
             FilterChip(selected = scope == AppSettings.Scope.BLACKLIST, onClick = { vm.setScope(AppSettings.Scope.BLACKLIST) }, label = { Text(tr("Чёрные")) })
         }
         Hint(
@@ -226,17 +229,21 @@ fun ConnectionPage(vm: MainViewModel) {
             Text(tr("Сейчас для этого режима действуют общие настройки. Включите «Свои настройки», чтобы менять их отдельно."), style = MaterialTheme.typography.bodyMedium)
         }
         if (editable) {
+        GroupLabel(tr("Для выбранной области"))
         GroupLabel(tr("Смена сервера"))
         SwitchRow(
             tr("Переподключаться само"),
-            tr("Если туннель перестал работать (три неудачные проверки), приложение перебирает запасные конфиги лучшего рейтинга."),
+            tr("Если туннель перестал работать (неудачных проверок подряд: {} на Wi-Fi, {} на мобильной сети), приложение перебирает запасные конфиги лучшего рейтинга.", HealthGate.failuresNeeded(false), HealthGate.failuresNeeded(true)),
             reconnect,
         ) { vm.setAutoReconnect(it) }
         SwitchRow(
             tr("Менять сервер при низкой скорости"),
-            tr("Бывает, что интернет «есть», но фото и страницы почти не грузятся. Пока вы пользуетесь телефоном, раз в 45 секунд смотрится, сколько данных идёт через сервер; если мало, делается один маленький замер (до 400 КБ), и после двух медленных подряд пробуются другие серверы. Если телефон не используется — ничего не качается."),
+            tr("Бывает, что интернет «есть», но фото и страницы почти не грузятся. Пока вы пользуетесь телефоном, раз в {} секунд смотрится, сколько данных идёт через сервер; если мало, делается один маленький замер (до 400 КБ), и после двух медленных подряд пробуются другие серверы. Если телефон не используется — ничего не качается. На мобильной сети работает, только если включено «Измерять скорость и по мобильной сети» и не исчерпан суточный лимит.", PhoenixVpnService.SPEED_PERIOD_MS / 1000),
             slowOn,
         ) { vm.setSlowSwitch(it) }
+        if (!LiteProfile.ON && slowOn && !metered && !NetInfo.isUnmetered(context)) {
+            Text(tr("Сейчас мобильная сеть: без замеров по ней эта функция не работает"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
         if (slowOn) {
             Hint(tr("Считать сервер медленным, если скорость ниже (Мбит/с):"))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -250,11 +257,60 @@ fun ConnectionPage(vm: MainViewModel) {
             }
             Hint(tr("Не чаще раза в 5 минут и не больше 4 раз в час, чтобы при плохой сети везде не прыгать с сервера на сервер."))
         }
+        if (!LiteProfile.ON) {
+            SwitchRow(
+                tr("Измерять скорость и по мобильной сети"),
+                tr("Замер скачивает до 8 МБ. По умолчанию — только по Wi-Fi."),
+                metered,
+            ) { vm.setSpeedOnMetered(it) }
+        }
         SwitchRow(
-            tr("Измерять скорость и по мобильной сети"),
-            tr("Замер скачивает до 8 МБ. По умолчанию — только по Wi-Fi."),
-            metered,
-        ) { vm.setSpeedOnMetered(it) }
+            tr("Закрыть QUIC (UDP 443)"),
+            tr("Многие серверы не пропускают UDP: приложения ждут ответа и не открываются, хотя Telegram работает. При закрытом QUIC они сразу переходят на обычный TCP. Рекомендуется оставить включённым. Применяется при следующем подключении."),
+            quic,
+        ) { vm.setBlockQuic(it) }
+        SwitchRow(
+            tr("Сам перепроверять все конфиги"),
+            tr("Сам запускает полную перепроверку после ночного сбора и когда запасной сервер не нашёлся (не чаще раза в 30 минут). После ручного «Собрать» перепроверка идёт всегда."),
+            autoRecheck,
+        ) { vm.setAutoRecheck(it) }
+        GroupLabel(tr("Запуск и защита"))
+        SwitchRow(
+            tr("Подключать VPN само"),
+            tr("При включении телефона и при открытии приложения (последний или лучший конфиг). Если VPN был включён, после перезагрузки он поднимется и при выключенной настройке. Нужно один раз дать системное разрешение на VPN."),
+            autoConnect,
+        ) { vm.setAutoConnect(it) }
+        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(12.dp))
+        Text("IPv6", style = MaterialTheme.typography.titleMedium)
+        Hint(
+            tr("Если IPv6 не заводить в туннель, сайты с IPv6 открываются напрямую, мимо VPN (утечка). Блокировка заставляет приложения сразу переходить на IPv4 через VPN. Применяется при следующем подключении.")
+        )
+        Column(Modifier.padding(top = 4.dp)) {
+            Ipv6Mode.entries.forEach { m ->
+                FilterChip(selected = ipv6 == m, onClick = { vm.setIpv6(m) }, label = { Text(tr(m.title)) })
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(4.dp))
+        SwitchRow(
+            tr("Не пускать интернет без VPN"),
+            tr("Если подключиться не удалось: при включённой настройке туннель остаётся, и интернета нет, пока приложение ищет рабочий сервер; при выключенной телефон выходит в интернет напрямую. Если связь пропала посреди работы, туннель держится в любом случае, пока ищется другой сервер."),
+            kill,
+        ) { vm.setKillSwitch(it) }
+        Hint(
+            tr("Полная защита (даже когда приложение закрыто или убито системой) включается только в настройках Android: VPN → Phoenix → «Постоянный VPN» и «Блокировать подключения без VPN».")
+        )
+        OutlinedButton(onClick = {
+            try {
+                context.startActivity(android.content.Intent(android.provider.Settings.ACTION_VPN_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (_: Exception) {
+                Toast.makeText(context, tr("Не удалось открыть настройки VPN"), Toast.LENGTH_SHORT).show()
+            }
+        }) { Text(tr("Настройки VPN в Android")) }
+        }
+        GroupLabel(tr("Для всех режимов"))
+        Hint(tr("Действуют в любом режиме и не зависят от выбора «Общие / Белые / Чёрные»."))
         // как долго держится сервер, выбранный вручную (кнопкой «Сменить сервер» или в списке): автоперебор его не трогает
         val pinSettings = remember { AppSettings(context) }
         var pinHours by remember(resetTick) { mutableStateOf(pinSettings.pinHours) }
@@ -269,30 +325,22 @@ fun ConnectionPage(vm: MainViewModel) {
                 )
             }
         }
-        SwitchRow(
-            tr("Закрыть QUIC (UDP 443)"),
-            tr("Многие серверы не пропускают UDP: приложения ждут ответа и не открываются, хотя Telegram работает. При закрытом QUIC они сразу переходят на обычный TCP. Рекомендуется оставить включённым. Применяется при следующем подключении."),
-            quic,
-        ) { vm.setBlockQuic(it) }
-        SwitchRow(
-            tr("Сам перепроверять все конфиги"),
-            tr("Если запасной сервер не нашёлся, приложение само запускает полную перепроверку всех конфигов (не чаще раза в 30 минут)."),
-            autoRecheck,
-        ) { vm.setAutoRecheck(it) }
         // тихие часы: тяжёлое (перепроверка, аудит) без зарядки не запускается
         val quietSettings = remember { AppSettings(context) }
-        var focus by remember { mutableStateOf(quietSettings.focusMode) }
+        var focus by remember(resetTick) { mutableStateOf(quietSettings.focusMode) }
         SwitchRow(
             tr("Режим «Фокус»"),
             tr("Пока открыто приложение из ваших целей (игра, банк, звонок), приложение не запускает тяжёлые проверки и не меняет сервер по скорости. Нужен доступ к данным об использовании."),
             focus,
         ) { focus = it; quietSettings.focusMode = it }
-        var appAware by remember { mutableStateOf(quietSettings.appAwareFailover) }
-        SwitchRow(
-            tr("Смена сервера с учётом открытого приложения"),
-            tr("Когда сервер перестаёт работать и приложение само ищет другой, оно смотрит, какое приложение открыто сейчас (нужен доступ к данным об использовании), и пробует первыми серверы, на которых это приложение уже открывалось. Если у приложения есть своя цель — сначала её серверы."),
-            appAware,
-        ) { appAware = it; quietSettings.appAwareFailover = it }
+        if (!LiteProfile.ON) {
+            var appAware by remember(resetTick) { mutableStateOf(quietSettings.appAwareFailover) }
+            SwitchRow(
+                tr("Смена сервера с учётом открытого приложения"),
+                tr("Когда сервер перестаёт работать и приложение само ищет другой, оно смотрит, какое приложение открыто сейчас (нужен доступ к данным об использовании), и пробует первыми серверы, на которых это приложение уже открывалось. Если у приложения есть своя цель — сначала её серверы."),
+                appAware,
+            ) { appAware = it; quietSettings.appAwareFailover = it }
+        }
         // вернулись из системных настроек доступности — статус обновляется сам, а не только после перезахода на страницу
         val resumed = rememberResumeTick()
         val siteWatching = remember(resumed) {
@@ -329,12 +377,12 @@ fun ConnectionPage(vm: MainViewModel) {
         var quietTo by remember { mutableStateOf(quietSettings.quietTo) }
         SwitchRow(
             tr("Тихие часы по привычкам"),
-            tr("Приложение запоминает, в какие часы недели вы пользуетесь телефоном (только на телефоне, файл входит в резервную копию). Через неделю в «тихие» часы тяжёлое без зарядки не запускается, а перед обычным началом активности туннель проверяется заранее."),
+            tr("Приложение запоминает, в какие часы недели вы пользуетесь телефоном (только на телефоне, файл входит в резервную копию) и через неделю проверяет туннель заранее, перед обычным началом активности. Без зарядки тяжёлые проверки и так не запускаются; в тихие часы не делается даже редкое исключение «давно не проверяли»."),
             quietAuto,
         ) { quietAuto = it; quietSettings.quietAuto = it }
         SwitchRow(
             tr("Свои тихие часы"),
-            tr("Сильнее автоматических. Тяжёлые фоновые проверки без зарядки в это время не запускаются."),
+            tr("То же, но по заданным вами часам; сильнее автоматических."),
             quietManual,
         ) { quietManual = it; quietSettings.quietManual = it }
         if (quietManual) {
@@ -347,41 +395,6 @@ fun ConnectionPage(vm: MainViewModel) {
                 Text(tr("  до %02d:00  ").format(quietTo))
                 OutlinedButton(onClick = { quietTo = (quietTo + 1) % 24; quietSettings.quietTo = quietTo }) { Text("+") }
             }
-        }
-        GroupLabel(tr("Запуск и защита"))
-        SwitchRow(
-            tr("Подключать VPN само"),
-            tr("При включении телефона и при открытии приложения (последний или лучший конфиг). Нужно один раз дать системное разрешение на VPN."),
-            autoConnect,
-        ) { vm.setAutoConnect(it) }
-        Spacer(Modifier.height(4.dp))
-        Spacer(Modifier.height(12.dp))
-        Text("IPv6", style = MaterialTheme.typography.titleMedium)
-        Hint(
-            tr("Если IPv6 не заводить в туннель, сайты с IPv6 открываются напрямую, мимо VPN (утечка). Блокировка заставляет приложения сразу переходить на IPv4 через VPN. Применяется при следующем подключении.")
-        )
-        Column(Modifier.padding(top = 4.dp)) {
-            Ipv6Mode.entries.forEach { m ->
-                FilterChip(selected = ipv6 == m, onClick = { vm.setIpv6(m) }, label = { Text(tr(m.title)) })
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        Spacer(Modifier.height(4.dp))
-        SwitchRow(
-            tr("Не пускать интернет без VPN"),
-            tr("Если VPN не удалось поднять или он оборвался, туннель остаётся включённым и трафик блокируется, пока приложение ищет рабочий сервер. По умолчанию выключено: тогда при сбое интернет идёт напрямую."),
-            kill,
-        ) { vm.setKillSwitch(it) }
-        Hint(
-            tr("Полная защита (даже когда приложение закрыто или убито системой) включается только в настройках Android: VPN → Phoenix → «Постоянный VPN» и «Блокировать подключения без VPN».")
-        )
-        OutlinedButton(onClick = {
-            try {
-                context.startActivity(android.content.Intent(android.provider.Settings.ACTION_VPN_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-            } catch (_: Exception) {
-                Toast.makeText(context, tr("Не удалось открыть настройки VPN"), Toast.LENGTH_SHORT).show()
-            }
-        }) { Text(tr("Настройки VPN в Android")) }
         }
         Spacer(Modifier.height(12.dp))
         Spacer(Modifier.height(4.dp))
@@ -413,7 +426,7 @@ fun ConnectionPage(vm: MainViewModel) {
         }
         Spacer(Modifier.height(16.dp))
         OutlinedButton(onClick = { askReset = true }) { Text(tr("Вернуть рекомендуемые")) }
-        Hint(tr("Сбрасывает настройки этого экрана до значений по умолчанию. Язык, тема, расписание, списки и данные не трогаются."))
+        Hint(tr("Сбрасывает только настройки этого экрана для выбранной области (Общие / Белые / Чёрные)."))
     }
     if (dnsTrialAt > 0L) {
         var now by remember(dnsTrialAt) { mutableStateOf(System.currentTimeMillis()) }
@@ -432,7 +445,7 @@ fun ConnectionPage(vm: MainViewModel) {
         AlertDialog(
             onDismissRequest = { askReset = false },
             title = { Text(tr("Вернуть рекомендуемые")) },
-            text = { Text(tr("Настройки подключения вернутся к значениям по умолчанию. Продолжить?")) },
+            text = { Text(tr("К значениям по умолчанию вернутся: {}. Продолжить?", SettingsKeys.resetBaseKeys(editMode?.name).joinToString(", ") { tr(SettingsKeys.LABELS[it] ?: it) })) },
             confirmButton = {
                 TextButton(onClick = {
                     askReset = false
@@ -447,647 +460,3 @@ fun ConnectionPage(vm: MainViewModel) {
 }
 
 // ---------------------------------------------------------------- Цели (приложения и сайты)
-
-@Composable
-fun TargetsPage(vm: MainViewModel) {
-    val context = LocalContext.current
-    val owner = LocalLifecycleOwner.current
-    val targets by vm.targets.collectAsStateWithLifecycle()
-    val global by vm.globalPolicy.collectAsStateWithLifecycle()
-    val busy by vm.busy.collectAsStateWithLifecycle()
-    val status by vm.checkStatus.collectAsStateWithLifecycle()
-    var showApps by remember { mutableStateOf(false) }
-    var showSite by remember { mutableStateOf(false) }
-    var pendingApp by remember { mutableStateOf<InstalledApp?>(null) }
-    var editUrl by remember { mutableStateOf<Target?>(null) }
-    var usage by remember { mutableStateOf(ForegroundWatcher.hasAccess(context)) }
-
-    LaunchedEffect(Unit) { vm.reloadTargets() }
-    DisposableEffect(owner) {
-        val observer = LifecycleEventObserver { _, e -> if (e == Lifecycle.Event.ON_RESUME) usage = ForegroundWatcher.hasAccess(context) }
-        owner.lifecycle.addObserver(observer)
-        onDispose { owner.lifecycle.removeObserver(observer) }
-    }
-
-    fun toast(t: String) = Toast.makeText(context, t, Toast.LENGTH_SHORT).show()
-
-    LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        item { Spacer(Modifier.height(6.dp)) }
-        item { Text(tr("Что делать, если приложение не работает на текущем сервере"), style = MaterialTheme.typography.titleMedium) }
-        item {
-            Hint(tr("Для каждой цели приложение держит до 3 проверенных серверов и перепроверяет их раз в несколько часов."))
-        }
-        item {
-            Hint(tr("У каждой цели есть адрес проверки: по нему видно, открывается ли сервис через сервер. Для известных приложений он подставляется сам, для остальных проверяется просто работа сервера; адрес можно поменять кнопкой «Адрес»."))
-        }
-        item {
-            FilterChip(selected = global == Policy.AUTO, onClick = { vm.setGlobalPolicy(Policy.AUTO) }, label = { Text(tr("Само выбирает (рекомендуется)")) })
-        }
-        item {
-            FilterChip(selected = global == Policy.PROXY, onClick = { vm.setGlobalPolicy(Policy.PROXY) }, label = { Text(tr("А: только оно через свой сервер")) })
-        }
-        item {
-            FilterChip(selected = global == Policy.SWITCH, onClick = { vm.setGlobalPolicy(Policy.SWITCH) }, label = { Text(tr("Б: переключить весь VPN")) })
-        }
-        if (global == Policy.AUTO) {
-            item {
-                Hint(
-                    tr("«как везде» у приложения значит: взять выбор, сделанный выше, для всех. Остальные кнопки (авто, «Только это», «Весь VPN») задают своё для этого приложения.\n\nСайты — всегда в режиме «Только это». Приложение — «Только это», если ядро умеет узнавать приложение по соединению (тогда остальной трафик не затрагивается); если не умеет — «Весь VPN», когда выдан доступ к данным об использовании.")
-                )
-            }
-        }
-        if (global == Policy.AUTO || global == Policy.SWITCH || targets.any { it.policy == Policy.SWITCH || it.policy == Policy.AUTO }) {
-            item {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text(
-                            if (usage) tr("Доступ к данным об использовании: есть") else tr("Для режима «Весь VPN» нужен доступ к данным об использовании"),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Hint(tr("Чтобы узнать, какое приложение открыто сейчас. Данные остаются на телефоне."))
-                        if (!usage) TextButton(onClick = { ForegroundWatcher.openAccessSettings(context) }) { Text(tr("Открыть настройки")) }
-                    }
-                }
-            }
-        }
-        item {
-            FlowRow(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { showApps = true }) { Text(tr("+ Приложение")) }
-                OutlinedButton(onClick = { showSite = true }) { Text(tr("+ Сайт")) }
-            }
-        }
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { vm.verifyTargetsNow() }, enabled = busy.isEmpty() && targets.isNotEmpty()) { Text(tr("Проверить серверы сейчас")) }
-            }
-        }
-        if (busy.isNotEmpty()) item { Text(busy, style = MaterialTheme.typography.bodySmall) }
-        else if (status.isNotBlank()) item { Text(status, style = MaterialTheme.typography.bodySmall) }
-        item { Spacer(Modifier.height(8.dp)) }
-        if (targets.isEmpty()) item { Hint(tr("Целей пока нет. Добавьте приложение (список берётся с телефона) или сайт.")) }
-        items(targets, key = { it.id }) { t ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text((if (t.kind == TargetKind.APP) "📱 " else "🌐 ") + t.label, style = MaterialTheme.typography.titleSmall)
-                            Hint(
-                                if (t.isDirect) tr("напрямую, мимо VPN (сервер не нужен)")
-                                else if (t.servers.isEmpty()) tr("нет своего сервера — идёт через общий")
-                                else tr("серверов: {}", t.servers.size) + if (t.verifiedAt.isNotBlank()) tr(" · проверено {}", t.verifiedAt) else "",
-                            )
-                        }
-                        TextButton(onClick = { editUrl = t }) { Text(tr("Адрес")) }
-                        var askRemove by remember(t.id) { mutableStateOf(false) }
-                        TextButton(onClick = { askRemove = true }) { Text(tr("Убрать")) }
-                        if (askRemove) ConfirmDialog(tr("Убрать цель?"), tr("Цель «{}» и её серверы будут удалены.", t.label), onYes = { vm.removeTarget(t.id) }, onDismiss = { askRemove = false })
-                    }
-                    Hint(tr("проверка: ") + t.checkUrl.removePrefix("https://").removePrefix("http://") +
-                        if (t.kind == TargetKind.APP && t.checkUrl == KnownApps.DEFAULT_URL) tr(" (общая: только работа сервера)") else "")
-                    if (t.kind == TargetKind.APP) {
-                        FlowRow(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FilterChip(selected = t.policy == Policy.DEFAULT, onClick = { vm.setTargetPolicy(t, Policy.DEFAULT) }, label = { Text(tr("как везде")) })
-                            FilterChip(selected = t.policy == Policy.AUTO, onClick = { vm.setTargetPolicy(t, Policy.AUTO) }, label = { Text(tr("авто")) })
-                            FilterChip(selected = t.policy == Policy.PROXY, onClick = { vm.setTargetPolicy(t, Policy.PROXY) }, label = { Text(tr("Только это")) })
-                            FilterChip(selected = t.policy == Policy.SWITCH, onClick = { vm.setTargetPolicy(t, Policy.SWITCH) }, label = { Text(tr("Весь VPN")) })
-                        }
-                    } else {
-                        Hint(tr("Для сайта работает только режим «Только это»."))
-                    }
-                }
-            }
-        }
-        item { Spacer(Modifier.height(16.dp)) }
-    }
-
-    if (showApps) {
-        SingleAppPicker(vm, onDismiss = { showApps = false }) { app ->
-            showApps = false
-            pendingApp = app
-        }
-    }
-    pendingApp?.let { app ->
-        var url by remember(app.pkg) { mutableStateOf(KnownApps.urlOrDefault(app.pkg)) }
-        AlertDialog(
-            onDismissRequest = { pendingApp = null },
-            title = { Text(app.label) },
-            text = {
-                Column {
-                    Hint(
-                        if (KnownApps.isKnown(app.pkg)) tr("Адрес, который открывает это приложение: через него проверяется, работает ли сервер для него.")
-                        else tr("Адрес этого приложения не известен, подставлена общая проверка (работает ли сервер вообще). Если знаете, какой сайт использует приложение, впишите его адрес — проверка станет точнее.")
-                    )
-                    OutlinedTextField(
-                        value = url, onValueChange = { url = it }, label = { Text("https://…") },
-                        singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val err = vm.addTargetApp(app.pkg, app.label, url)
-                    if (err == null) pendingApp = null
-                    toast(err ?: tr("Добавлено"))
-                }) { Text(tr("Добавить")) }
-            },
-            dismissButton = { TextButton(onClick = { pendingApp = null }) { Text(tr("Отмена")) } },
-        )
-    }
-    editUrl?.let { t ->
-        var url by remember(t.id) { mutableStateOf(t.checkUrl) }
-        AlertDialog(
-            onDismissRequest = { editUrl = null },
-            title = { Text(t.label) },
-            text = {
-                Column {
-                    Hint(tr("Адрес, по которому проверяется, что сервер работает для этой цели. Пустое поле вернёт адрес по умолчанию. Серверы пересчитаются при ближайшей проверке."))
-                    OutlinedTextField(
-                        value = url, onValueChange = { url = it }, label = { Text("https://…") },
-                        singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val err = vm.setTargetUrl(t, url)
-                    if (err == null) editUrl = null
-                    toast(err ?: tr("Сохранено"))
-                }) { Text(tr("Сохранить")) }
-            },
-            dismissButton = { TextButton(onClick = { editUrl = null }) { Text(tr("Отмена")) } },
-        )
-    }
-    if (showSite) {
-        var text by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { showSite = false },
-            title = { Text(tr("Сайт")) },
-            text = {
-                OutlinedTextField(
-                    value = text, onValueChange = { text = it }, label = { Text(tr("example.com или ссылка")) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val err = vm.addTargetSite(text)
-                    if (err == null) showSite = false
-                    toast(err ?: tr("Добавлено"))
-                }) { Text(tr("Добавить")) }
-            },
-            dismissButton = { TextButton(onClick = { showSite = false }) { Text(tr("Отмена")) } },
-        )
-    }
-}
-
-@Composable
-private fun SingleAppPicker(vm: MainViewModel, onDismiss: () -> Unit, onPick: (InstalledApp) -> Unit) {
-    var apps by remember { mutableStateOf<List<InstalledApp>?>(null) }
-    var query by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) { apps = withContext(Dispatchers.IO) { vm.installedApps() } }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(tr("Выберите приложение")) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = query, onValueChange = { query = it }, label = { Text(tr("Поиск")) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
-                )
-                val list = apps
-                if (list == null) {
-                    Text(tr("Загружаю список…"), modifier = Modifier.padding(top = 8.dp))
-                } else {
-                    val shown = list.filter { query.isBlank() || it.label.contains(query, true) || it.pkg.contains(query, true) }
-                    LazyColumn(Modifier.height(360.dp)) {
-                        items(shown, key = { it.pkg }) { app ->
-                            Column(Modifier.fillMaxWidth().clickable { onPick(app) }.padding(vertical = 8.dp)) {
-                                Text(app.label, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(
-                                    app.pkg, style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Отмена")) } },
-    )
-}
-
-/** Сайты, которые открываются напрямую, мимо VPN (российские уже включены по умолчанию). */
-@Composable
-fun BypassSitesSection(vm: MainViewModel) {
-    val context = LocalContext.current
-    val sites by vm.bypassSites.collectAsStateWithLifecycle()
-    var text by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) { vm.reloadTargets() }
-
-    Text(tr("Сайты в обход VPN"), style = MaterialTheme.typography.titleMedium)
-    Hint(
-        tr("Российские сайты ({} доменов: .ru, .рф, Госуслуги, банки, Яндекс, ВК…) открываются напрямую по умолчанию. Здесь можно добавить свои. Применится при следующем подключении.", RussianSites.DOMAINS.size)
-    )
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
-        OutlinedTextField(
-            value = text, onValueChange = { text = it }, label = { Text("example.com") },
-            singleLine = true, modifier = Modifier.weight(1f),
-        )
-        Spacer(Modifier.width(8.dp))
-        Button(onClick = {
-            val err = vm.addBypassSite(text)
-            if (err == null) text = ""
-            Toast.makeText(context, err ?: tr("Добавлено"), Toast.LENGTH_SHORT).show()
-        }) { Text(tr("Добавить")) }
-    }
-    sites.forEach { host ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(host, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-            TextButton(onClick = { vm.removeBypassSite(host) }) { Text(tr("Убрать")) }
-        }
-    }
-}
-
-
-// ---------------------------------------------------------------- Журнал
-
-/** Раздел «Диагностика»: сводка «что сейчас», журнал с фильтрами и поиском, отчёт последнего сбора. */
-@Composable
-fun DiagPage(vm: MainViewModel) {
-    // 0 — сводка; 1 — журнал; 2 — отчёт сбора; 3 — расход, статистика, «Можно вернуть», данные
-    var sub by remember { mutableStateOf(0) }
-    BackHandler(enabled = sub != 0) { sub = 0 }
-    Column(Modifier.fillMaxSize()) {
-        if (sub != 0) TextButton(onClick = { sub = 0 }, modifier = Modifier.padding(horizontal = 4.dp)) { Text("‹ " + tr("Сводка")) }
-        Box(Modifier.weight(1f)) {
-            when (sub) {
-                0 -> SummaryPage(vm) { sub = it }
-                1 -> LogPage(vm)
-                2 -> ReportTab(vm)
-                else -> DiagExtras(vm)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SummaryPage(vm: MainViewModel, onMore: (Int) -> Unit) {
-    val context = LocalContext.current
-    var tick by remember { mutableStateOf(0) }
-    var summary by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    var big by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    var matrix by remember { mutableStateOf<Pair<List<CheckService>, List<MatrixRow>>>(emptyList<CheckService>() to emptyList()) }
-    var day by remember { mutableStateOf<List<String>>(emptyList()) }
-    LaunchedEffect(tick) {
-        withContext(Dispatchers.IO) {
-            summary = vm.diagSummary()
-            matrix = vm.diagMatrix()
-            big = vm.diagBig()
-            day = vm.logDay()
-        }
-    }
-    val counts = remember(day) { Diagnostics.counts(day) }
-    val problems = remember(day) { day.filter { Diagnostics.isProblem(it) }.takeLast(8) }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        val headline = remember(counts) { Diagnostics.headline(counts) }
-        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
-            Text(
-                when (headline) {
-                    Diagnostics.Headline.OK -> tr("Всё работает")
-                    Diagnostics.Headline.UNSTABLE -> tr("Сервер сменился {} раз за сутки: сеть нестабильна", counts.failovers)
-                    Diagnostics.Headline.PROBLEMS -> tr("Есть проблемы: {} за сутки. Подробности в журнале", counts.problems)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp),
-            )
-        }
-        if (big.isNotEmpty()) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                big.forEach { (num, cap) ->
-                    Card(Modifier.weight(1f), shape = RoundedCornerShape(20.dp)) {
-                        Column(Modifier.padding(12.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(num, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1)
-                            Text(cap, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                        }
-                    }
-                }
-            }
-        }
-        if (matrix.second.isNotEmpty()) {
-            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(tr("Цели и сервисы"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
-                    TargetMatrix(matrix.first, matrix.second)
-                }
-            }
-        }
-        var all by remember { mutableStateOf(false) }
-        TextButton(onClick = { all = !all }) { Text(if (all) tr("Скрыть подробности") else tr("Подробнее")) }
-        if (all) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onMore(1) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Журнал")) }
-                OutlinedButton(onClick = { onMore(2) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Отчёт сбора")) }
-                OutlinedButton(onClick = { onMore(3) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Что приложение делает само, статистика, данные")) }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    OutlinedButton(onClick = { tick++ }) { Text(tr("Обновить")) }
-                    OutlinedButton(onClick = {
-                        val text = Diagnostics.bundle(summary, counts, vm.logLines("", 400))
-                        val clip = context.getSystemService(android.content.ClipboardManager::class.java)
-                        clip.setPrimaryClip(android.content.ClipData.newPlainText("phoenix-diagnostics", text))
-                        Toast.makeText(context, tr("Диагностика скопирована"), Toast.LENGTH_SHORT).show()
-                    }) { Text(tr("Копировать всё")) }
-                    OutlinedButton(onClick = {
-                        val text = Diagnostics.bundle(summary, counts, vm.logLines("", 400))
-                        val ok = Exporter.saveToDownloads(context, "phoenix-diagnostics.txt", text)
-                        Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить"), Toast.LENGTH_SHORT).show()
-                    }) { Text(tr("В файл")) }
-                }
-            }
-        }
-        // цели показаны таблицей выше; их длинные строки в сводке не повторяем
-        val targetPrefix = tr("Цель «{}»").substringBefore("{}")
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                summary.filter { !it.first.startsWith(targetPrefix) && it.first != tr("Свежие проверки (сутки)") && it.first != tr("Перепроверка конфигов") }.forEach { (k, v) ->
-                    Column {
-                        Text(k, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(v, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
-        }
-        Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(12.dp)) {
-                Text(tr("За последние сутки"), style = MaterialTheme.typography.titleSmall)
-                Text(
-                    tr("переключений сервера {} · смен режима {} · смен сети {}\nсбоев маршрутов {} · обновлений целей {} · проблемных записей {}", counts.failovers, counts.modeSwitches, counts.networkChanges, counts.routeFails, counts.targetUpdates, counts.problems),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
-        if (problems.isNotEmpty()) {
-            Text(tr("Последние проблемы"), style = MaterialTheme.typography.titleSmall)
-            Text(
-                problems.joinToString("\n") { Diagnostics.pretty(it) },
-                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                fontSize = 11.sp,
-            )
-        }
-    }
-}
-
-/** Отфильтрованный журнал, готовый к показу (считается на фоновом потоке). */
-private class LogView(val lines: List<String>, val shown: List<String>, val text: String, val pretty: List<Pair<String, Boolean>>) {
-    companion object {
-        val EMPTY = LogView(emptyList(), emptyList(), "", emptyList())
-        fun build(all: List<String>, group: String, query: String, problemsOnly: Boolean): LogView {
-            val lines = Diagnostics.filter(all, group, query, problemsOnly)
-            val shown = lines.takeLast(800)
-            val pretty = shown.map { Diagnostics.pretty(it) to Diagnostics.isProblem(it) }
-            return LogView(lines, shown, pretty.joinToString("\n") { it.first }, pretty)
-        }
-    }
-}
-
-@Composable
-fun LogPage(vm: MainViewModel) {
-    val context = LocalContext.current
-    var group by remember { mutableStateOf("Всё") } // ключ группы — русское название (по нему фильтрует Diagnostics), на экране оно переводится
-    var query by remember { mutableStateOf("") }
-    var problemsOnly by remember { mutableStateOf(false) }
-    var all by remember { mutableStateOf<List<String>>(emptyList()) }
-    var tick by remember { mutableStateOf(0) }
-    var saving by remember { mutableStateOf(false) }
-    val ioScope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) { withContext(Dispatchers.IO) { MemInfo.log(context, "открыт журнал") } }
-    LaunchedEffect(tick) { all = withContext(Dispatchers.IO) { vm.logLines("", 40_000) } }
-    // фильтр по суткам журнала (до 40 000 строк, регулярки) и разбор последних строк — не в основном потоке, с паузой после ввода
-    val view by produceState(LogView.EMPTY, all, group, query, problemsOnly) {
-        if (query.isNotEmpty()) delay(300)
-        value = withContext(Dispatchers.Default) { LogView.build(all, group, query, problemsOnly) }
-    }
-    val lines = view.lines
-    val shown = view.shown
-    val text = view.text
-
-    Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Diagnostics.GROUPS.forEach { (title, _) ->
-                FilterChip(selected = group == title, onClick = { group = title }, label = { Text(tr(title)) })
-            }
-        }
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text(tr("Поиск по журналу")) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = problemsOnly, onCheckedChange = { problemsOnly = it })
-            Text(tr("  Только проблемы").trim(), modifier = Modifier.padding(start = 8.dp), style = MaterialTheme.typography.bodyMedium)
-        }
-        var askClear by remember { mutableStateOf(false) }
-        var menu by remember { mutableStateOf(false) }
-        val copyLog = {
-            // redact() на 800 строках — регулярные выражения: в главном потоке это давало ANR (журнал 05.11, стек Diagnostics.redact)
-            ioScope.launch {
-                val clean = withContext(Dispatchers.IO) { Diagnostics.redact(text) }
-                val clip = context.getSystemService(android.content.ClipboardManager::class.java)
-                clip.setPrimaryClip(android.content.ClipData.newPlainText("phoenix-log", clean))
-                Toast.makeText(context, tr("Журнал скопирован"), Toast.LENGTH_SHORT).show()
-            }
-        }
-            // два вида файла: только последние сутки (короче и проще отправить) или весь журнал (всё, что накопилось)
-            val saveLog = { dayOnly: Boolean ->
-                // до 40 000 строк: сборка, вычистка ключей и запись в «Загрузки» занимают секунды — в главном потоке это был «не отвечает»
-                saving = true
-                Toast.makeText(context, tr("Сохраняю журнал…"), Toast.LENGTH_SHORT).show()
-                ioScope.launch {
-                    val ok = try {
-                        withContext(Dispatchers.IO) {
-                            val part = if (dayOnly) Diagnostics.since(lines, java.time.OffsetDateTime.now().minusHours(24).toString()) else lines
-                            val full = part.joinToString("\n") { Diagnostics.pretty(it) }
-                            full.isNotEmpty() && Exporter.saveToDownloads(context, if (dayOnly) "phoenix-log-24h.txt" else "phoenix-log.txt", Diagnostics.redact(full))
-                        }
-                    } catch (_: Throwable) {
-                        false
-                    }
-                    saving = false
-                    Toast.makeText(context, if (ok) tr("Сохранено: Загрузки/Phoenix") else tr("Не удалось сохранить журнал (за выбранный период записей нет?)"), Toast.LENGTH_SHORT).show()
-                }
-            }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-            OutlinedButton(onClick = { tick++ }) { Text(tr("Обновить")) }
-            Spacer(Modifier.weight(1f))
-            Box {
-                TextButton(onClick = { menu = true }) { Text("⋮", style = MaterialTheme.typography.titleLarge) }
-                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text(tr("Копировать")) }, enabled = shown.isNotEmpty(), onClick = { menu = false; copyLog() })
-                    DropdownMenuItem(text = { Text(if (saving) tr("Сохраняю…") else tr("В файл: 24 часа")) }, enabled = lines.isNotEmpty() && !saving, onClick = { menu = false; saveLog(true) })
-                    DropdownMenuItem(text = { Text(tr("В файл: весь")) }, enabled = lines.isNotEmpty() && !saving, onClick = { menu = false; saveLog(false) })
-                    DropdownMenuItem(text = { Text(tr("Очистить")) }, onClick = { menu = false; askClear = true })
-                }
-            }
-        }
-        if (askClear) ConfirmDialog(tr("Очистить журнал?"), tr("Записи будут удалены без возможности вернуть."), onYes = { vm.clearLogs(); tick++ }, onDismiss = { askClear = false })
-        Text(tr("Записей: {} из {} (на экране последние {}; «В файл» сохраняет по фильтру: за 24 часа или весь журнал). Журнал копится до 5 МБ на режим.", lines.size, all.size, shown.size), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        if (lines.isEmpty()) {
-            Hint(tr("Записей по этому фильтру нет."))
-        } else {
-            // самые свежие записи внизу; список прокручивается
-            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-            val pretty = view.pretty
-            LaunchedEffect(pretty) { if (pretty.isNotEmpty()) listState.scrollToItem(pretty.lastIndex) }
-            LazyColumn(Modifier.fillMaxSize(), state = listState) {
-                items(pretty.size, key = { it }) { i ->
-                    val (line, bad) = pretty[i]
-                    Text(
-                        line,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp,
-                        color = if (bad) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 1.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-// ---------------------------------------------------------------- Экспорт и импорт
-
-@Composable
-fun BackupPage(vm: MainViewModel) {
-    val status by vm.backupStatus.collectAsStateWithLifecycle()
-    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
-        if (uri != null) vm.exportBackup(uri)
-    }
-    val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) vm.importBackup(uri)
-    }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
-        Text(tr("Резервная копия"), style = MaterialTheme.typography.titleMedium)
-        Hint(
-            tr("В файл сохраняются настройки и, для каждого режима (белые и чёрные списки), цели с их адресами проверки и политикой, приложения и сайты в обход VPN, свои источники, чёрный список источников, выбранные сервисы, накопленный опыт конфигов (где они работали) и журнал (при импорте он сливается с текущим). Скачанные конфиги не входят — они обновляются ночным сбором. Серверы целей тоже не сохраняются, потому что содержат ключи доступа: после импорта они подберутся заново.")
-        )
-        Spacer(Modifier.height(8.dp))
-        FlowRow(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { export.launch("phoenix-backup.txt") }) { Text(tr("Экспорт в файл")) }
-            OutlinedButton(onClick = { import.launch(arrayOf("*/*")) }) { Text(tr("Импорт из файла")) }
-        }
-        Spacer(Modifier.height(8.dp))
-        Hint(
-            tr("Импорт ничего не стирает: списки объединяются (чёрный список источников только пополняется), цели добавляются к имеющимся, одиночные настройки берутся из файла. Файл текстовый, его можно открыть и посмотреть. В нём могут быть ссылки на ваши источники — не отправляйте его посторонним.")
-        )
-        // автокопия: раз в неделю во внутреннюю память, последние три
-        val abContext = LocalContext.current
-        val abSettings = remember { AppSettings(abContext) }
-        var autoBackupOn by remember { mutableStateOf(abSettings.autoBackup) }
-        Spacer(Modifier.height(12.dp))
-        SwitchRow(
-            tr("Автокопия раз в неделю"),
-            tr("Копия настроек и данных без журнала сохраняется во внутреннюю память приложения после планового сбора, хранятся последние три. При удалении приложения она пропадёт — для этого есть экспорт в файл."),
-            autoBackupOn,
-        ) { autoBackupOn = it; abSettings.autoBackup = it }
-        val lastAuto = abSettings.lastAutoBackupAt
-        Hint(
-            if (lastAuto > 0) tr("Последняя автокопия: {}", java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(lastAuto)))
-            else tr("Автокопий пока нет: первая появится после ближайшего сбора."),
-        )
-        OutlinedButton(onClick = { vm.restoreAutoBackup() }) { Text(tr("Восстановить из последней автокопии")) }
-        if (status.isNotBlank()) {
-            Spacer(Modifier.height(12.dp))
-            Text(status, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-
-// ---------------------------------------------------------------- Фоновая работа (прошивка)
-
-@Composable
-fun FirmwarePage() {
-    val context = LocalContext.current
-    val owner = LocalLifecycleOwner.current
-    var fw by remember { mutableStateOf<FirmwareInfo?>(null) }
-    var perms by remember { mutableStateOf<List<PermCheck>>(emptyList()) }
-    var dataSaver by remember { mutableStateOf(Background.dataSaverText(context)) }
-    var tick by remember { mutableStateOf(0) }
-    var showGuide by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) { fw = withContext(Dispatchers.IO) { Background.firmware() } }
-    // права проверяются при открытии и при возврате из системных настроек, а не при каждой отрисовке
-    LaunchedEffect(tick) {
-        dataSaver = Background.dataSaverText(context)
-        perms = withContext(Dispatchers.IO) { StateInfo.permissions(context, withClock = false) }
-    }
-    DisposableEffect(owner) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) tick++ }
-        owner.lifecycle.addObserver(observer)
-        onDispose { owner.lifecycle.removeObserver(observer) }
-    }
-
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
-        Text(tr("Прошивка"), style = MaterialTheme.typography.titleMedium)
-        Text(fw?.text() ?: tr("определяю…"), style = MaterialTheme.typography.bodyLarge)
-        Hint(tr("Оболочки телефонов (EMUI, MIUI, ColorOS и другие) сами выгружают фоновые приложения. Здесь собрано, что нужно разрешить именно на вашем телефоне."))
-        Spacer(Modifier.height(8.dp))
-        Spacer(Modifier.height(4.dp))
-        Spacer(Modifier.height(8.dp))
-        Text(tr("Что уже разрешено"), style = MaterialTheme.typography.titleMedium)
-        // одно место для всех прав: кнопка «Исправить» только у невыданных
-        val okColor = PhoenixTheme.ok(appDark())
-        perms.forEach { p ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (p.ok) "✓" else if (p.optional) "–" else "✗",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (p.ok) okColor else if (p.optional) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(end = 8.dp),
-                )
-                Column(Modifier.weight(1f)) {
-                    Text(p.title, style = MaterialTheme.typography.bodyMedium)
-                    Text(p.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-                if (!p.ok && p.fix != null) TextButton(onClick = { p.fix.invoke() }) { Text(tr("Исправить")) }
-            }
-        }
-        Text(tr("Экономия трафика: {}", dataSaver), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            TextButton(onClick = { Background.requestUnrestrictedData(context) }) { Text(tr("Данные в фоне без ограничений")) }
-        }
-        TextButton(onClick = { Background.openAppSettings(context) }) { Text(tr("Настройки приложения")) }
-
-        val guide = fw?.let { FirmwareGuides.forKind(it.kind) }
-        if (guide != null) {
-            Spacer(Modifier.height(8.dp))
-            Spacer(Modifier.height(4.dp))
-            Row(
-                Modifier.fillMaxWidth().clickable { showGuide = !showGuide }.padding(vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(guide.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Text(if (showGuide) "▴" else "▾", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            }
-            if (showGuide) {
-                guide.steps.forEachIndexed { i, step ->
-                    Text("${i + 1}. $step", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 6.dp))
-                }
-                Spacer(Modifier.height(8.dp))
-                guide.actions.forEach { a ->
-                    OutlinedButton(onClick = { Background.openFirst(context, a.screens) }, modifier = Modifier.fillMaxWidth()) { Text(a.label) }
-                }
-                    Hint(tr("Названия пунктов зависят от версии прошивки. Если кнопка не нашла нужный экран, откроются настройки приложения — дальше по шагам выше."))
-            }
-        }
-    }
-}

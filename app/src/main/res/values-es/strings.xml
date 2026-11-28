@@ -3,4 +3,5 @@
     <string name="shortcut_fix">No funciona</string>
     <string name="shortcut_switch">Cambiar servidor</string>
     <string name="shortcut_stop">Desconectar</string>
+    <string name="site_watcher_desc">Lee solo la barra de direcciones del navegador para saber el dominio del sitio abierto y elegir un servidor para él. El dominio se guarda solo en memoria, no se lee el contenido de las páginas y no se envía nada.</string>
 </resources>

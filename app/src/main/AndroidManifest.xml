@@ -13,7 +13,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Только для кнопки «Скачать и установить» новую версию: пользователь отдельно разрешает установку из Phoenix в системных настройках -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <!-- Нужно только для варианта Б (переключить VPN, когда открыто приложение); выдаётся вручную в настройках -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 
@@ -108,6 +107,7 @@
 
         <service
             android:name=".PhoenixTileService"
+            tools:targetApi="24"
             android:exported="true"
             android:icon="@drawable/ic_tile"
             android:label="Phoenix VPN"
@@ -119,6 +119,7 @@
 
         <service
             android:name=".SwitchTileService"
+            tools:targetApi="24"
             android:exported="true"
             android:icon="@drawable/ic_tile"
             android:label="Сменить сервер"
@@ -130,6 +131,7 @@
 
         <service
             android:name=".SmartTileService"
+            tools:targetApi="24"
             android:exported="true"
             android:icon="@drawable/ic_tile"
             android:label="Не работает"

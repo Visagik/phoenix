@@ -34,12 +34,20 @@ object UpdateCheck {
         return sb.toString()
     }
 
+    /**
+     * Свой ли это файл: Lite-файл узнаётся по слову «lite» в ИМЕНИ файла (часть ссылки после последнего «/», без учёта регистра),
+     * файл full — по его отсутствию. «Lite» в пути (имя репозитория, тег) не считается.
+     */
+    fun isOwnApk(url: String, lite: Boolean): Boolean = url.substringAfterLast('/').contains("lite", ignoreCase = true) == lite
+
     /** Ответ `releases/latest`; null — не похоже на релиз. Черновики и предрелизы API туда не отдаёт. */
-    fun parse(json: String): ReleaseInfo? {
+    fun parse(json: String, lite: Boolean = LiteProfile.ON): ReleaseInfo? {
         val tag = str(json, "tag_name")?.trim().orEmpty()
         if (tag.isEmpty() || tag.length > 40) return null
         val url = str(json, "html_url")?.takeIf { it.startsWith("https://github.com/") } ?: PAGE_URL
-        val apkMatch = Regex("\"browser_download_url\"\\s*:\\s*\"(https://[^\"]+?\\.apk)\"").find(json)
+        // в релизе может быть несколько APK (full и Lite): берём первый СВОЕГО варианта, а не просто первый
+        val apkMatch = Regex("\"browser_download_url\"\\s*:\\s*\"(https://[^\"]+?\\.apk)\"").findAll(json)
+            .firstOrNull { isOwnApk(it.groupValues[1], lite) }
         val apk = apkMatch?.groupValues?.get(1).orEmpty()
         // в описании файла контрольная сумма и размер идут ДО ссылки; берём то, что между предыдущей ссылкой (или началом) и этой
         var sha = ""

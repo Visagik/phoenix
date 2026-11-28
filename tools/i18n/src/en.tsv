@@ -811,8 +811,6 @@ Notebook больше не ставит ✓ на закрытых сервера
 С выключенным экраном проверки идут раз в 2 минуты, при нагреве телефона — раз в 3.	With the screen off, checks run every 2 minutes; when the phone is hot, every 3.
 Phoenix сам определяет, белые у вас списки или чёрные: открывает 15 сайтов и сравнивает.	Phoenix works out on its own whether your blocking is whitelist or blacklist: it opens 15 sites and compares.
 Замер блокировок идёт напрямую, мимо VPN, в 8 потоков и не дольше 14 секунд.	Blocking is measured directly, bypassing the VPN, in 8 threads and for no longer than 14 seconds.
-Режим меняется только после двух одинаковых определений подряд.	The mode changes only after two identical detections in a row.
-«Белые списки» подтверждаются дольше «чёрных»: ложное «белые» из-за сбоя Wi-Fi обходится дороже всего.	«Whitelist» takes longer to confirm than «blacklist»: a false «whitelist» from a Wi-Fi glitch costs the most.
 Режим, выбранный вручную, держится 30 минут или до смены сети.	A mode chosen by hand holds for 30 minutes or until the network changes.
 Тип блокировок проверяется каждые 5 минут, но только когда экран включён.	The blocking type is checked every 5 minutes, but only while the screen is on.
 Знакомую сеть Phoenix запоминает: после двух подтверждений режим берётся сразу.	Phoenix remembers a familiar network: after two confirmations the mode is applied at once.
@@ -832,14 +830,12 @@ Wi-Fi узнаётся по отпечатку шлюза и DNS, без гео�
 Перепроверка сначала отсеивает конфиги по TCP, потом мерит настоящую задержку через ядро.	Rechecking first filters configs by TCP, then measures real latency through the core.
 Полная перепроверка идёт не дольше 25 минут и не чаще раза в 30 минут.	A full recheck takes no longer than 25 minutes and runs no more often than every 30 minutes.
 Если на одном адресе три пробы подряд молчат, остальные конфиги этого адреса не пробуются.	If three probes in a row to one address stay silent, the other configs at that address are not tried.
-Тяжёлые задачи идут на зарядке; если телефон не заряжали сутки, их разрешают при заряде от 50%.	Heavy tasks run while charging; if the phone hasn't been charged for a day, they are allowed at 50% or more.
 «Скорость перепроверки» имеет три режима: щадящая, обычная и быстрая.	«Recheck speed» has three modes: gentle, normal and fast.
 За один прогон настоящая страна выхода определяется у 12 рабочих серверов.	In one run the real exit country is determined for 12 working servers.
 Фоновый трафик на мобильной сети ограничен: по умолчанию 100 МБ.	Background traffic on mobile data is limited: 100 MB by default.
 На мобильной сети параллельных TCP-проверок не больше 16: радиомодуль греется от частых соединений.	On mobile no more than 16 TCP checks run in parallel: the radio heats up from frequent connections.
 Если процесс занимает больше 200 МБ, проверок становится меньше; при 260 МБ — вчетверо меньше.	If the process takes over 200 MB, fewer checks run; at 260 MB, four times fewer.
 Phoenix запоминает часы, когда вы обычно пользуетесь телефоном, и тяжёлую работу старается не делать в них.	Phoenix remembers the hours you usually use the phone and tries not to do heavy work then.
-Если поиск проверил 200 серверов и ни один не ответил, он останавливается: дальше впустую.	If a search checked 200 servers and none answered, it stops: going on would be pointless.
 Журнал занимает не больше 5 МБ: старые строки отбрасываются.	The log takes up no more than 5 MB: old lines are discarded.
 Автокопия настроек делается раз в неделю, хранятся три последние.	Settings are backed up automatically once a week; the last three are kept.
 Новый DNS получает 30 секунд на проверку, иначе возвращается прежний.	A new DNS gets 30 seconds to be checked, otherwise the previous one returns.
@@ -852,3 +848,41 @@ Phoenix запоминает часы, когда вы обычно пользу
 Если обновление подписано другим ключом, Phoenix сохранит копию настроек и скачает новую версию, а ставить её дальше вам.	If an update is signed with a different key, Phoenix saves a copy of the settings and downloads the new version, and installing it is up to you.
 Тип блокировок определяется сразу после запуска, а Wi-Fi без интернета больше не переключает режим туда-сюда.	The blocking type is detected right at launch, and Wi-Fi without internet no longer flips the mode back and forth.
 Бегущая строка с фактами о Phoenix на главном экране: выключена, включается в «Ещё → Фишки».	A ticker with facts about Phoenix on the main screen: off by default, turn it on in More → Features.
+3. Удалить Phoenix в настройках	3. Uninstall Phoenix in settings
+Убрано лишнее разрешение на удаление приложений: при смене ключа подписи удалить Phoenix нужно в настройках телефона.	Removed an extra app-deletion permission: if the signing key changes, uninstall Phoenix in the phone settings.
+Если подключиться не удалось: при включённой настройке туннель остаётся, и интернета нет, пока приложение ищет рабочий сервер; при выключенной телефон выходит в интернет напрямую. Если связь пропала посреди работы, туннель держится в любом случае, пока ищется другой сервер.	If connecting fails: when on, the tunnel stays up and there is no internet while the app looks for a working server; when off, the phone goes online directly. If the connection drops mid-session, the tunnel is kept either way while another server is being found.
+Приложение запоминает, в какие часы недели вы пользуетесь телефоном (только на телефоне, файл входит в резервную копию) и через неделю проверяет туннель заранее, перед обычным началом активности. Без зарядки тяжёлые проверки и так не запускаются; в тихие часы не делается даже редкое исключение «давно не проверяли».	The app learns which hours of the week you use your phone (on the phone only; the file is included in the backup) and after a week checks the tunnel in advance, before your usual start of activity. Without charging, heavy checks do not start anyway; during quiet hours even the rare exception “not checked for a long time” is skipped.
+То же, но по заданным вами часам; сильнее автоматических.	The same, but for the hours you set; takes priority over the automatic ones.
+Бывает, что интернет «есть», но фото и страницы почти не грузятся. Пока вы пользуетесь телефоном, раз в {} секунд смотрится, сколько данных идёт через сервер; если мало, делается один маленький замер (до 400 КБ), и после двух медленных подряд пробуются другие серверы. Если телефон не используется — ничего не качается. На мобильной сети работает, только если включено «Измерять скорость и по мобильной сети» и не исчерпан суточный лимит.	Sometimes the internet “works” but photos and pages barely load. While you use the phone, every {} seconds the app checks how much data goes through the server; if it is low, one small test (up to 400 KB) is made, and after two slow ones in a row other servers are tried. If the phone is not in use, nothing is downloaded. On a mobile network it works only if “Measure speed on mobile network too” is on and the daily limit is not used up.
+Сейчас мобильная сеть: без замеров по ней эта функция не работает	Mobile network now: without measurements on it this feature does not work
+Сам запускает полную перепроверку после ночного сбора и когда запасной сервер не нашёлся (не чаще раза в 30 минут). После ручного «Собрать» перепроверка идёт всегда.	Starts a full recheck by itself after the nightly collect and when no backup server is found (at most once every 30 minutes). After a manual “Collect” the recheck always runs.
+Если туннель перестал работать (неудачных проверок подряд: {} на Wi-Fi, {} на мобильной сети), приложение перебирает запасные конфиги лучшего рейтинга.	If the tunnel stops working (failed checks in a row: {} on Wi-Fi, {} on mobile network), the app tries backup configs with the best rating.
+При включении телефона и при открытии приложения (последний или лучший конфиг). Если VPN был включён, после перезагрузки он поднимется и при выключенной настройке. Нужно один раз дать системное разрешение на VPN.	When the phone starts and when the app is opened (last or best config). If the VPN was on, it comes back up after a reboot even with this setting off. The system VPN permission is needed once.
+Приложение проверяет, какие сайты открываются напрямую, и переключает режим. После смены сети хватает одного определения, иначе нужно два подряд. Проверка идёт при смене сети, при обрыве связи и при запуске.	The app checks which sites open directly and switches the mode. After a network change one detection is enough, otherwise two in a row are needed. The check runs on a network change, when the connection drops, and at start.
+Касается автоматической перепроверки, подбора серверов для целей и замеров скорости. Поиск сервера при обрыве не ограничивается никогда.	Applies to automatic rechecks, picking servers for targets and speed measurements. The server search after a connection drop is never limited.
+Замеры идут и по мобильной сети (включено ниже).	Measurements also run on the mobile network (enabled below).
+Сбрасывает только настройки этого экрана для выбранной области (Общие / Белые / Чёрные).	Resets only this screen's settings for the selected scope (Common / Whitelist / Blacklist).
+К значениям по умолчанию вернутся: {}. Продолжить?	These will return to defaults: {}. Continue?
+Закрепление сервера	Pinned server
+DNS	DNS
+Для выбранной области	For the selected scope
+Для всех режимов	For all modes
+Действуют в любом режиме и не зависят от выбора «Общие / Белые / Чёрные».	Apply in any mode and do not depend on the “Common / Whitelist / Blacklist” choice.
+Для режима «{}» (у него свои настройки)	For the “{}” mode (it has its own settings)
+Сохранено: {}	Saved: {}
+Отчёт сохранён: {}	Report saved: {}
+Загрузки/Phoenix	Downloads/Phoenix
+Лёгкий режим (сборка Lite): отключены белые списки, цели, обновления	Lite mode (Lite build): whitelists, targets and updates are off
+Показано {} из {}. Показать все	Showing {} of {}. Show all
+Перепроверка серверов идёт службой на переднем плане, а при отказе системы — частями и продолжает круг с того же места.	Server re-checking runs as a foreground service; if the system refuses, it runs in parts and resumes the round where it stopped.
+Возврат к привычному режиму сети — по одному замеру; «Не работает» при свежем замере другого режима меняет режим, а не ищет сервер.	Returning to a network's usual mode takes one measurement; "Not working" with a fresh measurement of another mode changes the mode instead of searching for a server.
+Статистика перерывов связи одна на оба режима; в журнале видно, кто запросил смену сервера и сколько ушло на поиск.	Connection-break statistics are now shared by both modes; the log shows who requested a server switch and how long the search took.
+Смена сервера занимает не дольше 60 секунд на мобильной сети и 120 на Wi-Fi, по кнопке «Не работает» — до 150.	A server switch takes at most 60 seconds on mobile data and 120 on Wi-Fi, up to 150 when you press «Not working».
+Если система не даёт запустить перепроверку службой, она идёт частями по 8 минут и продолжает круг с того же места.	If the system won't let the recheck run as a service, it works in 8-minute parts and resumes the round where it stopped.
+Источник, который два сбора подряд в разные дни отвечает 404 или 410, убирается сам; вернуть его можно кнопкой.	A source that answers 404 or 410 on two collections in a row on different days is removed automatically; a button brings it back.
+Режим меняется после двух одинаковых определений подряд; возврат к привычному режиму сети — после одного.	The mode changes after two identical detections in a row; returning to the network's usual mode takes just one.
+Если при живой сети не открылось ничего, замер через 4 секунды повторяется: сбой Wi-Fi не должен менять режим.	If nothing opens on a live network, the check is repeated after 4 seconds: a Wi-Fi glitch must not change the mode.
+Тяжёлые задачи идут на зарядке; если их не было сутки, их разрешают без неё при заряде от 50% и не на мобильной сети.	Heavy tasks run while charging; if none ran for a day, they're allowed without charging at 50% or more and not on mobile data.
+Если за 60 запусков ядра ни один сервер не ответил, проверка останавливается: дальше впустую.	If after 60 core launches no server has answered, the check stops: going on would be pointless.
+Источники, которые два сбора подряд отвечают 404 или 410, убираются сами; кнопка «Вернуть» остаётся. Добавлены новые адреса для белых списков.	Sources that answer 404 or 410 on two collections in a row are removed automatically; the «Restore» button stays. New addresses added for whitelists.
+Если связь вернулась посреди сбора, источники получают ещё одну попытку через VPN.	If the connection comes back in the middle of a collection, sources get one more attempt through the VPN.

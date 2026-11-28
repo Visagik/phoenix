@@ -124,12 +124,14 @@ fun VpnTab(vm: MainViewModel, onOpenServices: () -> Unit = {}) {
                 appLinksOn, onChange = { vm.setAppLinks(it) },
             )
         }
-        SwitchRow(
-            tr("Быстрый движок туннеля (hev)"),
-            tr("Тот же движок, что у v2rayNG: обычно быстрее на скорости. Вступает в силу при следующем подключении. Только 64-битные телефоны; если у вас есть сайты или приложения со своим сервером, по приложениям они работать не будут — тогда автоматически остаётся встроенный.") +
-                if (!vm.hevAvailable) tr(" Сейчас недоступен на этом телефоне.") else "",
-            hevOn, enabled = vm.hevAvailable, onChange = { vm.setHev(it) },
-        )
+        if (!LiteProfile.ON) {
+            SwitchRow(
+                tr("Быстрый движок туннеля (hev)"),
+                tr("Тот же движок, что у v2rayNG: обычно быстрее на скорости. Вступает в силу при следующем подключении. Только 64-битные телефоны; если у вас есть сайты или приложения со своим сервером, по приложениям они работать не будут — тогда автоматически остаётся встроенный.") +
+                    if (!vm.hevAvailable) tr(" Сейчас недоступен на этом телефоне.") else "",
+                hevOn, enabled = vm.hevAvailable, onChange = { vm.setHev(it) },
+            )
+        }
         if (appsMode == AppsMode.ALL_EXCEPT) {
             if (found.isNotEmpty()) {
                 Text(
@@ -250,11 +252,17 @@ fun ServicesPage(vm: MainViewModel) {
                 TextButton(onClick = { vm.removeCustomService(s.id) }) { Text(tr("Убрать")) }
             }
         }
-        SwitchRow(
-            tr("Проверять рабочие конфиги само"),
-            tr("После перепроверки и в фоне: у рабочих конфигов, которых ещё не проверяли по выбранным сервисам, проверяются они. Добавили сервис — проверятся и уже проверенные."),
-            autoServices, onChange = { vm.setAutoServices(it) },
-        )
+        if (!LiteProfile.ON) {
+            SwitchRow(
+                tr("Проверять рабочие конфиги само"),
+                tr("После перепроверки и в фоне: у рабочих конфигов, которых ещё не проверяли по выбранным сервисам, проверяются они. Добавили сервис — проверятся и уже проверенные."),
+                autoServices, onChange = { vm.setAutoServices(it) },
+            )
+        }
+        // Н8: запись идёт в настройки активного режима, если у него они свои; без приписки этого не видно
+        val separateNow by vm.separate.collectAsStateWithLifecycle()
+        val modeNow by vm.mode.collectAsStateWithLifecycle()
+        if (separateNow[modeNow] == true) Hint(tr("Для режима «{}» (у него свои настройки)", tr(modeNow.title)))
         Spacer(Modifier.height(4.dp))
         Button(onClick = { vm.runChecks(rows.take(CHECK_LIMIT).map { it.raw }) }, enabled = rows.isNotEmpty()) {
             Text(tr("Проверить первые {} конфигов", minOf(rows.size, CHECK_LIMIT)), maxLines = 1, overflow = TextOverflow.Ellipsis)
